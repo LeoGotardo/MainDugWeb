@@ -1,0 +1,7 @@
+flask_sqlalchemy
+python-dotenv
+cryptography
+flask_login
+argon2-cffi
+flask_admin
+flask

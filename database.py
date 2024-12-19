@@ -1,0 +1,255 @@
+import secrets, locale, json, sys, os, uuid
+
+from flask_sqlalchemy import SQLAlchemy
+from cryptograph import Cryptograph
+from flask_login import UserMixin
+from dotenv import load_dotenv
+from flask import Flask
+
+class Config:
+    locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+    load_dotenv()
+    SECRET_KEY = os.getenv('SecretKey') 
+    DEFAUT_PASSWORD = os.getenv('DefautPassword')
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+    app.config['SECRET_KEY'] = SECRET_KEY
+    db = SQLAlchemy(app)
+    session = db.session
+
+class User(UserMixin, Config.db.Model):
+    __tablename__ = 'Users'
+    id = Config.db.Column(Config.db.String(36), default=lambda: str(uuid.uuid4()), primary_key=True, nullable=False)
+    login = Config.db.Column(Config.db.String(80), unique=True, nullable=False)
+    password = Config.db.Column(Config.db.String(80), nullable=False)
+    admin = Config.db.Column(Config.db.Boolean, default=False, nullable=False)
+    enabled = Config.db.Column(Config.db.Boolean, default=True, nullable=False)
+    gerentBy = Config.db.Column(Config.db.String(36), nullable=True)
+
+
+class Passwords(UserMixin, Config.db.Model):
+    __tablename__ = 'Passwords'
+    id = Config.db.Column(Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
+    user_id = Config.db.Column(Config.db.String(36), Config.db.ForeignKey('Users.id'), nullable=False)
+    login = Config.db.Column(Config.db.String(80), nullable=False)
+    password = Config.db.Column(Config.db.String(80), nullable=False)
+    site = Config.db.Column(Config.db.String(80), nullable=False)
+    status = Config.db.Column(Config.db.String(80), nullable=False, default='OK')
+    
+
+class Database:
+    def __init__(self) -> None:
+        self.db = Config.db
+        self.session = Config.session
+        self.cryptograph = Cryptograph()
+        
+        self.createTables()
+        
+        
+    def createTables(self) -> None:
+        with Config.app.app_context():
+            self.db.create_all()
+
+    
+    def getUser(self, id: str) -> tuple[bool, User | str]:
+        try:
+            user = self.session.query(User).filter_by(id=id).first()
+            
+            if user is not None:
+                return True, user
+            else:
+                return False, 'Invalid user'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+
+
+    def validUser(self, login: str, password: str) -> tuple[bool, User | str]:
+        try:
+            user = self.session.query(User).filter_by(login=login).first()
+            
+            if user is not None:
+                if self.cryptograph.isValidPass(user.password, password):
+                    return True, user
+                else:
+                    return False, 'Invalid credentials'
+            else:
+                return False, 'Invalid credentials'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+
+
+    def createUser(self, login: str, password: str, admin: bool = False, menagedBy: str = None) -> tuple[bool, User | str]:
+        try:
+            if User.query.filter_by(login=login).first() is None:
+                user = User(login=login, password=self.cryptograph.encryptPass(password), admin=admin, gerentBy=menagedBy)
+                self.session.add(user)
+                self.session.commit()
+                
+                return True, user
+            else:
+                return False, 'User already exists'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+
+    def deleteUser(self, id: str) -> tuple[bool, str]:
+        try:
+            user = self.session.query(User).filter_by(id=id).first()
+            
+            if user is not None:
+                self.session.delete(user)
+                self.session.commit()
+                
+                return True, 'User deleted'
+            else:
+                return False, 'User not found'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+        
+    def updateUser(self, id: str, login: str = None, password: str = None, admin: bool = None, menagedBy: str = None) -> tuple[bool, str]:
+        try:
+            user = self.session.query(User).filter_by(id=id).first()
+
+            if login is None:
+                login = user.login
+            if password is None:
+                password = user.password
+            else:
+                password = self.cryptograph.encryptPass(password)
+            if admin is None:
+                admin = user.admin
+            if menagedBy is None:
+                menagedBy = user.gerentBy
+            
+            if user is not None:
+                user.login = login
+                user.password = password
+                user.admin = admin
+                user.gerentBy = menagedBy
+                    
+                self.session.commit()
+                    
+                return True, 'User updated'
+            else:
+                return False, 'Invalid id'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+    
+    def deleteUserByGerent(self, gerentID: str, userID: str) -> tuple[bool, str]:
+        try:
+            user = self.session.query(User).filter_by(id=userID).first()
+            
+            if user is not None:
+                if user.gerentBy == gerentID:
+                    self.session.delete(user)
+                    self.session.commit()
+                    
+                    return True, 'User deleted'
+                else:
+                    return False, 'User not found'
+            else:
+                return False, 'User not found'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+    
+    def createUserByGerent(self, gerentID: str, login: str, password: str) -> tuple[bool, User | str]:
+        try:
+            if User.query.filter_by(login=login).first() is None:
+                user = User(login=login, password=self.cryptograph.encryptPass(password), gerentBy=gerentID)
+                self.session.add(user)
+                self.session.commit()
+                
+                return True, user
+            else:
+                return False, 'This login already exists'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+
+    def getUsersByGerent(self, gerentID: str) -> tuple[bool, list[User]] | tuple[bool, str]:
+        try:
+            users = self.session.query(User).filter_by(gerentBy=gerentID).all()
+            
+            if users is not None:
+                return True, users
+            else:
+                return False, 'Invalid gerent'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+    
+    def addPassword(self, id: str, password: str, site: str, login: str) -> tuple[bool, str]:
+        try:
+            key = self.cryptograph.keyGenerator(id)
+            password = Passwords(user_id=id, password=self.cryptograph.encryptSentence(password, key), site=site, login=login)
+            self.session.add(password)
+            self.session.commit()
+            
+            return True, 'Password added'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+
+
+    def getPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
+        try:
+            passwords = self.session.query(Passwords).filter_by(user_id=id).all()
+            
+            if passwords is not None:
+                for password in passwords:
+                    password.password = self.cryptograph.decryptSentence(password.password, self.cryptograph.keyGenerator(id)[1])
+                return True, passwords
+            else:
+                return False, 'Cant find any passwords'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+    
+    def deletePassword(self, passwordID: str, userID: str) -> tuple[bool, str]:
+        try:
+            password = self.session.query(Passwords).filter_by(id=passwordID).first()
+            
+            if password is not None:
+                if password.user_id == userID:
+                    self.session.delete(password)
+                    self.session.commit()
+                    
+                    return True, 'Password deleted'
+                else:
+                    return False, 'Password not found'
+            else:
+                return False, 'Password not found'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+
+    def updatePassword(self, passwordID: str, userID: str, password: str = None, site: str = None, login: str = None) -> tuple[bool, str]:
+        try:
+            passwordRec = self.session.query(Passwords).filter_by(id=passwordID).first()
+
+            if passwordRec is not None:
+                if passwordRec.user_id == userID:
+                    if password is None:
+                        password = passwordRec.password
+                    else:
+                        password = self.cryptograph.encryptSentence(password, self.cryptograph.keyGenerator(userID)[1])
+                    if login is None:
+                        login = passwordRec.login
+                    if site is None:
+                        site = passwordRec.site
+                    
+                    passwordRec.password = password
+                    passwordRec.login = login
+                    passwordRec.site = site
+                    
+                    self.session.commit()
+                    
+                    return True, 'Password updated'
+                else:
+                    return False, 'Password not found'
+            else:
+                return False, 'Password not found'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
