@@ -10,13 +10,13 @@ class Cryptograph:
         self.ph = argon2.PasswordHasher()
         
         
-    def keyGenerator(key: str) -> bytes:
+    def keyGenerator(key: str) -> tuple[bool, bytes] | tuple[bool, str]:
         try:
             hash_bytes = sha256(key.encode('utf-8')).digest()
             
             base64_key = base64.urlsafe_b64encode(hash_bytes)
             
-            return base64_key
+            return True, base64_key
         except Exception as e:
             return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
     

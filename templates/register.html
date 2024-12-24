@@ -147,7 +147,7 @@
             </div>
             <button type="submit" class="login-button">Register</button>
             <div class="register">
-                <p>Já tem conta? <a href="{{ url_for('index') }}">Faça login</a></p>
+                <p>Já tem conta? <a href="{{ url_for('login') }}">Faça login</a></p>
             </div>
             {% with messages = get_flashed_messages() %}
                 {% if messages %}

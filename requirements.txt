@@ -4,4 +4,5 @@ cryptography
 flask_login
 argon2-cffi
 flask_admin
+requests
 flask

@@ -1,4 +1,4 @@
-import secrets, locale, json, sys, os, uuid
+import locale, json, sys, os, uuid, hashlib, requests
 
 from flask_sqlalchemy import SQLAlchemy
 from cryptograph import Cryptograph
@@ -199,7 +199,14 @@ class Database:
             
             if passwords is not None:
                 for password in passwords:
-                    password.password = self.cryptograph.decryptSentence(password.password, self.cryptograph.keyGenerator(id)[1])
+                    response = self.cryptograph.keyGenerator(id)
+                    if response[0] == False:
+                        return False, response[1]
+                    key = response[1]
+                    response = self.cryptograph.decryptSentence(password.password, key)
+                    if response[0] == False:
+                        return False, response[1]
+                    password.password = response[1]
                 return True, passwords
             else:
                 return False, 'Cant find any passwords'
@@ -251,5 +258,79 @@ class Database:
                     return False, 'Password not found'
             else:
                 return False, 'Password not found'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+
+    def getPasswordsStatus(self, id: str, status: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
+        try:
+            passwords = self.session.query(Passwords).filter_by(user_id=id).filter_by(status=status).all()
+            
+            if passwords is not None:
+                for password in passwords:
+                    response = self.cryptograph.keyGenerator(id)
+                    if response[0] == False:
+                        return False, response[1]
+                    key = response[1]
+                    response = self.cryptograph.decryptSentence(password.password, key)
+                    if response[0] == False:
+                        return False, response[1]
+                    password.password = response[1]
+                return True, passwords
+            else:
+                return False, 'Cant find any passwords'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+    
+    def updatePasswordStatus(self, passwordID: str, userID: str, status: str) -> tuple[bool, str]:
+        try:
+            passwordRec = self.session.query(Passwords).filter_by(id=passwordID).first()
+
+            if passwordRec is not None:
+                if passwordRec.user_id == userID:
+                    passwordRec.status = status
+                    
+                    self.session.commit()
+                    
+                    return True, 'Password updated'
+                else:
+                    return False, 'Password not found'
+            else:
+                return False, 'Password not found'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+    
+    def checkPasswordPwned(self, password: str) -> tuple[bool, str]:
+        try:
+            sha1_hash = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()
+            prefix = sha1_hash[:5]
+            suffix = sha1_hash[5:]
+            
+            url = f"https://api.pwnedpasswords.com/range/{prefix}"
+            response = requests.get(url)
+            
+            if response.status_code != 200:
+                return False, f"Erro ao acessar a API: {response.status_code}"
+            
+            hashes = (line.split(':') for line in response.text.splitlines())
+            for hash_suffix, count in hashes:
+                if hash_suffix == suffix:
+                    return True, count
+            
+            return False, "A senha não foi encontrada em violações conhecidas."
+        except Exception as e:
+            return f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+    
+    def findUserLogin(self, login: str) -> tuple[bool, User | str]:
+        try:
+            user = self.session.query(User).filter_by(login=login).first()
+            
+            if user is not None:
+                return True, user
+            else:
+                return False, 'Invalid user'
         except Exception as e:
             return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
