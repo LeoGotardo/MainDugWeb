@@ -1,4 +1,4 @@
-import locale, json, sys, os, uuid, hashlib, requests
+import locale, sys, os, uuid, hashlib, requests
 
 from flask_sqlalchemy import SQLAlchemy
 from cryptograph import Cryptograph
@@ -10,7 +10,7 @@ class Config:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
     load_dotenv()
     SECRET_KEY = os.getenv('SecretKey') 
-    DEFAUT_PASSWORD = os.getenv('DefautPassword')
+    DEFAULT_PASSWORD = os.getenv('DefaultPassword')
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
     app.config['SECRET_KEY'] = SECRET_KEY
@@ -34,7 +34,7 @@ class Passwords(UserMixin, Config.db.Model):
     login = Config.db.Column(Config.db.String(80), nullable=False)
     password = Config.db.Column(Config.db.String(80), nullable=False)
     site = Config.db.Column(Config.db.String(80), nullable=False)
-    status = Config.db.Column(Config.db.String(80), nullable=False, default='OK')
+    status = Config.db.Column(Config.db.Boolean, nullable=False, default=False)
     
 
 class Database:
@@ -176,7 +176,7 @@ class Database:
             if users is not None:
                 return True, users
             else:
-                return False, 'Invalid gerent'
+                return False, 'Dident find any user'
         except Exception as e:
             return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
@@ -332,5 +332,33 @@ class Database:
                 return True, user
             else:
                 return False, 'Invalid user'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+
+    def updatePasswordsStatus(self, id: str) -> tuple[bool, str]:
+        try:
+            passwords = self.session.query(Passwords).filter_by(user_id=id, status=False).all()
+            
+            if passwords is not None:
+                for password in passwords:
+                    response = self.cryptograph.keyGenerator(id)
+                    if response[0] == False:
+                        return False, response[1]
+                    key = response[1]
+                    response = self.cryptograph.decryptSentence(password.password, key)
+                    if response[0] == False:
+                        return False, response[1]
+                    password = response[1]
+                    response = self.cryptograph.checkPasswordPwned(password)
+                    if response[0] == True:
+                        password.status = True
+                    else:
+                        password.status = False
+                    self.session.commit()
+                
+                return True, 'Passwords updated'
+            else:
+                return True, 'Passwords updated'
         except Exception as e:
             return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'

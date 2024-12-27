@@ -20,7 +20,6 @@
                                 <label for="login">Login</label>
                                 <input type="text" class="form-control" id="login" name="login" value="{{ user.login }}" required>
                             </div>
-                            {% if current_user.admin %}
                             <div class="form-group">
                                 <label for="currentPassword">Senha atual</label>
                                 <input type="text" class="form-control" id="currentPassword" name="currentPassword" placeholder="Senha atual" required>

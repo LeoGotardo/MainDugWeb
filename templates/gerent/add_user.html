@@ -1,4 +1,4 @@
-{% extends 'admin/base.html' %}
+{% extends 'gerent/base.html' %}
 
 {% block body %}
     {{ super() }}
@@ -10,10 +10,6 @@
             <div class="form-group mb-4">
                 <label for="login" class="form-label fw-semibold">Login</label>
                 <input type="text" class="form-control form-control-lg" id="login" name="login" required>
-            </div>
-            <div class="form-check mb-4">
-                <input type="checkbox" class="form-check-input custom-checkbox" id="admin" name="admin" value="True">
-                <label for="admin" class="form-check-label fw-semibold">Admin</label>
             </div>
             
             <!-- Exibição de mensagens -->
@@ -30,7 +26,7 @@
             <!-- Botões de ação -->
             <div class="d-flex justify-content-between">
                 <button type="submit" class="btn btn-primary btn-lg px-4">Adicionar Usuário</button>
-                <a href="{{ url_for('adminPainel') }}" class="btn btn-outline-secondary btn-lg px-4">Cancelar</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg px-4">Cancelar</a>
             </div>
         </form>
     </div>

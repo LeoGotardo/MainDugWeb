@@ -2,12 +2,24 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask import redirect, url_for, render_template, request, flash
 from database import Database, Config
 from cryptograph import Cryptograph
+from functools import wraps
+import time
 
 database = Database()
 cryptograph = Cryptograph()
 app = Config.app
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
+
+def require_admin(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if current_user.admin:
+            return f(*args, **kwargs)
+        else:
+            return render_template('gerent/404.html'), 404
+    return wrapper
 
 
 @login_manager.user_loader
@@ -36,9 +48,9 @@ def login():
             else:
                 users = []
                 flash(response[1])
-            return render_template('gerent/index.html', user=users)
+            return render_template('gerent/index.html', users=users)
         else:
-            return render_template('user/index.html', user=current_user)
+            return render_template('user/index.html', users=current_user)
     if request.method == 'POST':
         login = request.form['login']
         password = request.form['password']
@@ -46,7 +58,6 @@ def login():
         response = database.validUser(login, password)
         if response[0] == True:
             login_user(response[1])
-            flash(current_user.admin)
             if current_user.admin:
                 response = database.getUsersByGerent(current_user.id)
                 if response[0] == True:
@@ -54,9 +65,9 @@ def login():
                 else:
                     users = []
                     flash(response[1])
-                return render_template('gerent/index.html', user=users)
+                return render_template('gerent/index.html', users=users)
             else:
-                return render_template('user/index.html', user=current_user)
+                return render_template('user/index.html', users=current_user)
         else:
             flash(response[1])
             return render_template('login.html')
@@ -158,12 +169,13 @@ def passwords_status():
 
 @app.route('/add_user', methods=['GET', 'POST'])
 @login_required
+@require_admin
 def add_user():
     if request.method == 'POST':
         login = request.form['login']
         password = Config.DEFAULT_PASSWORD
 
-        response = database.createUser(login, password, False, current_user.id)
+        response = database.createUserByGerent(current_user.id, login, password)
            
         if response[0] == True:
             flash(f'Usuário {login} criado com sucesso')
@@ -174,29 +186,24 @@ def add_user():
     return render_template('gerent/add_user.html')
 
 
-@app.route('/delete_user/<string:id>', defaults={'id': 'user'}, methods=['POST'])
+@app.route('/delete_user/<string:id>', methods=['POST'])
 @login_required
+@require_admin
 def delete_user(id: str = 'user'):
-    if not current_user.admin and id != 'user':
-        return render_template('404.html'),404
-    if request.method == 'POST':
-        user = database.getUser(id)
-
-        if user[0] == False:
-            flash(user[1])
-            return redirect(url_for('login'))
-        else:
-            user = user[1]
-        
-        if user.menegedBy != current_user.id:
-            return render_template('404.html'), 404
-
-        if database.deleteUser(user.id)[0] == True:
-            flash(f'Usuário {user.login} deletado com sucesso')
-            return redirect(url_for('login'))
-        else:
-            flash(f"Falha ao deletar usuário. {database.deleteUser(user.id)[1]}")
-            return redirect(url_for('login'))
+    user = database.getUser(id)
+    if user[0] == False:
+        flash(user[1])
+        return redirect(url_for('login'))
+    else:
+        user = user[1]
+    
+    response = database.deleteUser(user.id)
+    if response[0] == True:
+        flash(f'Usuário {user.login} deletado com sucesso')
+        return redirect(url_for('login'))
+    else:
+        flash(f"Falha ao deletar usuário. {response[1]}")
+        return redirect(url_for('login'))
 
 
 @app.route('/reset_password/<string:id>', methods=['GET', 'POST'])
@@ -218,7 +225,53 @@ def reset_password(id: str):
         else:
             flash(f"Falha ao resetar senha. {response[1]}")
             return redirect(url_for('account', id=id))
-        
+
+
+@app.route('/user_info/<string:id>', methods=['GET'])
+@login_required
+@require_admin
+def user_info(id: str = 'user'):
+    time.sleep(10)
+    user = database.getUser(id)
+    if user[0] == False:
+        flash(user[1])
+        return redirect(url_for('login'))
+    else:
+        user = user[1]
+        passwords = database.getPasswords(user.id)
+        response = database.updatePasswordsStatus(user.id)
+        if response[0] == False:
+            flash(response[1])
+        if passwords[0] == False:
+            flash(passwords[1])
+            return redirect(url_for('login'))
+        else:
+            passwords = passwords[1]
+            return render_template('gerent/user_info.html', user=user, passwords=passwords)
+
+
+@app.route('/edit_user/<string:id>', methods=['POST'])
+@login_required
+@require_admin    
+def edit_user(id: str = 'user'):
+    user = database.getUser(id)
+
+    if user[0] == False:
+        flash(user[1])
+        return redirect(url_for('login'))
+    else:
+        user = user[1]
+
+    enable = request.form['enable']
+
+    response = database.updateUser(user.id, enabled=enable)
+    if response[0] == True:
+        flash(f'Usuário {user.login} atualizado com sucesso')
+        return redirect(url_for('login'))
+    else:
+        flash(f"Falha ao atualizar usuário. {response[1]}")
+        return redirect(url_for('login'))
+
 
 if __name__ == '__main__':    
     app.run(debug=True)
