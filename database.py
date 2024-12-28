@@ -232,36 +232,6 @@ class Database:
             return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
-    def updatePassword(self, passwordID: str, userID: str, password: str = None, site: str = None, login: str = None) -> tuple[bool, str]:
-        try:
-            passwordRec = self.session.query(Passwords).filter_by(id=passwordID).first()
-
-            if passwordRec is not None:
-                if passwordRec.user_id == userID:
-                    if password is None:
-                        password = passwordRec.password
-                    else:
-                        password = self.cryptograph.encryptSentence(password, self.cryptograph.keyGenerator(userID)[1])
-                    if login is None:
-                        login = passwordRec.login
-                    if site is None:
-                        site = passwordRec.site
-                    
-                    passwordRec.password = password
-                    passwordRec.login = login
-                    passwordRec.site = site
-                    
-                    self.session.commit()
-                    
-                    return True, 'Password updated'
-                else:
-                    return False, 'Password not found'
-            else:
-                return False, 'Password not found'
-        except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-
     def getPasswordsStatus(self, id: str, status: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
         try:
             passwords = self.session.query(Passwords).filter_by(user_id=id).filter_by(status=status).all()
@@ -355,7 +325,7 @@ class Database:
                         password.status = True
                     else:
                         password.status = False
-                    self.session.commit()
+                self.session.commit()
                 
                 return True, 'Passwords updated'
             else:

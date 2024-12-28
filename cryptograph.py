@@ -57,14 +57,6 @@ class Cryptograph:
         except Exception as e:
             return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
     
-    
-    def decryptPass(self, password: str, hash: str) -> str:
-        try:
-            with argon2.exceptions.VerifyMismatchError:
-                return self.ph.verify(hash, password)
-        except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
         
 if __name__ == "__main__":
     Cryptograph()

@@ -3,7 +3,6 @@ from flask import redirect, url_for, render_template, request, flash
 from database import Database, Config
 from cryptograph import Cryptograph
 from functools import wraps
-import time
 
 database = Database()
 cryptograph = Cryptograph()
@@ -18,7 +17,7 @@ def require_admin(f):
         if current_user.admin:
             return f(*args, **kwargs)
         else:
-            return render_template('gerent/404.html'), 404
+            return render_template('404.html'), 404
     return wrapper
 
 
@@ -231,7 +230,6 @@ def reset_password(id: str):
 @login_required
 @require_admin
 def user_info(id: str = 'user'):
-    time.sleep(10)
     user = database.getUser(id)
     if user[0] == False:
         flash(user[1])
