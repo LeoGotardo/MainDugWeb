@@ -9,7 +9,7 @@
         <form action="{{ url_for('edit_user', id=user.id) }}" method="POST" class="shadow-lg p-4 rounded bg-white border border-light">
             <div class="form-group mb-4">
                 <label for="enable" class="form-label fw-semibold">Ativo</label>
-                <input type="checkbox" class="form-control form-control-lg" id="enable" name="enable" value="{{ user.enabled }}" required>
+                <input type="checkbox" class="form-control form-control-lg" id="enable" name="enable" value="True" {% if user.enabled %} checked {% endif %}>
             </div>
             
             <!-- Exibição de mensagens -->
@@ -32,16 +32,20 @@
     </div>
 
     <div class="container">
+        <h2 class="text-center mb-4 text-primary fw-bold">Credenciais do usuário</h2>
+        <a href="{{ url_for('add_credentials', id=user.id) }}" type="button" class="btn btn-primary btn-lg px-4 mb-4" data-bs-toggle="modal" data-bs-target="#modal-password">Adicionar nova credencial</a>
         <table class="table table-bordered table-striped text-center">
             <thead>
                 <tr>
                     <th>Site</th>
+                    <th>Login</th>
                     <th>Vazado</th>
                 </tr>
             </thead>
             <tbody>
-                {% for pasasword in passwords %}
+                {% for password in passwords %}
                     <td>{{ password.site }}</td>
+                    <td>{{ password.login }}</td>
                     <td>
                         {% if password.status %}
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16">

@@ -1,1 +1,164 @@
 {% extends "user/base.html" %}
+
+{% block body %}
+    {{ super() }}
+    <div class="container mt-4">
+        <!-- Formulário de busca -->
+        <form method="GET" action="{{ url_for('login') }}" class="d-flex justify-content-between align-items-center m-3" >
+            <div class="input-group w-50 shadow-sm">
+                <input 
+                    type="text" 
+                    name="search" 
+                    class="form-control border-primary" 
+                    placeholder="Pesquisar por login..." 
+                    aria-label="Pesquisar por login"
+                    value="{{ request.args.get('search', '') }}">
+                
+                <button class="btn btn-primary" type="submit" aria-label="Pesquisar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                    </svg>
+                </button>
+                
+                <a href="{{ url_for('login') }}" class="btn btn-outline-secondary ms-2" aria-label="Limpar pesquisa">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+                        <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                    </svg>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    {% for error in get_flashed_messages() %}
+    <div class="alert alert-danger text-center" role="alert">
+        {{ error }}
+    </div>
+    {% endfor %}
+    
+    <div class="container">
+        <table class="table table-bordered table-striped text-center">
+            <thead>
+                <tr>
+                    <th><button id="sortBtn" onclick="sortTable('login')">Login</button></th>
+                    <th><button id="sortBtn" onclick="sortTable('enabled')">Enabled</button></th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for password in passwords %}
+                    <tr>
+                        <td>{{ password['site'] }}</td>
+                        <td>{{ password['login'] }}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="window.location.href='{{ url_for('pass_info', credId=password.id) }}'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                                    <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                                    <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/>
+                                </svg>
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="copyCred('{{ password['login'] }}, '{{ password['password'] }}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <script>
+        function copyCred(login, password) {
+            navigator.clipboard.writeText(`login: ${login}\npassword: ${password}`);
+            alert('Credenciais copiadas para a área de transferência');
+        }
+
+        function sortTable(column) {
+            // Obtém os dados dos usuários do JSON
+            let passwords = JSON.parse('{{ passwords|tojson }}');
+
+            // Ordena os dados com base na coluna especificada
+            passwords.sort((a, b) => {
+                if (typeof a[column] === "boolean") {
+                    return b[column] - a[column]; // Para valores booleanos, ordena decrescente (true > false)
+                }
+                return a[column].localeCompare(b[column]); // Para strings, ordena alfabeticamente
+            });
+
+            // Seleciona o corpo da tabela
+            const tbody = document.querySelector("table tbody");
+
+            // Limpa o corpo da tabela
+            tbody.innerHTML = "";
+
+            // Renderiza os dados ordenados na tabela
+            passwords.forEach(user => {
+                const tr = document.createElement("tr");
+
+                // Login
+                tr.innerHTML += `<td>${user['login']}</td>`;
+
+                // Enabled
+                tr.innerHTML += `<td>${user['enabled'] 
+                    ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                    </svg>`
+                    : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-circle-fill" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293z"/>
+                    </svg>`}
+                    </td>`;
+
+                // Editar botões
+                tr.innerHTML += `
+                    <td>
+                        <button class="btn btn-warning btn-sm" onclick="window.location.href='/edit_user/${user['id']}'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                                <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                                <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/>
+                            </svg>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="window.location.href='/delete_user/${user['id']}'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                            </svg>
+                        </button>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+    </script>
+{% endblock %}
+
+{% block style %}
+    {{ super() }}
+    <style>
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px;
+            font-size: 18px;
+            text-align: center;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        button {
+            border: 0px, solid, transparent;
+            text-decoration: bold;
+            background-color: transparent;
+        }
+    </style>
+{% endblock %}

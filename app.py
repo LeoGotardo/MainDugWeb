@@ -4,12 +4,21 @@ from database import Database, Config
 from cryptograph import Cryptograph
 from functools import wraps
 
+import requests
+
 database = Database()
 cryptograph = Cryptograph()
 app = Config.app
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+def onlyUser(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if current_user.admin == False:
+            return f(*args, **kwargs)
+        else:
+            return render_template('404.html'), 404
 
 def require_admin(f):
     @wraps(f)
@@ -44,12 +53,28 @@ def login():
             response = database.getUsersByGerent(current_user.id)
             if response[0] == True:
                 users = response[1]
+                query = request.args.get('search')
+                if query:
+                    response = database.sortUsers(current_user, query)
+                    if response[0] == True:
+                        users = response[1]
+                    else:
+                        users = []
+                        flash(response[1])
             else:
                 users = []
                 flash(response[1])
+            users = [user.to_dict() for user in users]
             return render_template('gerent/index.html', users=users)
         else:
-            return render_template('user/index.html', users=current_user)
+            passwords = database.getPasswords(current_user.id)
+            if passwords[0] == False:
+                flash(passwords[1])
+                return render_template('user/index.html', user=current_user, passwords=[])
+            else:
+                passwords = passwords[1]
+                passwords = [password.to_dict() for password in passwords]
+            return render_template('user/index.html', user=current_user, passwords=passwords)
     if request.method == 'POST':
         login = request.form['login']
         password = request.form['password']
@@ -64,9 +89,17 @@ def login():
                 else:
                     users = []
                     flash(response[1])
+                users = [user.to_dict() for user in users]
                 return render_template('gerent/index.html', users=users)
             else:
-                return render_template('user/index.html', users=current_user)
+                passwords = database.getPasswords(current_user.id)
+                if passwords[0] == False:
+                    flash(passwords[1])
+                    return render_template('user/index.html', user=current_user, passwords=[])
+                else:
+                    passwords = passwords[1]
+                    passwords = [password.to_dict() for password in passwords]
+                return render_template('user/index.html', user=current_user, passwords=passwords)
         else:
             flash(response[1])
             return render_template('login.html')
@@ -88,7 +121,7 @@ def register():
            
         if response[0] == True:
             flash(f'Usuario {login} criado com sucesso')
-            return redirect(url_for('index'))
+            return redirect(url_for('login'))
         else:
             flash(response[1])
             return render_template('register.html')
@@ -155,15 +188,6 @@ def account(id: str = 'user'):
 def logout():
     logout_user()
     return render_template('login.html')
-
-
-@app.route('/passwords_status', methods=['GET'])
-@login_required
-def passwords_status():
-    if not current_user.admin:
-        return render_template('user/passwords_status.html', user=current_user)
-    else:
-        return render_template('404.html'), 404
     
 
 @app.route('/add_user', methods=['GET', 'POST'])
@@ -231,6 +255,9 @@ def reset_password(id: str):
 @require_admin
 def user_info(id: str = 'user'):
     user = database.getUser(id)
+    response = database.updatePasswordsStatus(id)
+    if response[0] == False:
+        flash(response[1])
     if user[0] == False:
         flash(user[1])
         return redirect(url_for('login'))
@@ -269,6 +296,50 @@ def edit_user(id: str = 'user'):
     else:
         flash(f"Falha ao atualizar usuário. {response[1]}")
         return redirect(url_for('login'))
+
+
+@app.route('/add_credentials/<string:id>', methods=['GET', 'POST'])
+@login_required
+@require_admin
+def add_credentials(id: str):
+    if request.method == 'POST':
+        site = request.form['site']
+        login = request.form['login']
+        password = request.form['password']
+
+        response = requests.get(f"{site}")
+        if response.status_code == 200:
+            response = database.addPassword(id, login, site, password)
+            if response[0] == True:
+                flash(f'Credencial adicionada com sucesso')
+                response = database.getPasswords(id)
+                if response[0] == False:
+                    flash(response[1])
+                passwords = response[1]
+                return redirect(url_for('user_info', id=id, passwords=passwords))
+            else:
+                flash(response[1])
+                return redirect(url_for('add_credentials', id=id))
+        else:
+            flash(f"Falha ao adicionar credencial. Site invalido ou fora do ar.")
+            return redirect(url_for('user_info', id=id))
+    return render_template('gerent/add_credentials.html', id=id)
+
+
+@app.route('/statisticPainel', methods=['GET'], endpoint='statisticPainel')
+@login_required
+@onlyUser
+def statisticPainel():
+
+    return render_template('user/statisticPainel.html')
+
+
+@app.route('/pass_info/<string:credId>', methods=['GET', 'POST'], endpoint='pass_info')
+@login_required
+@onlyUser
+def pass_info(credId: str):
+    response = database.getPassword(credId)
+    render_template('user/pass_info.html', password=response[1])
 
 
 if __name__ == '__main__':    

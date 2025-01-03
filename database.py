@@ -1,4 +1,4 @@
-import locale, sys, os, uuid, hashlib, requests
+import locale, sys, os, uuid, hashlib, requests, datetime
 
 from flask_sqlalchemy import SQLAlchemy
 from cryptograph import Cryptograph
@@ -26,6 +26,13 @@ class User(UserMixin, Config.db.Model):
     enabled = Config.db.Column(Config.db.Boolean, default=True, nullable=False)
     gerentBy = Config.db.Column(Config.db.String(36), nullable=True)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'login': self.login,
+            'admin': self.admin,
+            'enabled': self.enabled,
+        }
 
 class Passwords(UserMixin, Config.db.Model):
     __tablename__ = 'Passwords'
@@ -35,13 +42,30 @@ class Passwords(UserMixin, Config.db.Model):
     password = Config.db.Column(Config.db.String(80), nullable=False)
     site = Config.db.Column(Config.db.String(80), nullable=False)
     status = Config.db.Column(Config.db.Boolean, nullable=False, default=False)
+    lastUse = Config.db.Column(Config.db.DateTime, nullable=True)
     
+    def to_dict(self):
+        key = Cryptograph.keyGenerator(self.user_id)
+        if key[0] == False:
+            return False, key[1]
+        key = key[1]
+        password =Cryptograph.decryptSentence(self.password, key)
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'site': self.site,
+            'login': self.login,
+            'password': password,
+            'status': self.status,
+            'lastUse': self.lastUse,
+        }
 
 class Database:
     def __init__(self) -> None:
         self.db = Config.db
         self.session = Config.session
-        self.cryptograph = Cryptograph()
+        self.cryptograph = Cryptograph
+        self.iscryptograph = Cryptograph()
         
         self.createTables()
         
@@ -68,7 +92,7 @@ class Database:
             user = self.session.query(User).filter_by(login=login).first()
             
             if user is not None:
-                if self.cryptograph.isValidPass(user.password, password):
+                if self.iscryptograph.isValidPass(user.password, password):
                     return True, user
                 else:
                     return False, 'Invalid credentials'
@@ -81,7 +105,7 @@ class Database:
     def createUser(self, login: str, password: str, admin: bool = False, menagedBy: str = None) -> tuple[bool, User | str]:
         try:
             if User.query.filter_by(login=login).first() is None:
-                user = User(login=login, password=self.cryptograph.encryptPass(password), admin=admin, gerentBy=menagedBy)
+                user = User(login=login, password=self.iscryptograph.encryptPass(password), admin=admin, gerentBy=menagedBy)
                 self.session.add(user)
                 self.session.commit()
                 
@@ -116,7 +140,7 @@ class Database:
             if password is None:
                 password = user.password
             else:
-                password = self.cryptograph.encryptPass(password)
+                password = self.iscryptograph.encryptPass(password)
             if admin is None:
                 admin = user.admin
             if menagedBy is None:
@@ -158,7 +182,7 @@ class Database:
     def createUserByGerent(self, gerentID: str, login: str, password: str) -> tuple[bool, User | str]:
         try:
             if User.query.filter_by(login=login).first() is None:
-                user = User(login=login, password=self.cryptograph.encryptPass(password), gerentBy=gerentID)
+                user = User(login=login, password=self.iscryptograph.encryptPass(password), gerentBy=gerentID)
                 self.session.add(user)
                 self.session.commit()
                 
@@ -181,10 +205,17 @@ class Database:
             return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
-    def addPassword(self, id: str, password: str, site: str, login: str) -> tuple[bool, str]:
+    def addPassword(self, id: str, site: str, login: str,password: str ) -> tuple[bool, str]:
         try:
-            key = self.cryptograph.keyGenerator(id)
-            password = Passwords(user_id=id, password=self.cryptograph.encryptSentence(password, key), site=site, login=login)
+            response = self.cryptograph.keyGenerator(id)
+            if response[0] == False:
+                return False, response[1]
+            key = response[1]
+            response = self.cryptograph.encryptSentence(password, key)
+            if response[0] == False:
+                return False, response[1]  
+            password = response[1]
+            password = Passwords(user_id=id, password=password, site=site, login=login, lastUse=datetime.datetime.now())
             self.session.add(password)
             self.session.commit()
             
@@ -320,7 +351,7 @@ class Database:
                     if response[0] == False:
                         return False, response[1]
                     password = response[1]
-                    response = self.cryptograph.checkPasswordPwned(password)
+                    response = self.checkPasswordPwned(password)
                     if response[0] == True:
                         password.status = True
                     else:
@@ -330,5 +361,28 @@ class Database:
                 return True, 'Passwords updated'
             else:
                 return True, 'Passwords updated'
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+
+    def sortUsers(self, user: User, query: str) -> tuple[bool, list[User]] | tuple[bool, str] | tuple[bool,  list[Passwords]]:
+        try:
+            if user.admin:
+                items = self.session.query(User).filter_by(gerentBy=user.id).filter(User.login.like(f'%{query}%')).all()
+            else:
+                items = self.session.query(Passwords).filter_by(user_id=user.id).filter(Passwords.site.like(f'%{query}%')).all()  
+            return True, items
+        except Exception as e:
+            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+
+    def getPassword(self, credId: str) -> tuple[bool, Passwords] | tuple[bool, str]:
+        try:
+            password = self.session.query(Passwords).filter_by(id=credId).first()
+            
+            if password is not None:
+                return True, password
+            else:
+                return False, 'Invalid password'
         except Exception as e:
             return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
