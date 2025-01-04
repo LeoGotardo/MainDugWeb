@@ -67,6 +67,9 @@ def login():
             users = [user.to_dict() for user in users]
             return render_template('gerent/index.html', users=users)
         else:
+            response = database.updatePasswordStatus(current_user.id)
+            if response[0] == False:
+                flash(response[1])
             passwords = database.getPasswords(current_user.id)
             if passwords[0] == False:
                 flash(passwords[1])
@@ -92,9 +95,12 @@ def login():
                 users = [user.to_dict() for user in users]
                 return render_template('gerent/index.html', users=users)
             else:
+                response = database.updatePasswordStatus(current_user.id)
+                if response[0] == False:
+                    flash(response[1])
                 passwords = database.getPasswords(current_user.id)
                 if passwords[0] == False:
-                    flash(passwords[1])
+                    flash(f"teste {passwords[1]}")
                     return render_template('user/index.html', user=current_user, passwords=[])
                 else:
                     passwords = passwords[1]
@@ -255,7 +261,7 @@ def reset_password(id: str):
 @require_admin
 def user_info(id: str = 'user'):
     user = database.getUser(id)
-    response = database.updatePasswordsStatus(id)
+    response = database.updatePasswordStatus(id)
     if response[0] == False:
         flash(response[1])
     if user[0] == False:
@@ -263,10 +269,10 @@ def user_info(id: str = 'user'):
         return redirect(url_for('login'))
     else:
         user = user[1]
-        passwords = database.getPasswords(user.id)
-        response = database.updatePasswordsStatus(user.id)
+        response = database.updatePasswordStatus(user.id)
         if response[0] == False:
             flash(response[1])
+        passwords = database.getPasswords(user.id)
         if passwords[0] == False:
             flash(passwords[1])
             return redirect(url_for('login'))
@@ -309,7 +315,7 @@ def add_credentials(id: str):
 
         response = requests.get(f"{site}")
         if response.status_code == 200:
-            response = database.addPassword(id, login, site, password)
+            response = database.addPassword(current_user.id, id, login, site, password)
             if response[0] == True:
                 flash(f'Credencial adicionada com sucesso')
                 response = database.getPasswords(id)

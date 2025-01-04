@@ -45,17 +45,12 @@ class Passwords(UserMixin, Config.db.Model):
     lastUse = Config.db.Column(Config.db.DateTime, nullable=True)
     
     def to_dict(self):
-        key = Cryptograph.keyGenerator(self.user_id)
-        if key[0] == False:
-            return False, key[1]
-        key = key[1]
-        password =Cryptograph.decryptSentence(self.password, key)
         return {
             'id': self.id,
             'user_id': self.user_id,
             'site': self.site,
             'login': self.login,
-            'password': password,
+            'password': self.password,
             'status': self.status,
             'lastUse': self.lastUse,
         }
@@ -84,7 +79,7 @@ class Database:
             else:
                 return False, 'Invalid user'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 
 
     def validUser(self, login: str, password: str) -> tuple[bool, User | str]:
@@ -99,7 +94,7 @@ class Database:
             else:
                 return False, 'Invalid credentials'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 
 
     def createUser(self, login: str, password: str, admin: bool = False, menagedBy: str = None) -> tuple[bool, User | str]:
@@ -113,7 +108,7 @@ class Database:
             else:
                 return False, 'User already exists'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
     def deleteUser(self, id: str) -> tuple[bool, str]:
@@ -128,7 +123,7 @@ class Database:
             else:
                 return False, 'User not found'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
     def updateUser(self, id: str, login: str = None, password: str = None, admin: bool = None, menagedBy: str = None) -> tuple[bool, str]:
@@ -158,7 +153,7 @@ class Database:
             else:
                 return False, 'Invalid id'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def deleteUserByGerent(self, gerentID: str, userID: str) -> tuple[bool, str]:
@@ -176,21 +171,7 @@ class Database:
             else:
                 return False, 'User not found'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-    
-    def createUserByGerent(self, gerentID: str, login: str, password: str) -> tuple[bool, User | str]:
-        try:
-            if User.query.filter_by(login=login).first() is None:
-                user = User(login=login, password=self.iscryptograph.encryptPass(password), gerentBy=gerentID)
-                self.session.add(user)
-                self.session.commit()
-                
-                return True, user
-            else:
-                return False, 'This login already exists'
-        except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
     def getUsersByGerent(self, gerentID: str) -> tuple[bool, list[User]] | tuple[bool, str]:
@@ -202,11 +183,14 @@ class Database:
             else:
                 return False, 'Dident find any user'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
-    def addPassword(self, id: str, site: str, login: str,password: str ) -> tuple[bool, str]:
+    def addPassword(self, gerentId, id: str, site: str, login: str, password: str ) -> tuple[bool, str]:
         try:
+            user = self.session.query(User).filter_by(gerentBy=gerentId).filter_by(id=id).first()
+            if user is None:
+                return False, 'Invalid user'
             response = self.cryptograph.keyGenerator(id)
             if response[0] == False:
                 return False, response[1]
@@ -215,25 +199,25 @@ class Database:
             if response[0] == False:
                 return False, response[1]  
             password = response[1]
-            password = Passwords(user_id=id, password=password, site=site, login=login, lastUse=datetime.datetime.now())
-            self.session.add(password)
+            cred = Passwords(user_id=id, password=password, site=site, login=login, lastUse=datetime.datetime.now())
+            self.session.add(cred)
             self.session.commit()
             
             return True, 'Password added'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 
 
     def getPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
         try:
             passwords = self.session.query(Passwords).filter_by(user_id=id).all()
+            response = self.cryptograph.keyGenerator(id)
             
             if passwords is not None:
+                if response[0] == False:
+                    return False, response[1]
+                key = response[1]
                 for password in passwords:
-                    response = self.cryptograph.keyGenerator(id)
-                    if response[0] == False:
-                        return False, response[1]
-                    key = response[1]
                     response = self.cryptograph.decryptSentence(password.password, key)
                     if response[0] == False:
                         return False, response[1]
@@ -242,7 +226,7 @@ class Database:
             else:
                 return False, 'Cant find any passwords'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def deletePassword(self, passwordID: str, userID: str) -> tuple[bool, str]:
@@ -260,47 +244,7 @@ class Database:
             else:
                 return False, 'Password not found'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-
-    def getPasswordsStatus(self, id: str, status: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
-        try:
-            passwords = self.session.query(Passwords).filter_by(user_id=id).filter_by(status=status).all()
-            
-            if passwords is not None:
-                for password in passwords:
-                    response = self.cryptograph.keyGenerator(id)
-                    if response[0] == False:
-                        return False, response[1]
-                    key = response[1]
-                    response = self.cryptograph.decryptSentence(password.password, key)
-                    if response[0] == False:
-                        return False, response[1]
-                    password.password = response[1]
-                return True, passwords
-            else:
-                return False, 'Cant find any passwords'
-        except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-    
-    def updatePasswordStatus(self, passwordID: str, userID: str, status: str) -> tuple[bool, str]:
-        try:
-            passwordRec = self.session.query(Passwords).filter_by(id=passwordID).first()
-
-            if passwordRec is not None:
-                if passwordRec.user_id == userID:
-                    passwordRec.status = status
-                    
-                    self.session.commit()
-                    
-                    return True, 'Password updated'
-                else:
-                    return False, 'Password not found'
-            else:
-                return False, 'Password not found'
-        except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def checkPasswordPwned(self, password: str) -> tuple[bool, str]:
@@ -322,7 +266,7 @@ class Database:
             
             return False, "A senha não foi encontrada em violações conhecidas."
         except Exception as e:
-            return f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def findUserLogin(self, login: str) -> tuple[bool, User | str]:
@@ -334,35 +278,34 @@ class Database:
             else:
                 return False, 'Invalid user'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
-    def updatePasswordsStatus(self, id: str) -> tuple[bool, str]:
+    def updatePasswordStatus(self, id: str) -> tuple[bool, str]:
         try:
-            passwords = self.session.query(Passwords).filter_by(user_id=id, status=False).all()
-            
-            if passwords is not None:
-                for password in passwords:
-                    response = self.cryptograph.keyGenerator(id)
+            credentials = self.session.query(Passwords).filter_by(user_id=id, status=False).all()
+            if credentials is not None:
+                response = self.cryptograph.keyGenerator(id)
+                if response[0] == False:
+                    return False, response[1]
+                key = response[1]
+                for credential in credentials:
+                    response = self.cryptograph.decryptSentence(credential.password, key)
                     if response[0] == False:
                         return False, response[1]
-                    key = response[1]
-                    response = self.cryptograph.decryptSentence(password.password, key)
-                    if response[0] == False:
-                        return False, response[1]
-                    password = response[1]
-                    response = self.checkPasswordPwned(password)
+                    userPassword = response[1]
+                    response = self.checkPasswordPwned(userPassword)
                     if response[0] == True:
-                        password.status = True
+                        credential.status = True
                     else:
-                        password.status = False
+                        credential.status = False
                 self.session.commit()
                 
                 return True, 'Passwords updated'
             else:
                 return True, 'Passwords updated'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
     def sortUsers(self, user: User, query: str) -> tuple[bool, list[User]] | tuple[bool, str] | tuple[bool,  list[Passwords]]:
@@ -373,7 +316,7 @@ class Database:
                 items = self.session.query(Passwords).filter_by(user_id=user.id).filter(Passwords.site.like(f'%{query}%')).all()  
             return True, items
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
     def getPassword(self, credId: str) -> tuple[bool, Passwords] | tuple[bool, str]:
@@ -385,4 +328,4 @@ class Database:
             else:
                 return False, 'Invalid password'
         except Exception as e:
-            return False, f'{e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
