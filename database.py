@@ -25,6 +25,7 @@ class User(UserMixin, Config.db.Model):
     admin = Config.db.Column(Config.db.Boolean, default=False, nullable=False)
     enabled = Config.db.Column(Config.db.Boolean, default=True, nullable=False)
     gerentBy = Config.db.Column(Config.db.String(36), nullable=True)
+    passwordPwned = Config.db.Column(Config.db.Boolean, default=False, nullable=False)
 
     def to_dict(self):
         return {
@@ -87,7 +88,9 @@ class Database:
             user = self.session.query(User).filter_by(login=login).first()
             
             if user is not None:
-                if self.iscryptograph.isValidPass(user.password, password):
+                verify = self.iscryptograph.isValidPass(user.password, password)
+                print(verify)
+                if verify[0]:
                     return True, user
                 else:
                     return False, 'Invalid credentials'
@@ -327,5 +330,20 @@ class Database:
                 return True, password
             else:
                 return False, 'Invalid password'
+        except Exception as e:
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+    
+    def pwned(self, id: str) -> tuple[bool, str]:
+        try:
+            user = self.session.query(User).filter_by(id=id).first()
+            
+            if user is not None:
+                user.passwordPwned = True
+                self.session.commit()
+                
+                return True, 'Senha atualizada'
+            else:
+                return False, 'Invalid user'
         except Exception as e:
             return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'

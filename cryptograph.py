@@ -21,9 +21,9 @@ class Cryptograph:
             return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
     
     
-    def isValidPass(self, hash, password: str) -> bool:
+    def isValidPass(self, hash, password: str) -> tuple[bool, str]:
         try:
-            return self.ph.verify(hash, password)
+            return self.ph.verify(hash, password), "Valid user."
         except Exception as e:
             return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
   

@@ -15,10 +15,20 @@ login_manager.login_view = 'login'
 def onlyUser(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if current_user.admin == False:
-            return f(*args, **kwargs)
-        else:
+        try:
+            # Verifica se o current_user está autenticado e se NÃO é admin
+            if not current_user.is_authenticated:
+                return render_template('404.html'), 404
+            if not current_user.admin:  # Usuário não é admin
+                return f(*args, **kwargs)
+            else:
+                return render_template('404.html'), 404
+        except Exception as e:
+            # Log do erro para depuração
+            print(f"Erro no onlyUser: {e}")
             return render_template('404.html'), 404
+    return wrapper
+
 
 def require_admin(f):
     @wraps(f)
@@ -65,7 +75,7 @@ def login():
                 users = []
                 flash(response[1])
             users = [user.to_dict() for user in users]
-            return render_template('gerent/index.html', users=users)
+            return render_template('gerent/index.html', users=users )
         else:
             response = database.updatePasswordStatus(current_user.id)
             if response[0] == False:
@@ -93,8 +103,26 @@ def login():
                     users = []
                     flash(response[1])
                 users = [user.to_dict() for user in users]
+                respose = database.checkPasswordPwned(password)
+                if respose[0] == True:
+                    if respose[1] != "0":
+                        if current_user.passwordPwned == False:
+                            rasponse = database.pwned(current_user.id)
+                            if rasponse[0] != True:
+                                flash(rasponse[1])
+                else:
+                    flash(respose[1])
                 return render_template('gerent/index.html', users=users)
             else:
+                respose = database.checkPasswordPwned(password)
+                if respose[0] == True:
+                    if respose[1] != "0":
+                        if current_user.passwordPwned == False:
+                            rasponse = database.pwned(current_user.id)
+                            if rasponse[0] != True:
+                                flash(rasponse[1])
+                else:
+                    flash(respose[1])
                 response = database.updatePasswordStatus(current_user.id)
                 if response[0] == False:
                     flash(response[1])
@@ -134,7 +162,7 @@ def register():
     return render_template('register.html')
 
 
-@app.route('/account/<string:id>', defaults={'id': 'user'}, methods=['GET', 'POST'])
+@app.route('/account/<string:id>/', defaults={'id': 'user'}, methods=['GET', 'POST'])
 @login_required
 def account(id: str = 'user'):
     if not current_user.admin and id != 'user':
@@ -190,13 +218,13 @@ def account(id: str = 'user'):
             return render_template('account.html', user=user)
 
 
-@app.route('/logout', methods=['GET'])
+@app.route('/logout/', methods=['GET'])
 def logout():
     logout_user()
     return render_template('login.html')
     
 
-@app.route('/add_user', methods=['GET', 'POST'])
+@app.route('/add_user/', methods=['GET', 'POST'])
 @login_required
 @require_admin
 def add_user():
@@ -204,7 +232,7 @@ def add_user():
         login = request.form['login']
         password = Config.DEFAULT_PASSWORD
 
-        response = database.createUserByGerent(current_user.id, login, password)
+        response = database.createUser(login, password, False,current_user.id)
            
         if response[0] == True:
             flash(f'Usuário {login} criado com sucesso')
@@ -215,7 +243,7 @@ def add_user():
     return render_template('gerent/add_user.html')
 
 
-@app.route('/delete_user/<string:id>', methods=['POST'])
+@app.route('/delete_user/<string:id>/', methods=['POST'])
 @login_required
 @require_admin
 def delete_user(id: str = 'user'):
@@ -235,7 +263,7 @@ def delete_user(id: str = 'user'):
         return redirect(url_for('login'))
 
 
-@app.route('/reset_password/<string:id>', methods=['GET', 'POST'])
+@app.route('/reset_password/<string:id>/', methods=['GET', 'POST'])
 def reset_password(id: str):
     if request.referrer != f"{url_for('account')}" or f"{url_for('account')}/{id}":
         return render_template('404.html'), 404
@@ -256,7 +284,7 @@ def reset_password(id: str):
             return redirect(url_for('account', id=id))
 
 
-@app.route('/user_info/<string:id>', methods=['GET'])
+@app.route('/user_info/<string:id>/', methods=['GET'])
 @login_required
 @require_admin
 def user_info(id: str = 'user'):
@@ -281,7 +309,7 @@ def user_info(id: str = 'user'):
             return render_template('gerent/user_info.html', user=user, passwords=passwords)
 
 
-@app.route('/edit_user/<string:id>', methods=['POST'])
+@app.route('/edit_user/<string:id>/', methods=['POST'])
 @login_required
 @require_admin    
 def edit_user(id: str = 'user'):
@@ -304,7 +332,7 @@ def edit_user(id: str = 'user'):
         return redirect(url_for('login'))
 
 
-@app.route('/add_credentials/<string:id>', methods=['GET', 'POST'])
+@app.route('/add_credentials/<string:id>/', methods=['GET', 'POST'])
 @login_required
 @require_admin
 def add_credentials(id: str):
@@ -315,6 +343,7 @@ def add_credentials(id: str):
 
         response = requests.get(f"{site}")
         if response.status_code == 200:
+            print(id)
             response = database.addPassword(current_user.id, id, login, site, password)
             if response[0] == True:
                 flash(f'Credencial adicionada com sucesso')
@@ -332,11 +361,10 @@ def add_credentials(id: str):
     return render_template('gerent/add_credentials.html', id=id)
 
 
-@app.route('/statisticPainel', methods=['GET'], endpoint='statisticPainel')
+@app.route('/statistic_painel/', methods=['GET'], endpoint='statisticPainel')
 @login_required
 @onlyUser
 def statisticPainel():
-
     return render_template('user/statisticPainel.html')
 
 
@@ -347,6 +375,21 @@ def pass_info(credId: str):
     response = database.getPassword(credId)
     render_template('user/pass_info.html', password=response[1])
 
+
+@app.route('/api/check-login', methods=['POST'])
+def check_login():
+    data = request.json
+    response = database.validUser(data['login'], data['password'])
+    if response[0]:
+        return {"status": "success", "message": "Login válido!"}, 200
+    else:
+        return {"status": "error", "message": "Login inválido."}, 401
+
+@app.route('/test', methods=['GET'])
+@login_required
+@onlyUser
+def test():
+    return render_template('user/statisticPainel.html')
 
 if __name__ == '__main__':    
     app.run(debug=True)
