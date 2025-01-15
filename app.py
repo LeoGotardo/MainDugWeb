@@ -365,7 +365,28 @@ def add_credentials(id: str):
 @login_required
 @onlyUser
 def statisticPainel():
-    return render_template('user/statisticPainel.html')
+    response = database.getLeakedPasswords(current_user.id)
+    if response[0] == False:
+        flash(response[1])
+        return redirect(url_for('login'))
+    else:
+        leakedPasswords = response[1]
+    
+    response = database.getMostUsedPasswords(current_user.id)
+    if response[0] == False:
+        flash(response[1])
+        return redirect(url_for('login'))
+    else:
+        mostUsedPasswords = response[1]
+        
+    response = database.getGoodPasswords(current_user.id)
+    if response[0] == False:
+        flash(response[1])
+        return redirect(url_for('login'))
+    else:
+        goodPasswords = response[1]
+        
+    return render_template('user/statisticPainel.html', leakedPasswords=leakedPasswords, mostUsedPasswords=mostUsedPasswords, goodPasswords=goodPasswords)
 
 
 @app.route('/pass_info/<string:credId>', methods=['GET', 'POST'], endpoint='pass_info')
@@ -384,12 +405,6 @@ def check_login():
         return {"status": "success", "message": "Login válido!"}, 200
     else:
         return {"status": "error", "message": "Login inválido."}, 401
-
-@app.route('/test', methods=['GET'])
-@login_required
-@onlyUser
-def test():
-    return render_template('user/statisticPainel.html')
 
 if __name__ == '__main__':    
     app.run(debug=True)

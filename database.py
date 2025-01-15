@@ -5,6 +5,7 @@ from cryptograph import Cryptograph
 from flask_login import UserMixin
 from dotenv import load_dotenv
 from flask import Flask
+from collections import Counter
 
 class Config:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
@@ -44,6 +45,9 @@ class Passwords(UserMixin, Config.db.Model):
     site = Config.db.Column(Config.db.String(80), nullable=False)
     status = Config.db.Column(Config.db.Boolean, nullable=False, default=False)
     lastUse = Config.db.Column(Config.db.DateTime, nullable=True)
+    whereUsed = Config.db.Column(Config.db.String(80), nullable=True)
+    timesLeaked = Config.db.Column(Config.db.Integer, nullable=False, default=0)
+    
     
     def to_dict(self):
         return {
@@ -300,6 +304,7 @@ class Database:
                     response = self.checkPasswordPwned(userPassword)
                     if response[0] == True:
                         credential.status = True
+                        credential.timesLeaked = int(response[1])
                     else:
                         credential.status = False
                 self.session.commit()
@@ -345,5 +350,80 @@ class Database:
                 return True, 'Senha atualizada'
             else:
                 return False, 'Invalid user'
+        except Exception as e:
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+        
+    def getLeakedPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
+        try:
+            passwords = self.session.query(Passwords).filter_by(user_id=id).filter(Passwords.status == True).all()
+            
+            if passwords is not None:
+                return True, passwords
+            else:
+                return False, 'Cant find any passwords'
+        except Exception as e:
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+        
+    def getMostUsedPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
+        try:
+            passwords = self.session.query(Passwords).filter_by(user_id=id).all()
+            
+            if passwords is not None:
+                passwordList = [password[0] for password in passwords]
+                
+                passwordCounter = Counter(passwordList)
+                
+                mostUsedPasswords = passwordCounter.most_common(10)
+                
+                return True, mostUsedPasswords
+            else:
+                return False, 'Cant find any passwords'
+        except Exception as e:
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+    
+    def getGoodPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
+        try:
+            passwords = self.session.query(Passwords).filter_by(user_id=id).filter(Passwords.status == False).all()
+            
+            if passwords is not None:
+                return True, passwords
+            else:
+                return False, 'Cant find any passwords'
+        except Exception as e:
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+        
+    def getInfoByIP(self, passwordID: str, ip: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
+        try:
+            password = self.session.query(Passwords).filter_by(id=passwordID).first()
+            
+            if password is not None:
+                response = requests.get(f"https://ipapi.co/{ip}/json")
+                if response.status_code == 200:
+                    locationData = response.json()
+                    Location = {
+                    "city": locationData["city"],
+                    "country": locationData["country_name"],
+                    "lat": locationData["latitude"],
+                    "lon": locationData["longitude"],
+                    "region": locationData["region"],
+                    "postal": locationData["postal"],
+                    "timezone": locationData["timezone"],
+                    "languages": locationData["languages"],
+                    "asn": locationData["asn"],
+                    "org": locationData["org"]
+                }
+                    
+                    password.whereUsed = Location
+                    self.session.commit()
+                    return True, 'log added successfully'
+                else:
+                    return False, response.text
+            else:
+                return False, 'Invalid password'
+            
         except Exception as e:
             return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
