@@ -371,7 +371,7 @@ class Database:
             passwords = self.session.query(Passwords).filter_by(user_id=id).all()
             
             if passwords is not None:
-                passwordList = [password[0] for password in passwords]
+                passwordList = [password for password in passwords]
                 
                 passwordCounter = Counter(passwordList)
                 
@@ -407,12 +407,9 @@ class Database:
                     Location = {
                     "city": locationData["city"],
                     "country": locationData["country_name"],
-                    "lat": locationData["latitude"],
-                    "lon": locationData["longitude"],
                     "region": locationData["region"],
                     "postal": locationData["postal"],
                     "timezone": locationData["timezone"],
-                    "languages": locationData["languages"],
                     "asn": locationData["asn"],
                     "org": locationData["org"]
                 }
