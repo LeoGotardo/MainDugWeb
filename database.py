@@ -407,9 +407,12 @@ class Database:
                     Location = {
                     "city": locationData["city"],
                     "country": locationData["country_name"],
+                    "lat": locationData["latitude"],
+                    "lon": locationData["longitude"],
                     "region": locationData["region"],
                     "postal": locationData["postal"],
                     "timezone": locationData["timezone"],
+                    "languages": locationData["languages"],
                     "asn": locationData["asn"],
                     "org": locationData["org"]
                 }
