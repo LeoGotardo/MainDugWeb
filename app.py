@@ -4,7 +4,7 @@ from database import Database, Config
 from cryptograph import Cryptograph
 from functools import wraps
 
-import requests, sys
+import requests
 
 database = Database()
 cryptograph = Cryptograph()
@@ -16,14 +16,16 @@ def onlyUser(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         try:
+            # Verifica se o current_user está autenticado e se NÃO é admin
             if not current_user.is_authenticated:
                 return render_template('404.html'), 404
-            if not current_user.admin:
+            if not current_user.admin:  # Usuário não é admin
                 return f(*args, **kwargs)
             else:
                 return render_template('404.html'), 404
         except Exception as e:
-            print(f"Erro no onlyUser: {e}, in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}")
+            # Log do erro para depuração
+            print(f"Erro no onlyUser: {e}")
             return render_template('404.html'), 404
     return wrapper
 
@@ -366,21 +368,21 @@ def statisticPainel():
     response = database.getLeakedPasswords(current_user.id)
     if response[0] == False:
         flash(response[1])
-        return redirect(url_for('login'))
+        leakedPasswords = []
     else:
         leakedPasswords = response[1]
     
     response = database.getMostUsedPasswords(current_user.id)
     if response[0] == False:
         flash(response[1])
-        return redirect(url_for('login'))
+        mostUsedPasswords= []
     else:
         mostUsedPasswords = response[1]
         
     response = database.getGoodPasswords(current_user.id)
     if response[0] == False:
         flash(response[1])
-        return redirect(url_for('login'))
+        goodPasswords = []
     else:
         goodPasswords = response[1]
         
