@@ -15,7 +15,7 @@ login_manager.login_view = 'login'
 def onlyUser(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        try:
+
             # Verifica se o current_user está autenticado e se NÃO é admin
             if not current_user.is_authenticated:
                 return render_template('404.html'), 404
@@ -23,10 +23,6 @@ def onlyUser(f):
                 return f(*args, **kwargs)
             else:
                 return render_template('404.html'), 404
-        except Exception as e:
-            # Log do erro para depuração
-            print(f"Erro no onlyUser: {e}")
-            return render_template('404.html'), 404
     return wrapper
 
 
@@ -371,6 +367,7 @@ def statisticPainel():
         leakedPasswords = []
     else:
         leakedPasswords = response[1]
+        leakedPasswords = [password.to_dict() for password in leakedPasswords]
     
     response = database.getMostUsedPasswords(current_user.id)
     if response[0] == False:
@@ -379,6 +376,7 @@ def statisticPainel():
     else:
         mostUsedPasswords = response[1]
         
+    print(mostUsedPasswords)
     response = database.getGoodPasswords(current_user.id)
     if response[0] == False:
         flash(response[1])
@@ -405,6 +403,7 @@ def check_login():
         return {"status": "success", "message": "Login válido!"}, 200
     else:
         return {"status": "error", "message": "Login inválido."}, 401
+    
 
 if __name__ == '__main__':    
     app.run(debug=True)

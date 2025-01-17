@@ -49,6 +49,7 @@ class Cryptograph:
         except Exception as e:
             return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
     
+    
     def encryptPass(self, password: str) -> str:
         try:
             hash = self.ph.hash(password)

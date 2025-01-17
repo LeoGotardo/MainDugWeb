@@ -48,8 +48,8 @@ class Passwords(UserMixin, Config.db.Model):
     whereUsed = Config.db.Column(Config.db.String(80), nullable=True)
     timesLeaked = Config.db.Column(Config.db.Integer, nullable=False, default=0)
     
-    
     def to_dict(self):
+         
         return {
             'id': self.id,
             'user_id': self.user_id,
@@ -371,7 +371,7 @@ class Database:
             passwords = self.session.query(Passwords).filter_by(user_id=id).all()
             
             if passwords is not None:
-                passwordList = [password for password in passwords]
+                passwordList = [Cryptograph.decryptSentence(password.password, id)[1] for password in passwords]
                 
                 passwordCounter = Counter(passwordList)
                 
