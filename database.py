@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from cryptograph import Cryptograph
 from flask_login import UserMixin
 from dotenv import load_dotenv
+from functools import wraps
 from flask import Flask
 from collections import Counter
 
@@ -23,7 +24,7 @@ class User(UserMixin, Config.db.Model):
     id = Config.db.Column(Config.db.String(36), default=lambda: str(uuid.uuid4()), primary_key=True, nullable=False)
     login = Config.db.Column(Config.db.String(80), unique=True, nullable=False)
     password = Config.db.Column(Config.db.String(80), nullable=False)
-    admin = Config.db.Column(Config.db.Boolean, default=False, nullable=False)
+    role = Config.db.Column(Config.db.String(80), nullable=False)
     enabled = Config.db.Column(Config.db.Boolean, default=True, nullable=False)
     gerentBy = Config.db.Column(Config.db.String(36), nullable=True)
     passwordPwned = Config.db.Column(Config.db.Boolean, default=False, nullable=False)
@@ -32,9 +33,21 @@ class User(UserMixin, Config.db.Model):
         return {
             'id': self.id,
             'login': self.login,
-            'admin': self.admin,
+            'role': self.role,
             'enabled': self.enabled,
         }
+        
+    def is_authenticated(self):
+        return True
+    
+    def is_active(self):
+        return True
+    
+    def is_anonymous(self):
+        return False
+    
+    def get_id(self):
+        return str(self.id)
 
 class Passwords(UserMixin, Config.db.Model):
     __tablename__ = 'Passwords'
@@ -59,6 +72,22 @@ class Passwords(UserMixin, Config.db.Model):
             'status': self.status,
             'lastUse': self.lastUse,
         }
+      
+    @property  
+    def is_authenticated(self):
+        return True
+    
+    @property
+    def is_active(self):
+        return True
+    
+    @property
+    def is_anonymous(self):
+        return False
+    
+    @property
+    def get_id(self):
+        return str(self.id)
 
 class Database:
     def __init__(self) -> None:
@@ -68,18 +97,74 @@ class Database:
         self.iscryptograph = Cryptograph()
         
         self.createTables()
+        self.createSysadmin()
         
+    
+    def canHandle(f):
+        @wraps(f)
+        def wrapper(self, userId: str, itemType: str, method: str, item: Passwords | User = None, *args, **kwargs):
+            current_user = Config.session.query(User).filter_by(id=userId).first()
+            if not current_user:
+                return False, 'Invalid user'
+            match method:
+                case 'get':
+                    match itemType:
+                        case 'user':
+                            success, users = f(self, userId, *args, **kwargs)
+                            if not success:
+                                return False, users
+                            users = [user for user in users if user.role == 'sysadmin' or user.gerentBy == current_user.id  and current_user.role in ['admin', 'sysadmin']]
+                        case 'password':
+                            success, passwords = f(self, userId, *args, **kwargs)
+                            if not success:
+                                return False, passwords
+                            passwords = [password for password in passwords if password.user_id == current_user.id]
+                        case _:
+                            return False, f'Invalid itemType'
+                case 'post':
+                    if item:
+                        match itemType:
+                            case 'user':
+                                if item.gerentBy == current_user.id or item.id == current_user.id or current_user.role == 'sysadmin':
+                                    success, msg = f(self, userId, item, *args, **kwargs)
+                                    if not success:
+                                        return False, msg
+                                    return True, msg
+                            case 'password':
+                                owner = Config.session.query(User).filter_by(id=item.user_id).first()
+                                if not owner:
+                                    return False, 'Invalid user'
+                                if item.user_id == current_user.id or current_user.role == 'sysadmin' or owner.gerentBy == current_user.id:
+                                    success, msg = f(self, userId, item, *args, **kwargs)
+                                    if not success:
+                                        return False, msg
+                                    return True, msg
+                    return False, 'For post requests you need an item.'
+                case _:
+                    return False, f'Invalid method'
+        
+        return wrapper
         
     def createTables(self) -> None:
         with Config.app.app_context():
             self.db.create_all()
-
+            
+    
+    def createSysadmin(self) -> None:
+        with Config.app.app_context():
+            try:
+                user = User(login='sysadmin', password=self.iscryptograph.encryptPass('sysadmin'), role='sysadmin', gerentBy=None)
+                self.session.add(user)
+                self.session.commit()
+            except Exception as e:
+                self.session.rollback()
+                return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
     
     def getUser(self, id: str) -> tuple[bool, User | str]:
         try:
             user = self.session.query(User).filter_by(id=id).first()
             
-            if user is not None:
+            if user:
                 return True, user
             else:
                 return False, 'Invalid user'
@@ -111,7 +196,7 @@ class Database:
                 self.session.add(user)
                 self.session.commit()
                 
-                return True, user
+                return True, user.to_dict()
             else:
                 return False, 'User already exists'
         except Exception as e:
@@ -133,7 +218,7 @@ class Database:
             return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
-    def updateUser(self, id: str, login: str = None, password: str = None, admin: bool = None, menagedBy: str = None) -> tuple[bool, str]:
+    def updateUser(self, id: str, login: str = None, password: str = None, role: str = None, menagedBy: str = None) -> tuple[bool, str]:
         try:
             user = self.session.query(User).filter_by(id=id).first()
 
@@ -143,15 +228,15 @@ class Database:
                 password = user.password
             else:
                 password = self.iscryptograph.encryptPass(password)
-            if admin is None:
-                admin = user.admin
+            if role is None:
+                role = user.role
             if menagedBy is None:
                 menagedBy = user.gerentBy
             
             if user is not None:
                 user.login = login
                 user.password = password
-                user.admin = admin
+                user.role = role
                 user.gerentBy = menagedBy
                     
                 self.session.commit()
@@ -318,7 +403,7 @@ class Database:
 
     def sortUsers(self, user: User, query: str) -> tuple[bool, list[User]] | tuple[bool, str] | tuple[bool,  list[Passwords]]:
         try:
-            if user.admin:
+            if user.role:
                 items = self.session.query(User).filter_by(gerentBy=user.id).filter(User.login.like(f'%{query}%')).all()
             else:
                 items = self.session.query(Passwords).filter_by(user_id=user.id).filter(Passwords.site.like(f'%{query}%')).all()  

@@ -3,6 +3,7 @@ from flask import redirect, url_for, render_template, request, flash
 from database import Database, Config
 from cryptograph import Cryptograph
 from functools import wraps
+from database import User, Passwords
 
 import requests
 
@@ -11,15 +12,16 @@ cryptograph = Cryptograph()
 app = Config.app
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+current_user : User | None
+
 
 def onlyUser(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-
             # Verifica se o current_user está autenticado e se NÃO é admin
             if not current_user.is_authenticated:
                 return render_template('404.html'), 404
-            if not current_user.admin:  # Usuário não é admin
+            if current_user.role != 'admin':  # Usuário não é admin
                 return f(*args, **kwargs)
             else:
                 return render_template('404.html'), 404
@@ -29,7 +31,7 @@ def onlyUser(f):
 def require_admin(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if current_user.admin:
+        if current_user.role in ['admin', 'sysadmin']:
             return f(*args, **kwargs)
         else:
             return render_template('404.html'), 404
@@ -38,102 +40,62 @@ def require_admin(f):
 
 @login_manager.user_loader
 def load_user(user_id):
-    user = database.getUser(user_id)
+    success, user = database.getUser(user_id)
 
-    if user[0] != True:
-        flash(user[1])
+    if success != True:
         return None
     else:
-        return user[1]
+        return user
 
 
 @app.errorhandler(404)
 def pageNotFound(error):
     return render_template('404.html'), 404
 
+@app.errorhandler(500)
+def internalServerError(error):
+    return render_template('501.html'), 501
+
+@app.errorhandler(401)
+def forbiden(error):
+    return render_template('403.html'), 401
+
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
-        if current_user.admin:
-            response = database.getUsersByGerent(current_user.id)
-            if response[0] == True:
-                users = response[1]
-                query = request.args.get('search')
-                if query:
-                    response = database.sortUsers(current_user, query)
-                    if response[0] == True:
-                        users = response[1]
-                    else:
-                        users = []
-                        flash(response[1])
-            else:
-                users = []
-                flash(response[1])
-            users = [user.to_dict() for user in users]
-            return render_template('gerent/index.html', users=users )
+    if request.method == 'GET':
+        if current_user.is_authenticated:
+            match current_user.role:
+                case 'admin':
+                    success, users = database.getUsersByGerent(current_user.id)
+                    if not success:
+                        return render_template('501.heml', error=users)
+                    return render_template('gerent/index.html', users=users)
+                case 'sysadmin':
+                    success, users = database.getUsersByGerent(current_user.id)
+                    if not success:
+                        return render_template('501.heml', error=users)
+                    return render_template('sysadmin/index.html', users=users)
+                case 'user':
+                    success, passwords = database.getPasswords(current_user.id)
+                    if not success:
+                        return render_template('501.heml', error=passwords)
+                    return render_template('user/index.html', user=current_user, passwords=passwords)
+                case _:
+                    return render_template('404.html'), 404
         else:
-            response = database.updatePasswordStatus(current_user.id)
-            if response[0] == False:
-                flash(response[1])
-            passwords = database.getPasswords(current_user.id)
-            if passwords[0] == False:
-                flash(passwords[1])
-                return render_template('user/index.html', user=current_user, passwords=[])
-            else:
-                passwords = passwords[1]
-                passwords = [password.to_dict() for password in passwords]
-            return render_template('user/index.html', user=current_user, passwords=passwords)
-    if request.method == 'POST':
+            return render_template('login.html')
+    else:
         login = request.form['login']
         password = request.form['password']
-        
-        response = database.validUser(login, password)
-        if response[0] == True:
-            login_user(response[1])
-            if current_user.admin:
-                response = database.getUsersByGerent(current_user.id)
-                if response[0] == True:
-                    users = response[1]
-                else:
-                    users = []
-                    flash(response[1])
-                users = [user.to_dict() for user in users]
-                respose = database.checkPasswordPwned(password)
-                if respose[0] == True:
-                    if respose[1] != "0":
-                        if current_user.passwordPwned == False:
-                            rasponse = database.pwned(current_user.id)
-                            if rasponse[0] != True:
-                                flash(rasponse[1])
-                else:
-                    flash(respose[1])
-                return render_template('gerent/index.html', users=users)
-            else:
-                respose = database.checkPasswordPwned(password)
-                if respose[0] == True:
-                    if respose[1] != "0":
-                        if current_user.passwordPwned == False:
-                            rasponse = database.pwned(current_user.id)
-                            if rasponse[0] != True:
-                                flash(rasponse[1])
-                else:
-                    flash(respose[1])
-                response = database.updatePasswordStatus(current_user.id)
-                if response[0] == False:
-                    flash(response[1])
-                passwords = database.getPasswords(current_user.id)
-                if passwords[0] == False:
-                    flash(f"teste {passwords[1]}")
-                    return render_template('user/index.html', user=current_user, passwords=[])
-                else:
-                    passwords = passwords[1]
-                    passwords = [password.to_dict() for password in passwords]
-                return render_template('user/index.html', user=current_user, passwords=passwords)
+        success, user = database.validUser(login, password)
+        if success:
+            login_user(user, remember=True)
+            return redirect(url_for('login'))
         else:
-            flash(response[1])
+            flash(user)
             return render_template('login.html')
-    return render_template('login.html')
+       
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -147,13 +109,13 @@ def register():
             flash('Passwords do not match')
             return render_template('register.html')
 
-        response = database.createUser(login, password, True, None)
+        success, user = database.createUser(login, password, 'admin', None)
            
-        if response[0] == True:
-            flash(f'Usuario {login} criado com sucesso')
+        if success == True:
+            flash(f'Usuario {user.login} criado com sucesso')
             return redirect(url_for('login'))
         else:
-            flash(response[1])
+            flash(user)
             return render_template('register.html')
     return render_template('register.html')
 
