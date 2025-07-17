@@ -23,12 +23,18 @@ class User(UserMixin, Config.db.Model):
     __tablename__ = 'Users'
     id = Config.db.Column(Config.db.String(36), default=lambda: str(uuid.uuid4()), primary_key=True, nullable=False)
     login = Config.db.Column(Config.db.String(80), unique=True, nullable=False)
-    password = Config.db.Column(Config.db.String(80), nullable=False)
+    password = Config.db.Column(Config.db.String(255), nullable=False)
     role = Config.db.Column(Config.db.String(80), nullable=False)
     enabled = Config.db.Column(Config.db.Boolean, default=True, nullable=False)
-    gerentBy = Config.db.Column(Config.db.String(36), nullable=True)
     passwordPwned = Config.db.Column(Config.db.Boolean, default=False, nullable=False)
+    menagerId = Config.db.Column(Config.db.String(36), Config.db.ForeignKey('Users.id'), nullable=True)
 
+    menager = Config.db.relationship(
+        'User',
+        remote_side=[id],   
+        backref=Config.db.backref('menager', remote_side=[id])
+        )
+    
     def to_dict(self):
         return {
             'id': self.id,
