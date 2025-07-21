@@ -202,7 +202,7 @@ class Database:
                 self.session.add(user)
                 self.session.commit()
                 
-                return True, user.to_dict()
+                return True, user
             else:
                 return False, 'User already exists'
         except Exception as e:

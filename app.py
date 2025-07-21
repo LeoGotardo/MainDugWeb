@@ -83,16 +83,41 @@ def notFound():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    match request.method:
-        case 'GET':
-            if current_user.is_authenticated:
-                return render_template('index.html')
-            else:
-                return redirect(url_for('login'))
-        case 'POST':
-            pass
-        case _:
-            return redirect(url_for('notFound'))
+        if current_user.is_authenticated:
+            match request.method:
+                case 'GET':
+                    next_page = request.args.get('next')
+                    if not next_page or url_parse(next_page).netloc != '':
+                        return render_template('index.html')
+                    else:
+                        return redirect(next_page)
+                case 'POST':
+                    pass # TODO: the search logic
+                case _:
+                    return redirect(url_for('notFound'))
+        else:
+            match request.method:
+                case 'GET':
+                    return render_template('login.html')
+                case 'POST':
+                    login = request.form.get('login')
+                    password = request.form.get('password')
+                    
+                    if login and password:
+                        success, user = database.validUser(login, password)
+                        
+                        if success:
+                            login_user(user)
+                            flash('Login successful', 'success')
+                            return redirect(url_for('index'))
+                        else:
+                            flash(user, 'danger')
+                            return redirect(url_for('login'))
+                    else:
+                        flash('Login failed', 'danger')
+                        return redirect(url_for('login'))
+                case _:
+                    return redirect(url_for('notFound'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -108,13 +133,46 @@ def login():
                 
                 if success:
                     login_user(user)
-                    flash('Login sucesso', 'success')
+                    flash('Sussesful login', 'success')
                     return redirect(url_for('index'))
                 else:
-                    flash('Login falhou', 'danger')
+                    flash('Login failed', 'danger')
                     return redirect(url_for('login'))
             else:
-                flash('Login falhou', 'danger')
+                flash('Login failed', 'danger')
                 return redirect(url_for('login'))
         case _:
             return redirect(url_for('notFound'))
+        
+
+@app.route('/logout', methods=['GET'])
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    match request.method:
+        case 'GET':
+            return render_template('register.html')
+        case 'POST':
+            login = request.form.get('login')
+            password = request.form.get('password')
+            passwordConfirm = request.form.get('passwordConfirm')
+            
+            if None not in [login, password, passwordConfirm]:
+                if password == passwordConfirm:
+                    success, user = database.createUser(login=login, password=password, admin=True)
+                    
+                    if success == False:
+                        flash(user, 'danger')
+                        return redirect(url_for('register'))
+                    else:
+                        login_user(user, remember=True)
+                        flash(user, 'success')
+                        return redirect(url_for('index'))
+                else:
+                    flash('Passwords are not the same.', 'danger')
+                    return redirect(url_for('register'))
