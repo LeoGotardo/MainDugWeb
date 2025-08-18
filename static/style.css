@@ -19,6 +19,7 @@
   color: white;
   background-color: #2f3338;
 }
+
 body {
   background-color: var(--dark-color);
   color: var(--dark-color);

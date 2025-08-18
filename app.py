@@ -1,5 +1,5 @@
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from flask import redirect, url_for, render_template, request, flash
+from flask import redirect, url_for, render_template, request, flash, jsonify
 from database import Database, Config, User, Passwords
 from cryptograph import Cryptograph
 from notfy import notifications_bp
@@ -20,13 +20,13 @@ app = Config.app
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 current_user : User | None
-ITEM_CONFIGS = json.load(open('./src/config.json', 'r'))
+ITEM_CONFIGS = json.load(open('./config.json', 'r'))
 
 
 app.register_blueprint(notifications_bp)
 
 
-def onlySys(f) -> function:
+def onlySys(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         if 'sysadmin' in [current_user.gerentBy.role, current_user.role]:
@@ -36,7 +36,7 @@ def onlySys(f) -> function:
         
     return wrapper
 
-def onlyAdmin(f) -> function:
+def onlyAdmin(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         if 'sysadmin' in [current_user.menager.role, current_user.role] or current_user.role == 'admin':
@@ -73,12 +73,8 @@ def notFound():
     return render_template('404.html'), 404
 
 @app.route('/500', methods=['GET'])
-def notFound():
+def internalError():
     return render_template('500.html', error=request.args.get('error')), 500
-    
-@app.route('/403', methods=['GET'])
-def notFound():
-    return render_template('403.html'), 403
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -88,11 +84,15 @@ def index():
                 case 'GET':
                     next_page = request.args.get('next')
                     if not next_page or url_parse(next_page).netloc != '':
-                        return render_template('index.html')
+                        success, statistcs = database.getDeashboardInfo()
+                        if not success:
+                            return redirect(url_for('internalError'))
+                        
+                        return render_template('index.html', deashboardInfo=statistcs)
                     else:
                         return redirect(next_page)
                 case 'POST':
-                    pass # TODO: the search logic
+                    ... # TODO: logic for post here
                 case _:
                     return redirect(url_for('notFound'))
         else:
@@ -120,7 +120,7 @@ def index():
                     return redirect(url_for('notFound'))
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login/', methods=['GET', 'POST'])
 def login():
     match request.method:
         case 'GET':
@@ -145,14 +145,14 @@ def login():
             return redirect(url_for('notFound'))
         
 
-@app.route('/logout', methods=['GET'])
+@app.route('/logout/', methods=['GET'])
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('index'))
 
 
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/register/', methods=['GET', 'POST'])
 def register():
     match request.method:
         case 'GET':
@@ -176,3 +176,60 @@ def register():
                 else:
                     flash('Passwords are not the same.', 'danger')
                     return redirect(url_for('register'))
+                
+
+@app.route('/account/', methods=['GET', 'POST'])
+@login_required
+def account():
+    match request.method:
+        case 'GET':
+            user, success = database.getUserById(current_user.id)
+            if not success:
+                return redirect(url_for('internalError'))
+            
+            return render_template('account.html', user=user)
+        case 'POST':
+            login = request.form.get('login')
+            password = request.form.get('password')
+            passwordConfirm = request.form.get('passwordConfirm')
+            profilePic = request.form.get('profilePic')
+            
+            if password == passwordConfirm:
+                success, user = database.updateUser(current_user.id, login=login, password=password, profilePic=profilePic)
+                
+                if success == False:
+                    flash(user, 'danger')
+                    return redirect(url_for('account'))
+                else:
+                    flash(user, 'success')
+                    return redirect(url_for('index'))
+            else:
+                flash('Passwords are not the same.', 'danger')
+                return redirect(url_for('account'))
+            
+
+@app.route('/moreInfo', methods=['GET', 'DELETE'])
+@login_required
+def moreInfo():
+    match request.method:
+        case 'GET':
+            passwordId = request.args.get('passwordId')
+            success, passwordInfo = database.getPasswordLogs(passwordId=passwordId, userId=current_user.id, itemType='password')
+            if not success:
+                return redirect(url_for('internalError'))
+            
+            return render_template('moreInfo.html', passwordInfo=passwordInfo)
+        case 'DELETE':
+            logs = list(request.form.getlist('logs'))
+            
+            success, msg = database.deletePasswordLogs(logs=logs, userId=current_user.id, itemType='password')
+            if not success:
+                return redirect(url_for('internalError'))
+            
+            jsonify({'success': True, 'msg': msg})
+        case _:
+            return redirect(url_for('notFound'))
+        
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080, debug=True)
