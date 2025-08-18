@@ -27,7 +27,6 @@ class User(UserMixin, Config.db.Model):
     role = Config.db.Column(Config.db.String(80), nullable=False)
     enabled = Config.db.Column(Config.db.Boolean, default=True, nullable=False)
     passwordPwned = Config.db.Column(Config.db.Boolean, default=False, nullable=False)
-    menagerId = Config.db.Column(Config.db.String(36), Config.db.ForeignKey('Users.id'), nullable=True)
 
     menager = Config.db.relationship(
         'User',
@@ -41,6 +40,7 @@ class User(UserMixin, Config.db.Model):
             'login': self.login,
             'role': self.role,
             'enabled': self.enabled,
+            'passwordPwned': self.passwordPwned,
         }
         
     def is_authenticated(self):
@@ -65,7 +65,7 @@ class Passwords(UserMixin, Config.db.Model):
     status = Config.db.Column(Config.db.Boolean, nullable=False, default=False)
     lastUse = Config.db.Column(Config.db.DateTime, nullable=True)
     whereUsed = Config.db.Column(Config.db.String(80), nullable=True)
-    timesLeaked = Config.db.Column(Config.db.Integer, nullable=False, default=0)
+
     
     def to_dict(self):
          
@@ -119,12 +119,19 @@ class Database:
                             success, users = f(self, userId, *args, **kwargs)
                             if not success:
                                 return False, users
-                            users = [user for user in users if user.role == 'sysadmin' or user.gerentBy == current_user.id  and current_user.role in ['admin', 'sysadmin']]
+                            if current_user.role == 'sysadmin':
+                                return True, users
+                            else:
+                                return False, 403
                         case 'password':
                             success, passwords = f(self, userId, *args, **kwargs)
                             if not success:
                                 return False, passwords
-                            passwords = [password for password in passwords if password.user_id == current_user.id]
+                            if current_user.role == 'sysadmin':
+                                return True, passwords
+                            else:
+                                passwords = [password for password in passwords if password.user_id == current_user.id]
+                                return True, passwords
                         case _:
                             return False, f'Invalid itemType'
                 case 'post':
@@ -518,3 +525,4 @@ class Database:
             
         except Exception as e:
             return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+''
