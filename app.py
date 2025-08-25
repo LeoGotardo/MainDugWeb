@@ -29,17 +29,7 @@ app.register_blueprint(notifications_bp)
 def onlySys(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if 'sysadmin' in [current_user.gerentBy.role, current_user.role]:
-            return f(*args, **kwargs)
-        else:
-            return redirect(url_for('login'))
-        
-    return wrapper
-
-def onlyAdmin(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if 'sysadmin' in [current_user.menager.role, current_user.role] or current_user.role == 'admin':
+        if current_user.role == 'sysadmin':
             return f(*args, **kwargs)
         else:
             return redirect(url_for('login'))
@@ -49,7 +39,7 @@ def onlyAdmin(f):
 
 @login_manager.user_loader
 def load_user(user_id):
-    success, user = database.getUserById(user_id)
+    success, user = database.getUser(user_id)
     if success == False:
         return None
     return user
@@ -84,7 +74,7 @@ def index():
                 case 'GET':
                     next_page = request.args.get('next')
                     if not next_page or url_parse(next_page).netloc != '':
-                        success, statistcs = database.getDeashboardInfo()
+                        success, statistcs = database.getDeashboardInfo(current_user.id)
                         if not success:
                             return redirect(url_for('internalError'))
                         
@@ -92,7 +82,7 @@ def index():
                     else:
                         return redirect(next_page)
                 case 'POST':
-                    ... # TODO: logic for post here
+                    ... #TODO: POST logic
                 case _:
                     return redirect(url_for('notFound'))
         else:
@@ -164,7 +154,7 @@ def register():
             
             if None not in [login, password, passwordConfirm]:
                 if password == passwordConfirm:
-                    success, user = database.createUser(login=login, password=password, admin=True)
+                    success, user = database.createUser(login=login, password=password)
                     
                     if success == False:
                         flash(user, 'danger')

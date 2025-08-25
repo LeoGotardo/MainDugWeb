@@ -27,12 +27,6 @@ class User(UserMixin, Config.db.Model):
     role = Config.db.Column(Config.db.String(80), nullable=False)
     enabled = Config.db.Column(Config.db.Boolean, default=True, nullable=False)
     passwordPwned = Config.db.Column(Config.db.Boolean, default=False, nullable=False)
-
-    menager = Config.db.relationship(
-        'User',
-        remote_side=[id],   
-        backref=Config.db.backref('menager', remote_side=[id])
-        )
     
     def to_dict(self):
         return {
@@ -138,20 +132,20 @@ class Database:
                     if item:
                         match itemType:
                             case 'user':
-                                if item.gerentBy == current_user.id or item.id == current_user.id or current_user.role == 'sysadmin':
+                                if current_user.role == 'sysadmin':
                                     success, msg = f(self, userId, item, *args, **kwargs)
                                     if not success:
                                         return False, msg
                                     return True, msg
                             case 'password':
                                 owner = Config.session.query(User).filter_by(id=item.user_id).first()
-                                if not owner:
-                                    return False, 'Invalid user'
-                                if item.user_id == current_user.id or current_user.role == 'sysadmin' or owner.gerentBy == current_user.id:
+                                if owner or current_user.role == 'sysadmin':
                                     success, msg = f(self, userId, item, *args, **kwargs)
                                     if not success:
                                         return False, msg
                                     return True, msg
+                                else:
+                                    return False, 'Invalid user'
                     return False, 'For post requests you need an item.'
                 case _:
                     return False, f'Invalid method'
@@ -166,12 +160,32 @@ class Database:
     def createSysadmin(self) -> None:
         with Config.app.app_context():
             try:
-                user = User(login='sysadmin', password=self.iscryptograph.encryptPass('sysadmin'), role='sysadmin', gerentBy=None)
+                user = User(login='sysadmin', password=self.iscryptograph.encryptPass('sysadmin'), role='sysadmin')
                 self.session.add(user)
                 self.session.commit()
             except Exception as e:
                 self.session.rollback()
                 return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+    
+    
+    def getDashboardInfo(self, id: str, headers: dict ,userId: str, page: int = 1, perPage: int = 10, sort: str = 'date', sortOrder: str = 'asc', query: str = '') -> tuple[bool, list[User]] | tuple[bool, str]:
+        try:
+            user = self.session.query(User).filter_by(id=userId).first()
+            if user is None:
+                return False, 'Invalid user'
+            
+            
+            passwords = self.session.query(Passwords).filter_by(user_id=id).all()
+            
+            leakedPasswords = self.session.query(Passwords).filter_by(user_id=id).filter(Passwords.status == True).all()
+            
+            safePasswords = self.session.query(Passwords).filter_by(user_id=id).filter(Passwords.status == False).all()
+            
+            
+        except Exception as e:
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            
+    
     
     def getUser(self, id: str) -> tuple[bool, User | str]:
         try:
@@ -202,10 +216,10 @@ class Database:
             return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 
 
-    def createUser(self, login: str, password: str, admin: bool = False, menagedBy: str = None) -> tuple[bool, User | str]:
+    def createUser(self, login: str, password: str) -> tuple[bool, User | str]:
         try:
             if User.query.filter_by(login=login).first() is None:
-                user = User(login=login, password=self.iscryptograph.encryptPass(password), admin=admin, gerentBy=menagedBy)
+                user = User(login=login, password=self.iscryptograph.encryptPass(password))
                 self.session.add(user)
                 self.session.commit()
                 
@@ -231,7 +245,7 @@ class Database:
             return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
-    def updateUser(self, id: str, login: str = None, password: str = None, role: str = None, menagedBy: str = None) -> tuple[bool, str]:
+    def updateUser(self, id: str, login: str = None, password: str = None, role: str = None) -> tuple[bool, str]:
         try:
             user = self.session.query(User).filter_by(id=id).first()
 
@@ -243,14 +257,11 @@ class Database:
                 password = self.iscryptograph.encryptPass(password)
             if role is None:
                 role = user.role
-            if menagedBy is None:
-                menagedBy = user.gerentBy
             
             if user is not None:
                 user.login = login
                 user.password = password
                 user.role = role
-                user.gerentBy = menagedBy
                     
                 self.session.commit()
                     
@@ -261,39 +272,9 @@ class Database:
             return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
-    def deleteUserByGerent(self, gerentID: str, userID: str) -> tuple[bool, str]:
-        try:
-            user = self.session.query(User).filter_by(id=userID).first()
-            
-            if user is not None:
-                if user.gerentBy == gerentID:
-                    self.session.delete(user)
-                    self.session.commit()
-                    
-                    return True, 'User deleted'
-                else:
-                    return False, 'User not found'
-            else:
-                return False, 'User not found'
-        except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-
-    def getUsersByGerent(self, gerentID: str) -> tuple[bool, list[User]] | tuple[bool, str]:
-        try:
-            users = self.session.query(User).filter_by(gerentBy=gerentID).all()
-            
-            if users is not None:
-                return True, users
-            else:
-                return False, 'Dident find any user'
-        except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-    
     def addPassword(self, gerentId, id: str, site: str, login: str, password: str ) -> tuple[bool, str]:
         try:
-            user = self.session.query(User).filter_by(gerentBy=gerentId).filter_by(id=id).first()
+            user = self.session.query(User).filter_by(id=id).first()
             if user is None:
                 return False, 'Invalid user'
             response = self.cryptograph.keyGenerator(id)
@@ -410,17 +391,6 @@ class Database:
                 return True, 'Passwords updated'
             else:
                 return True, 'Passwords updated'
-        except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-
-    def sortUsers(self, user: User, query: str) -> tuple[bool, list[User]] | tuple[bool, str] | tuple[bool,  list[Passwords]]:
-        try:
-            if user.role:
-                items = self.session.query(User).filter_by(gerentBy=user.id).filter(User.login.like(f'%{query}%')).all()
-            else:
-                items = self.session.query(Passwords).filter_by(user_id=user.id).filter(Passwords.site.like(f'%{query}%')).all()  
-            return True, items
         except Exception as e:
             return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
