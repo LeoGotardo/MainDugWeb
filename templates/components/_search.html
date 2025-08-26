@@ -1,0 +1,16 @@
+<div class="search-wrapper">
+    <form method="POST" action="{{ destination }}">
+        <input type="text" name="search"  placeholder="Pesquise por nome..." {% if query %} value="{{ query }}" {% endif %} required>
+        <div class="action">
+            {% if query %}
+            <button class="search-clear" type="submit">
+                <i class="icon bi bi-x-lg"></i>
+            </button>
+            {% else %}
+            <a href="{{ request.base_url }}" class="search-icon">
+                    <i class="icon bi bi-search"></i>
+            </a >
+            {% endif %}
+        </div>
+    </form>
+</div>

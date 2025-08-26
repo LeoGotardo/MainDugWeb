@@ -233,47 +233,63 @@ def cleanup_dead_connections():
             for dead_conn in dead_connections:
                 notification_manager.remove_connection(client_id, dead_conn)
 
-# Exemplos de uso (opcional - pode ser removido)
-@notifications_bp.route('/exemplo_login', methods=['POST'])
-def exemplo_login():
-    """Exemplo de como usar notificações em um login"""
-    data = request.get_json()
-    client_id = data.get('client_id')
-    username = data.get('username')
+# # Exemplos de uso (opcional - pode ser removido)
+# @notifications_bp.route('/exemplo_login', methods=['POST'])
+# def exemplo_login():
+#     """Exemplo de como usar notificações em um login"""
+#     data = request.get_json()
+#     client_id = data.get('client_id')
+#     username = data.get('username')
     
-    # Simula processo de login
-    send_notification_to_user(
-        client_id,
-        'success',
-        'Login realizado!',
-        f'Bem-vindo, {username}!',
-        3000
-    )
+#     # Simula processo de login
+#     send_notification_to_user(
+#         client_id,
+#         'success',
+#         'Login realizado!',
+#         f'Bem-vindo, {username}!',
+#         3000
+#     )
     
-    return jsonify({'status': 'success'})
+#     return jsonify({'status': 'success'})
 
-@notifications_bp.route('/exemplo_operacao', methods=['POST'])
-def exemplo_operacao():
-    """Exemplo de como usar notificações em operações"""
-    data = request.get_json()
-    client_id = data.get('client_id')
-    operacao = data.get('operacao')
+# @notifications_bp.route('/exemplo_operacao', methods=['POST'])
+# def exemplo_operacao():
+#     """Exemplo de como usar notificações em operações"""
+#     data = request.get_json()
+#     client_id = data.get('client_id')
+#     operacao = data.get('operacao')
     
-    if operacao == 'erro':
-        send_notification_to_user(
-            client_id,
-            'error',
-            'Erro na operação!',
-            'Algo deu errado. Tente novamente.',
-            5000
-        )
-    else:
-        send_notification_to_user(
-            client_id,
-            'success',
-            'Operação concluída!',
-            'A operação foi realizada com sucesso.',
-            3000
-        )
+#     if operacao == 'erro':
+#         send_notification_to_user(
+#             client_id,
+#             'error',
+#             'Erro na operação!',
+#             'Algo deu errado. Tente novamente.',
+#             5000
+#         )
+#     else:
+#         send_notification_to_user(
+#             client_id,
+#             'success',
+#             'Operação concluída!',
+#             'A operação foi realizada com sucesso.',
+#             3000
+#         )
     
-    return jsonify({'status': 'success'})
+#     return jsonify({'status': 'success'})
+
+
+# @notifications_bp.route('/ntfyExemple', methods=['GET'])
+# def ntfyExemple():
+#     """Exemplo de como usar notificações em operações"""
+#     clientId = request.args.get('client_id')
+    
+#     send_notification_to_user(
+#         clientId,
+#         'success',
+#         'Notificação de exemplo',
+#         'Essa é uma notificação de exemplo.',
+#         3000
+#     )
+    
+#     return {'status': 'success'}

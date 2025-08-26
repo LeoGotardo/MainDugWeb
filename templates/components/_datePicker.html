@@ -1,0 +1,270 @@
+<div class="datepicker-container">
+    <label class="datepicker-label">Selecionar Período:</label>
+    <div class="datepicker-wrapper" id="datePicker">
+        <div class="date-group">
+            <div class="date-group-label">Data/Hora Inicial</div>
+            <div class="date-inputs">
+                <input type="date" class="datetime-input" id="startDate" name="startDate">
+                <input type="time" class="datetime-input" id="startTime" name="startTime">
+            </div>
+        </div>
+
+        <div class="date-group">
+            <div class="date-group-label">Data/Hora Final</div>
+            <div class="date-inputs">
+                <input type="date" class="datetime-input" id="endDate" name="endDate">
+                <input type="time" class="datetime-input" id="endTime" name="endTime">
+            </div>
+        </div>
+
+        <div class="date-separator">até</div>
+
+        <div class="datepicker-actions">
+            <button type="button" class="btn-today" id="btnToday">Hoje</button>
+            <button type="button" class="btn-today" id="btnThisWeek">Esta Semana</button>
+            <button type="button" class="btn-today" id="btnThisMonth">Este Mês</button>
+            <button type="button" class="btn-clear" id="btnClear">Limpar filtro</button>
+        </div>
+
+        <div class="period-display" id="periodDisplay">
+            <strong>Período selecionado:</strong> <span id="periodText"></span>
+        </div>
+
+        <div class="error-message" id="errorMessage">
+            Data final deve ser posterior à data inicial
+        </div>
+    </div>
+</div>
+
+<script>
+    class DatePicker {
+        constructor(containerId) {
+            this.container = document.getElementById(containerId);
+            this.startDate = document.getElementById('startDate');
+            this.startTime = document.getElementById('startTime');
+            this.endDate = document.getElementById('endDate');
+            this.endTime = document.getElementById('endTime');
+            this.periodDisplay = document.getElementById('periodDisplay');
+            this.periodText = document.getElementById('periodText');
+            this.errorMessage = document.getElementById('errorMessage');
+            
+            this.initializeEvents();
+            this.setDefaultTime();
+        }
+
+        initializeEvents() {
+            // Event listeners para validação
+            [this.startDate, this.startTime, this.endDate, this.endTime].forEach(input => {
+                input.addEventListener('change', () => this.validateAndUpdate());
+            });
+
+            // Botões de ação
+            document.getElementById('btnToday').addEventListener('click', () => this.setToday());
+            document.getElementById('btnThisWeek').addEventListener('click', () => this.setThisWeek());
+            document.getElementById('btnThisMonth').addEventListener('click', () => this.setThisMonth());
+            document.getElementById('btnClear').addEventListener('click', () => this.clear());
+        }
+
+        setDefaultTime() {
+            // Define horário padrão se não estiver preenchido
+            if (!this.startTime.value) this.startTime.value = '00:00';
+            if (!this.endTime.value) this.endTime.value = '23:59';
+        }
+
+        formatDateTime(date, time) {
+            if (!date) return null;
+            const dateObj = new Date(date + 'T' + (time || '00:00'));
+            return dateObj.toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        validateAndUpdate() {
+            this.hideError();
+            
+            if (this.startDate.value && this.endDate.value) {
+                const start = new Date(this.startDate.value + 'T' + (this.startTime.value || '00:00'));
+                const end = new Date(this.endDate.value + 'T' + (this.endTime.value || '23:59'));
+                
+                if (start >= end) {
+                    this.showError();
+                    return false;
+                }
+                
+                this.updatePeriodDisplay();
+                return true;
+            }
+            
+            this.hidePeriodDisplay();
+            return false;
+        }
+
+        updatePeriodDisplay() {
+            const startFormatted = this.formatDateTime(this.startDate.value, this.startTime.value);
+            const endFormatted = this.formatDateTime(this.endDate.value, this.endTime.value);
+            
+            if (startFormatted && endFormatted) {
+                this.periodText.textContent = `${startFormatted} até ${endFormatted}`;
+                this.periodDisplay.classList.add('active');
+                
+                // Atualizar display de resultado para demo
+                this.updateResultDisplay();
+            }
+        }
+
+        updateResultDisplay() {
+            const result = this.getPeriod();
+            const resultDisplay = document.getElementById('resultDisplay');
+            const resultContent = document.getElementById('resultContent');
+            
+            if (result.startDateTime && result.endDateTime) {
+                resultContent.innerHTML = `
+                    <p><strong>Data/Hora Inicial:</strong> ${result.startDateTime}</p>
+                    <p><strong>Data/Hora Final:</strong> ${result.endDateTime}</p>
+                    <p><strong>Duração:</strong> ${this.calculateDuration(result.startDateTime, result.endDateTime)}</p>
+                    <p><strong>Para usar em código:</strong></p>
+                    <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 12px;">
+    const periodo = datePicker.getPeriod();
+                `;
+                resultDisplay.style.display = 'block';
+            } else {
+                resultDisplay.style.display = 'none';
+            }
+        }
+
+        calculateDuration(start, end) {
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+            const diffMs = endDate - startDate;
+            
+            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (days > 0) return `${days} dias, ${hours}h${minutes}min`;
+            if (hours > 0) return `${hours}h${minutes}min`;
+            return `${minutes} minutos`;
+        }
+
+        showError() {
+            this.errorMessage.classList.add('active');
+            this.hidePeriodDisplay();
+        }
+
+        hideError() {
+            this.errorMessage.classList.remove('active');
+        }
+
+        hidePeriodDisplay() {
+            this.periodDisplay.classList.remove('active');
+            document.getElementById('resultDisplay').style.display = 'none';
+        }
+
+        setToday() {
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0];
+            
+            this.startDate.value = dateStr;
+            this.endDate.value = dateStr;
+            this.startTime.value = '00:00';
+            this.endTime.value = '23:59';
+            
+            this.validateAndUpdate();
+        }
+
+        setThisWeek() {
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - dayOfWeek);
+            
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            
+            this.startDate.value = startOfWeek.toISOString().split('T')[0];
+            this.endDate.value = endOfWeek.toISOString().split('T')[0];
+            this.startTime.value = '00:00';
+            this.endTime.value = '23:59';
+            
+            this.validateAndUpdate();
+        }
+
+        setThisMonth() {
+            const today = new Date();
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            
+            this.startDate.value = startOfMonth.toISOString().split('T')[0];
+            this.endDate.value = endOfMonth.toISOString().split('T')[0];
+            this.startTime.value = '00:00';
+            this.endTime.value = '23:59';
+            
+            this.validateAndUpdate();
+        }
+
+        clear() {
+            this.startDate.value = '';
+            this.startTime.value = '';
+            this.endDate.value = '';
+            this.endTime.value = '';
+            this.hideError();
+            this.hidePeriodDisplay();
+        }
+
+        // Método público para obter o período selecionado
+        getPeriod() {
+            if (!this.validateAndUpdate()) {
+                return { startDateTime: null, endDateTime: null };
+            }
+            
+            const startDateTime = this.startDate.value && this.startTime.value 
+                ? `${this.startDate.value}T${this.startTime.value}:00`
+                : null;
+                
+            const endDateTime = this.endDate.value && this.endTime.value 
+                ? `${this.endDate.value}T${this.endTime.value}:00`
+                : null;
+            
+            return {
+                startDateTime,
+                endDateTime,
+                startDate: this.startDate.value,
+                startTime: this.startTime.value,
+                endDate: this.endDate.value,
+                endTime: this.endTime.value
+            };
+        }
+
+        // Método público para definir período
+        setPeriod(startDateTime, endDateTime) {
+            if (startDateTime) {
+                const startDate = new Date(startDateTime);
+                this.startDate.value = startDate.toISOString().split('T')[0];
+                this.startTime.value = startDate.toTimeString().substr(0, 5);
+            }
+            
+            if (endDateTime) {
+                const endDate = new Date(endDateTime);
+                this.endDate.value = endDate.toISOString().split('T')[0];
+                this.endTime.value = endDate.toTimeString().substr(0, 5);
+            }
+            
+            this.validateAndUpdate();
+        }
+
+        // Método público para verificar se é válido
+        isValid() {
+            return this.validateAndUpdate();
+        }
+    }
+
+    // Inicializar o componente
+    const datePicker = new DatePicker('datePicker');
+
+    // Tornar disponível globalmente
+    window.datePicker = datePicker;
+</script>

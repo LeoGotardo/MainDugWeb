@@ -1,0 +1,74 @@
+<div class="form-group my-3">
+    <label for="{{ field.name }}">{{ field.label }} {% if field.required %}<span class="text-danger">*</span>{% endif %}</label>
+    <input type="{{ field.type }}" class="form-control" id="{{ field.name }}" name="{{ field.name }}" 
+           placeholder="{{ field.placeholder }}" value="{{ value or '' }}" {% if field.required %}required{% endif %}>
+    <small id="cardLabel">{{ field.regexCondition }}</small>
+</div>
+
+<script>
+document.getElementById('{{ field.name }}').addEventListener('input', function(event) {
+    const input = event.target;
+    const label = document.getElementById('cardLabel');
+    let inputValue = input.value;
+    let isInvalid = false;
+    const regexPattern = new RegExp('{{ field.regex }}');
+    const maxLength = Number('{{ field.maxLength }}') || 0;
+    const fieldName = '{{ field.name }}';
+
+    cleanInput = inputValue.replaceAll(':', '');
+    
+    // Verificar comprimento máximo (considerando a string formatada)
+    if (maxLength > 0 && cleanInput.length > maxLength) {
+        inputValue = inputValue.slice(0, maxLength);
+        isInvalid = true;
+    }
+    
+    // Validação com regex (aplicada no valor limpo)
+    if (regexPattern && regexPattern !== '' && regexPattern !== 'None') {
+        if (regexPattern.test(inputValue)) {
+            isInvalid = true;
+        }
+    }
+    
+    // Aplicar efeitos visuais de erro
+    if (isInvalid) {
+        // Adiciona a classe de erro (bordas vermelhas e tremor)
+        input.classList.add('is-invalid');
+        if (input.classList.contains('shake')) {
+            input.classList.remove('shake');
+            // Forçar reflow do DOM para reiniciar a animação
+            input.offsetHeight;
+        }
+        input.classList.add('shake');
+    } else {
+        // Remove a classe de erro caso o valor seja válido
+        input.classList.remove('is-invalid');
+        input.classList.remove('shake');
+    }
+
+    inputValue = inputValue.replace(regexPattern, '');
+    
+    // Atualizar o valor do input
+    input.value = inputValue;
+});
+
+// Adicionar CSS para animação de tremor
+const style = document.createElement('style');
+style.textContent = `
+    .shake {
+        animation: shake 0.3s ease-in-out;
+    }
+    
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    
+    .is-invalid {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+`;
+document.head.appendChild(style);
+</script>

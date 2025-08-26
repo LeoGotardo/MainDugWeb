@@ -1,0 +1,207 @@
+    <div class="container my-5">
+        <h2 class="text-center mb-4 fw-bold" id="page-title">Adicionar {{ itemType.title() }}</h2>
+        
+        <!-- Container para abas (será criado dinamicamente se necessário) -->
+        <div id="tabs-container"></div>
+        
+        <!-- Container para formulários -->
+        <div id="forms-container">
+            {{ form | safe }}
+        </div>
+    </div>
+    
+    <script>
+        const DATA_SOURCES = {
+            products: "{{ products|tojson|safe if products else '[]' }}",
+            rpis: "{{ rpis|tojson|safe if rpis else '[]' }}",
+            users: "{{ users|tojson|safe if users else '[]' }}"
+        };
+
+        // Tipo do item atual
+        const ITEM_TYPE = '{{ itemType }}';
+
+        function addValidation() {
+            // MAC Address validation
+            function isValidMacAddress(mac) {
+                const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+                if (!macRegex.test(mac)) return false;
+
+                const raspberryPiPrefixes = ["B8:27:EB", "DC:A6:32", "E4:5F:01"];
+                const macPrefix = mac.toUpperCase().slice(0, 8);
+                return raspberryPiPrefixes.includes(macPrefix);
+            }
+
+            // Add form validation
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    const macInputs = form.querySelectorAll('input[data-validation="mac"]');
+                    
+                    macInputs.forEach(macInput => {
+                        const macValue = macInput.value.trim();
+                        if (macValue && !isValidMacAddress(macValue)) {
+                            alert('Endereço MAC inválido ou não pertence a uma Raspberry Pi!');
+                            event.preventDefault();
+                        }
+                    });
+                });
+            });
+        }
+
+        function openTab(evt, tabName) {
+            const tabcontent = document.getElementsByClassName("tabcontent");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            const tablinks = document.getElementsByClassName("tablinks");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.classList.add("active");
+        }
+
+        // Função principal para inicializar a página
+        function initializePage() {
+            const config = ITEM_CONFIGS[ITEM_TYPE];
+            if (!config) {
+                console.error(`Configuração não encontrada para o tipo: ${ITEM_TYPE}`);
+                return;
+            }
+
+            // Definir título da página
+            document.getElementById('page-title').textContent = config.title;
+
+            const tabsContainer = document.getElementById('tabs-container');
+            const formsContainer = document.getElementById('forms-container');
+
+            if (config.tabs) {
+                // Criar abas
+                const tabsHtml = `
+                    <div class="tab">
+                        ${config.tabs.map(tab => 
+                            `<button class="tablinks" onclick="openTab(event, '${tab}')">${tab}</button>`
+                        ).join('')}
+                    </div>
+                `;
+                tabsContainer.innerHTML = tabsHtml;
+
+                // Criar formulários para cada aba
+                const formsHtml = config.tabs.map(tab => {
+                    const fields = config.fields[tab] || [];
+                    const fieldsHtml = fields.map(field => createFormField(field, tab)).join('');
+                    
+                    return `
+                        <div id="${tab}" class="tabcontent">
+                            <form action="${config.postUrl}" method="POST" enctype="application/x-www-form-urlencoded">
+                                ${fieldsHtml}
+                                
+                                {% with messages = get_flashed_messages() %}
+                                    {% if messages %}
+                                        <div class="alert alert-info text-center">
+                                            {% for message in messages %}
+                                                <p>{{ message }}</p>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                {% endwith %}
+
+                                <button type="submit" class="btn btn-primary">${config.title}</button>
+                                <a href="${config.cancelUrl}" class="btn btn-secondary">Cancelar</a>
+                            </form>
+                        </div>
+                    `;
+                }).join('');
+                
+                formsContainer.innerHTML = formsHtml;
+
+                // Ativar primeira aba
+                setTimeout(() => {
+                    const firstTab = document.getElementsByClassName("tablinks")[0];
+                    if (firstTab) firstTab.click();
+                }, 100);
+
+            } else {
+                // Criar formulário único
+                const fields = config.fields || [];
+                const fieldsHtml = fields.map(field => createFormField(field)).join('');
+                
+                formsContainer.innerHTML = `
+                    <form action="${config.postUrl}" method="POST" enctype="application/x-www-form-urlencoded">
+                        ${fieldsHtml}
+                        
+                        {% with messages = get_flashed_messages() %}
+                            {% if messages %}
+                                <div class="alert alert-info text-center">
+                                    {% for message in messages %}
+                                        <p>{{ message }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+
+                        <button type="submit" class="btn btn-primary">${config.title}</button>
+                        <a href="${config.cancelUrl}" class="btn btn-secondary">Cancelar</a>
+                    </form>
+                `;
+            }
+
+            // Inicializar dropdowns
+            setTimeout(() => {
+                document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+                    const fieldName = dropdown.getAttribute('data-field');
+                    const tabName = dropdown.getAttribute('data-tab');
+                    
+                    let field = null;
+                    if (config.tabs && tabName) {
+                        field = config.fields[tabName]?.find(f => f.name === fieldName);
+                    } else {
+                        field = config.fields?.find(f => f.name === fieldName);
+                    }
+                    
+                    if (field && field.type === 'dropdown_card') {
+                        populateDropdownCard(dropdown, field);
+                    }
+                });
+
+                // Adicionar validação
+                addValidation();
+
+                // Adicionar atributos de validação
+                document.querySelectorAll('input').forEach(input => {
+                    const fieldName = input.name;
+                    let field = null;
+                    
+                    if (config.tabs) {
+                        for (const tab of config.tabs) {
+                            field = config.fields[tab]?.find(f => f.name === fieldName);
+                            if (field) break;
+                        }
+                    } else {
+                        field = config.fields?.find(f => f.name === fieldName);
+                    }
+                    
+                    if (field && field.validation) {
+                        input.setAttribute('data-validation', field.validation);
+                    }
+                });
+
+                // Fechar dropdowns ao clicar fora
+                document.addEventListener('click', function(event) {
+                    if (!event.target.closest('.custom-dropdown')) {
+                        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                            closeDropdown(menu);
+                        });
+                    }
+                });
+
+            }, 200);
+        }
+
+        // Inicializar quando o DOM estiver carregado
+        document.addEventListener('DOMContentLoaded', initializePage);
+
+        // Expor função openTab globalmente para uso inline
+        window.openTab = openTab;
+    </script>

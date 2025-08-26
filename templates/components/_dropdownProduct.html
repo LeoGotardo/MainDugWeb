@@ -1,0 +1,141 @@
+<div class="container-fluid my-4">
+    <div class="custom-dropdown">
+        <button type="button" class="dropdown-toggle">
+            <div class="selected-item">
+            </div>
+        </button>
+        <ul class="dropdown-menu" name="productId">
+            <!-- Itens do dropdown serão inseridos aqui via JavaScript -->
+        </ul>
+    </div>
+    <input type="hidden" id="productId" name="productId" {% if required %} required {% endif %}>
+</div>
+
+<script>
+    // Lista de produtos vinda do backend via Jinja
+    const products = JSON.parse('{{ products|tojson }}');
+    // ID do produto que está vinculado a essa RPI (ou null se não existir)
+    const rpiProductId = '{{ productId if productId else "null" }}';
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const dropdownMenu = document.querySelector(".dropdown-menu");
+        const dropdownToggle = document.querySelector(".dropdown-toggle");
+        const productIdInput = document.getElementById("productId");
+
+        // Função para abrir o dropdown
+        function openDropdown() {
+            dropdownMenu.classList.remove("hide");
+            dropdownMenu.classList.add("show");
+            dropdownMenu.style.display = "block";
+        }
+
+        // Função para fechar o dropdown
+        function closeDropdown() {
+            dropdownMenu.classList.remove("show");
+            dropdownMenu.classList.add("hide");
+
+            setTimeout(() => {
+                dropdownMenu.style.display = "none";
+                dropdownMenu.classList.remove("hide");
+            }, 300); // Duração da animação de saída
+        }
+
+        // Popula o dropdown com os produtos
+        products.forEach(product => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                <div class="dropdown-item">
+                    <img 
+                        src="${product.imageUrl}"
+                        alt="${product.name}"
+                        class="item-image"
+                        onerror="this.src='{{ url_for('static', filename='images/productPlaceholder.jpeg') }}'"
+                    >
+                    <div class="item-details">
+                        <span class="item-name">${product.name}</span>
+                        <span class="item-value">R$ ${product.value.toFixed(2)}</span>
+                        <span class="item-id">ID: ${product.id}</span>
+                    </div>
+                </div>
+            `;
+
+            // Ao clicar em um item do dropdown
+            li.addEventListener("click", () => {
+                // Remove "selected" de todos os itens
+                dropdownMenu.querySelectorAll("li").forEach(item => {
+                    item.classList.remove("selected");
+                });
+
+                // Marca o item clicado
+                li.classList.add("selected");
+
+                // Define o produto escolhido no campo hidden
+                productIdInput.value = product.id;
+
+                // Atualiza o visual do dropdown-toggle
+                dropdownToggle.innerHTML = `
+                    <div class="selected-item">
+                        <img 
+                            src="${product.imageUrl}"
+                            alt="${product.name}"
+                            class="item-image"
+                            onerror="this.src='{{ url_for('static', filename='images/productPlaceholder.jpeg') }}'"
+                        >
+                        <div class="item-details">
+                            <span class="item-name">${product.name}</span>
+                            <span class="item-value">R$ ${product.value.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+
+                // Fecha o dropdown
+                closeDropdown();
+
+                // Remove animação "selected" depois de um tempo (opcional)
+                setTimeout(() => {
+                    li.classList.remove("selected");
+                }, 300);
+            });
+
+            // Adiciona o <li> no dropdown
+            dropdownMenu.appendChild(li);
+
+            // Pré-seleciona o produto se o ID bater com rpi['product']['id']
+            if (product.id === rpiProductId) {
+                productIdInput.value = product.id; // Seta ID no campo hidden
+
+                // Atualiza o dropdown-toggle para mostrar esse produto de início
+                dropdownToggle.innerHTML = `
+                    <div class="selected-item">
+                        <img 
+                            src="${product.imageUrl}"
+                            alt="${product.name}"
+                            class="item-image"
+                            onerror="this.src='{{ url_for('static', filename='images/productPlaceholder.jpeg') }}'"
+                        >
+                        <div class="item-details">
+                            <span class="item-name">${product.name}</span>
+                            <span class="item-value">R$ ${product.value.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        // Abre/fecha o dropdown ao clicar
+        dropdownToggle.addEventListener("click", function () {
+            if (dropdownMenu.style.display === "block") {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+
+        // Fecha se clicar fora
+        document.addEventListener("click", function (event) {
+            if (!event.target.closest(".custom-dropdown")) {
+                closeDropdown();
+            }
+        });
+    });
+</script>

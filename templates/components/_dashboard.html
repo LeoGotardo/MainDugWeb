@@ -1,0 +1,667 @@
+{# Componente Dashboard - Displays específicos por tipo de item #}
+{# 
+  Parâmetros esperados:
+  - stats: objeto com os dados estatísticos
+  - item_type: 'user', 'tap', 'rpi', ou 'store'
+#}
+
+{% if stats and stats != {} %}
+  {% set has_activity = (stats.get('successLogCount', 0) + stats.get('errorLogCount', 0)) > 0 %}
+  
+  <div class="dashboard-container">
+    
+    {# === DASHBOARD PARA USER === #}
+    {% if item_type == 'user' %}
+      <div class="dashboard-header">
+        <h3><i class="icon fas fa-user"></i> Dashboard do Usuário</h3>
+      </div>
+      
+      <div class="row">
+        {# Gráfico de Logs #}
+        <div class="col-lg-6 col-md-12 mb-4">
+          <div class="stats-card">
+            <div class="stats-card-header user-header">
+              <i class="icon fas fa-chart-pie"></i>Atividade
+            </div>
+            <div class="stats-card-body">
+              <div class="chart-container">
+                <div class="chart-wrapper">
+                  {% if has_activity %}
+                    <canvas id="userLogsChart"></canvas>
+                  {% else %}
+                    <div class="chart-placeholder">
+                      <div>
+                        <i class="icon fas fa-chart-pie" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <div>Nenhuma atividade registrada</div>
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {# Top Produtos Comprados pelo Usuário #}
+        <div class="col-lg-6 col-md-12 mb-4">
+          <div class="stats-card">
+            <div class="stats-card-header secondary-header">
+              <i class="icon fas fa-shopping-cart"></i>Meus Produtos Favoritos
+            </div>
+            <div class="stats-card-body p-0">
+              {% if stats.get('topBuyProducts') and stats['topBuyProducts']|length > 0 %}
+                <div class="table-responsive">
+                  <table class="leaderboard-table table table-striped mb-0">
+                    <thead>
+                      <tr>
+                        <th>Produto</th>
+                        <th>Compras</th>
+                        <th>Total Gasto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for p in stats['topBuyProducts'] %}
+                      <tr>
+                        <td><strong>{{ p.name if p.name else 'N/A' }}</strong></td>
+                        <td>{{ p.get('purchaseCount', 0) }}</td>
+                        <td><strong>R$ {{ "%.2f"|format((p.value or 0) * p.get('purchaseCount', 0)) }}</strong></td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="empty-state" style="padding: 2rem;">
+                  <i class="icon fas fa-shopping-basket" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                  <p class="mb-2"><strong>Nenhuma compra registrada</strong></p>
+                  <small class="text-muted">Seus produtos favoritos aparecerão aqui.</small>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    {# === DASHBOARD PARA TAP === #}
+    {% elif item_type == 'tap' %}
+      <div class="dashboard-header">
+        <h3><i class="icon fas fa-faucet"></i> Dashboard do Tap</h3>
+      </div>
+      
+      <div class="row justify-content-center">
+        {# Gráfico de Logs #}
+        <div class="col-lg-6 col-md-8 col-12 mb-4">
+          <div class="stats-card">
+            <div class="stats-card-header info-header">
+              <i class="icon fas fa-chart-pie"></i>Status das Transações
+            </div>
+            <div class="stats-card-body">
+              <div class="chart-container">
+                <div class="chart-wrapper">
+                  {% if has_activity %}
+                    <canvas id="tapLogsChart"></canvas>
+                  {% else %}
+                    <div class="chart-placeholder">
+                      <div>
+                        <i class="icon fas fa-chart-pie" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <div>Nenhuma transação registrada</div>
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    {# === DASHBOARD PARA RPI === #}
+    {% elif item_type == 'rpi' %}
+      <div class="dashboard-header">
+        <h3><i class="icon fas fa-microchip"></i> Dashboard do RPI</h3>
+      </div>
+      
+      <div class="row">
+        {# Gráfico de Logs #}
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="stats-card">
+            <div class="stats-card-header admin-header">
+              <i class="icon fas fa-chart-pie"></i>Transações
+            </div>
+            <div class="stats-card-body">
+              <div class="chart-container">
+                <div class="chart-wrapper">
+                  {% if has_activity %}
+                    <canvas id="rpiLogsChart"></canvas>
+                  {% else %}
+                    <div class="chart-placeholder">
+                      <div>
+                        <i class="icon fas fa-chart-pie" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <div>Nenhuma transação</div>
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {# Top Produtos #}
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="stats-card">
+            <div class="stats-card-header secondary-header">
+              <i class="icon fas fa-trophy"></i>Top Produtos
+            </div>
+            <div class="stats-card-body p-0">
+              {% if stats.get('topProducts') and stats['topProducts']|length > 0 %}
+                <div class="table-responsive">
+                  <table class="leaderboard-table table table-striped mb-0">
+                    <thead>
+                      <tr>
+                        <th>Produto</th>
+                        <th>Vendas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for p in stats['topProducts'][:3] %}
+                      <tr>
+                        <td><strong>{{ p.name if p.name else 'N/A' }}</strong></td>
+                        <td>{{ p.get('sellCount', 0) }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="empty-state" style="padding: 1.5rem;">
+                  <i class="icon fas fa-box" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.3;"></i>
+                  <small class="text-muted">Nenhuma venda</small>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        {# Top Vendedores #}
+        <div class="col-lg-4 col-md-12 mb-4">
+          <div class="stats-card">
+            <div class="stats-card-header secondary-header">
+              <i class="icon fas fa-medal"></i>Top Vendedores
+            </div>
+            <div class="stats-card-body p-0">
+              {% if stats.get('topSellers') and stats['topSellers']|length > 0 %}
+                <div class="table-responsive">
+                  <table class="leaderboard-table table table-striped mb-0">
+                    <thead>
+                      <tr>
+                        <th>Vendedor</th>
+                        <th>Vendas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for u in stats['topSellers'][:3] %}
+                      <tr>
+                        <td><strong>{{ u.get('name', u.get('login', 'N/A')) }}</strong></td>
+                        <td>{{ u.get('sellCount', 0) }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="empty-state" style="padding: 1.5rem;">
+                  <i class="icon fas fa-user-tie" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.3;"></i>
+                  <small class="text-muted">Nenhuma venda</small>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    {# === DASHBOARD PARA STORE === #}
+    {% elif item_type == 'store' %}
+      <div class="dashboard-header">
+        <h3><i class="icon fas fa-store"></i> Dashboard da Loja</h3>
+      </div>
+      
+      <div class="row">
+        {# Gráfico RPIs #}
+        <div class="col-lg-3 col-md-6 mb-4">
+          <div class="stats-card">
+            <div class="stats-card-header admin-header">
+              <i class="icon fas fa-microchip"></i>Equipamentos
+            </div>
+            <div class="stats-card-body">
+              <div class="chart-container">
+                <div class="chart-wrapper">
+                  {% if stats.get('activeRpisCount', 0) + stats.get('desabledRpisCount', 0) > 0 %}
+                    <canvas id="storeRpiChart"></canvas>
+                  {% else %}
+                    <div class="chart-placeholder">
+                      <div>
+                        <i class="icon fas fa-microchip" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <div>Nenhum Controle</div>
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {# Gráfico Usuários #}
+        <div class="col-lg-3 col-md-6 mb-4">
+          <div class="stats-card">
+            <div class="stats-card-header user-header">
+              <i class="icon fas fa-users"></i>Usuários
+            </div>
+            <div class="stats-card-body">
+              <div class="chart-container">
+                <div class="chart-wrapper">
+                  {% if stats.get('activeUsersCount', 0) + stats.get('desabledUsersCount', 0) > 0 %}
+                    <canvas id="storeUserChart"></canvas>
+                  {% else %}
+                    <div class="chart-placeholder">
+                      <div>
+                        <i class="icon fas fa-users" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <div>Nenhum usuário</div>
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {# Gráfico Logs #}
+        <div class="col-lg-3 col-md-6 mb-4">
+          <div class="stats-card">
+            <div class="stats-card-header info-header">
+              <i class="icon fas fa-chart-pie"></i>Transações
+            </div>
+            <div class="stats-card-body">
+              <div class="chart-container">
+                <div class="chart-wrapper">
+                  {% if has_activity %}
+                    <canvas id="storeLogsChart"></canvas>
+                  {% else %}
+                    <div class="chart-placeholder">
+                      <div>
+                        <i class="icon fas fa-chart-pie" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <div>Nenhuma transação</div>
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {# Resumo Numérico #}
+        <div class="col-lg-3 col-md-6 mb-4">
+          <div class="stats-card">
+            <div class="stats-card-header secondary-header">
+              <i class="icon fas fa-chart-bar"></i>Resumo
+            </div>
+            <div class="stats-card-body">
+              <div class="summary-stats">
+                <div class="summary-item">
+                  <div class="summary-number">{{ stats.get('activeRpisCount', 0) }}</div>
+                  <div class="summary-label">Controles Ativos</div>
+                </div>
+                <div class="summary-item">
+                  <div class="summary-number">{{ stats.get('activeUsersCount', 0) }}</div>
+                  <div class="summary-label">Usuários Ativos</div>
+                </div>
+                <div class="summary-item">
+                  <div class="summary-number">{{ stats.get('successLogCount', 0) }}</div>
+                  <div class="summary-label">Vendas</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {# Leaderboards para Store #}
+      <div class="row">
+        {# Top Produtos #}
+        <div class="col-lg-6 mb-4">
+          <div class="stats-card">
+            <div class="stats-card-header secondary-header">
+              <i class="icon fas fa-trophy"></i>Top 5 Produtos
+            </div>
+            <div class="stats-card-body p-0">
+              {% if stats.get('topProducts') and stats['topProducts']|length > 0 %}
+                <div class="table-responsive">
+                  <table class="leaderboard-table table table-striped mb-0">
+                    <thead>
+                      <tr>
+                        <th>Posição</th>
+                        <th>Produto</th>
+                        <th>Vendas</th>
+                        <th>Valor Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for p in stats['topProducts'] %}
+                      <tr>
+                        <td>
+                          <span class="position-badge position-{{ loop.index if loop.index <= 3 else 'default' }}">
+                            {{ loop.index }}
+                          </span>
+                        </td>
+                        <td><strong>{{ p.name if p.name else 'N/A' }}</strong></td>
+                        <td>{{ p.get('sellCount', 0) }}</td>
+                        <td><strong>R$ {{ "%.2f"|format((p.value or 0) * p.get('sellCount', 0)) }}</strong></td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="empty-state" style="padding: 2rem;">
+                  <i class="icon fas fa-shopping-cart" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                  <p class="mb-2"><strong>Nenhuma venda registrada</strong></p>
+                  <small class="text-muted">Os produtos mais vendidos aparecerão aqui.</small>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        {# Top Vendedores #}
+        <div class="col-lg-6 mb-4">
+          <div class="stats-card">
+            <div class="stats-card-header secondary-header">
+              <i class="icon fas fa-medal"></i>Top 5 Vendedores
+            </div>
+            <div class="stats-card-body p-0">
+              {% if stats.get('topSellers') and stats['topSellers']|length > 0 %}
+                <div class="table-responsive">
+                  <table class="leaderboard-table table table-striped mb-0">
+                    <thead>
+                      <tr>
+                        <th>Posição</th>
+                        <th>Vendedor</th>
+                        <th>Vendas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for u in stats['topSellers'] %}
+                      <tr>
+                        <td>
+                          <span class="position-badge position-{{ loop.index if loop.index <= 3 else 'default' }}">
+                            {{ loop.index }}
+                          </span>
+                        </td>
+                        <td><strong>{{ u.get('name', u.get('login', 'N/A')) }}</strong></td>
+                        <td>{{ u.get('sellCount', 0) }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="empty-state" style="padding: 2rem;">
+                  <i class="icon fas fa-store" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                  <p class="mb-2"><strong>Nenhuma venda registrada</strong></p>
+                  <small class="text-muted">Os melhores vendedores aparecerão aqui.</small>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <style>
+    .dashboard-container {
+      margin-bottom: 2rem;
+    }
+
+    .dashboard-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .dashboard-header h3 {
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--dark-color);
+      margin: 0;
+    }
+
+    .summary-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .summary-item {
+      text-align: center;
+      padding: 0.5rem;
+      border-radius: 6px;
+      background: #f8f9fa;
+    }
+
+    .summary-number {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin-bottom: 0.25rem;
+    }
+
+    .summary-label {
+      font-size: 0.75rem;
+      color: var(--secondary-color);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .chart-container {
+      margin-bottom: 0;
+    }
+
+    .chart-wrapper {
+      height: 250px;
+    }
+
+    @media (max-width: 768px) {
+      .chart-wrapper {
+        height: 200px;
+      }
+      
+      .dashboard-header h3 {
+        font-size: 1.25rem;
+      }
+    }
+  </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Configuração comum dos gráficos
+      Chart.defaults.font.family = "'Roboto', sans-serif";
+      Chart.defaults.color = '#495057';
+
+      // Função helper para criar gráficos
+      function createDashboardChart(canvasId, chartConfig) {
+        const canvas = document.getElementById(canvasId);
+        if (canvas) {
+          try {
+            new Chart(canvas.getContext('2d'), chartConfig);
+          } catch (error) {
+            console.error(`Erro ao criar gráfico ${canvasId}:`, error);
+          }
+        }
+      }
+
+      {% if item_type == 'user' and has_activity %}
+        // Gráfico de logs para usuário
+        createDashboardChart('userLogsChart', {
+          type: 'doughnut',
+          data: {
+            labels: ['Sucessos', 'Erros'],
+            datasets: [{
+              data: [{{ stats.get('successLogCount', 0) }}, {{ stats.get('errorLogCount', 0) }}],
+              backgroundColor: ['rgba(40, 167, 69, 0.8)', 'rgba(220, 53, 69, 0.8)'],
+              borderColor: ['rgba(40, 167, 69, 1)', 'rgba(220, 53, 69, 1)'],
+              borderWidth: 2,
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+              title: { display: true, text: 'Minhas Transações', font: { size: 14, weight: 'bold' } },
+              legend: { position: 'bottom', labels: { padding: 15 } }
+            }
+          }
+        });
+
+      {% elif item_type == 'tap' and has_activity %}
+        // Gráfico de logs para tap
+        createDashboardChart('tapLogsChart', {
+          type: 'pie',
+          data: {
+            labels: ['Sucessos', 'Erros'],
+            datasets: [{
+              data: [{{ stats.get('successLogCount', 0) }}, {{ stats.get('errorLogCount', 0) }}],
+              backgroundColor: ['rgba(40, 167, 69, 0.8)', 'rgba(220, 53, 69, 0.8)'],
+              borderColor: ['rgba(40, 167, 69, 1)', 'rgba(220, 53, 69, 1)'],
+              borderWidth: 2,
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+              title: { display: true, text: 'Transações do Tap', font: { size: 14, weight: 'bold' } },
+              legend: { position: 'bottom', labels: { padding: 15 } }
+            }
+          }
+        });
+
+      {% elif item_type == 'rpi' and has_activity %}
+        // Gráfico de logs para RPI
+        createDashboardChart('rpiLogsChart', {
+          type: 'doughnut',
+          data: {
+            labels: ['Sucessos', 'Erros'],
+            datasets: [{
+              data: [{{ stats.get('successLogCount', 0) }}, {{ stats.get('errorLogCount', 0) }}],
+              backgroundColor: ['rgba(40, 167, 69, 0.8)', 'rgba(220, 53, 69, 0.8)'],
+              borderColor: ['rgba(40, 167, 69, 1)', 'rgba(220, 53, 69, 1)'],
+              borderWidth: 2,
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+              title: { display: true, text: 'Transações', font: { size: 12, weight: 'bold' } },
+              legend: { position: 'bottom', labels: { padding: 10 } }
+            }
+          }
+        });
+
+      {% elif item_type == 'store' %}
+        
+        {% if stats.get('activeRpisCount', 0) + stats.get('desabledRpisCount', 0) > 0 %}
+        // Gráfico RPIs para store
+        createDashboardChart('storeRpiChart', {
+          type: 'doughnut',
+          data: {
+            labels: ['Ativos', 'Desativados'],
+            datasets: [{
+              data: [{{ stats.get('activeRpisCount', 0) }}, {{ stats.get('desabledRpisCount', 0) }}],
+              backgroundColor: ['rgba(40, 167, 69, 0.8)', 'rgba(220, 53, 69, 0.8)'],
+              borderColor: ['rgba(40, 167, 69, 1)', 'rgba(220, 53, 69, 1)'],
+              borderWidth: 2,
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+              title: { display: true, text: 'Controles', font: { size: 12, weight: 'bold' } },
+              legend: { position: 'bottom', labels: { padding: 10 } }
+            }
+          }
+        });
+        {% endif %}
+
+        {% if stats.get('activeUsersCount', 0) + stats.get('desabledUsersCount', 0) > 0 %}
+        // Gráfico Usuários para store
+        createDashboardChart('storeUserChart', {
+          type: 'doughnut',
+          data: {
+            labels: ['Ativos', 'Desativados'],
+            datasets: [{
+              data: [{{ stats.get('activeUsersCount', 0) }}, {{ stats.get('desabledUsersCount', 0) }}],
+              backgroundColor: ['rgba(0, 123, 255, 0.8)', 'rgba(108, 117, 125, 0.8)'],
+              borderColor: ['rgba(0, 123, 255, 1)', 'rgba(108, 117, 125, 1)'],
+              borderWidth: 2,
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+              title: { display: true, text: 'Usuários', font: { size: 12, weight: 'bold' } },
+              legend: { position: 'bottom', labels: { padding: 10 } }
+            }
+          }
+        });
+        {% endif %}
+
+        {% if has_activity %}
+        // Gráfico Logs para store
+        createDashboardChart('storeLogsChart', {
+          type: 'doughnut',
+          data: {
+            labels: ['Sucessos', 'Erros'],
+            datasets: [{
+              data: [{{ stats.get('successLogCount', 0) }}, {{ stats.get('errorLogCount', 0) }}],
+              backgroundColor: ['rgba(40, 167, 69, 0.8)', 'rgba(220, 53, 69, 0.8)'],
+              borderColor: ['rgba(40, 167, 69, 1)', 'rgba(220, 53, 69, 1)'],
+              borderWidth: 2,
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+              title: { display: true, text: 'Transações', font: { size: 12, weight: 'bold' } },
+              legend: { position: 'bottom', labels: { padding: 10 } }
+            }
+          }
+        });
+        {% endif %}
+
+      {% endif %}
+    });
+  </script>
+
+{% else %}
+  <!-- Estado vazio -->
+  <div class="dashboard-container">
+    <div class="empty-state">
+      <span class="empty-state-icon">📊</span>
+      <h3>Nenhum dado disponível</h3>
+      <p>Não há estatísticas para exibir no momento.</p>
+    </div>
+  </div>
+{% endif %}

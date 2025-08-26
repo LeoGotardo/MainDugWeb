@@ -1,9 +1,9 @@
 {#{% from 'macros/_notifications.html' import notification_system %}#}
 
-<!doctype html>
+<!doctype html5>
 <html lang="en">
-  {% block head %}
   <head>
+    {% block head %}
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/logo.png') }}">
@@ -14,13 +14,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="{{ url_for('static', filename='scripts/alert.js') }}"></script>
     <title>{% block title %}MainDug{% endblock %}</title>
+    {% endblock head %}
   </head>
-  {% endblock head %}
 
   {% block body %}
   <body>
     {% include "components/_navbar.html" %}
-    {% block content %} {#{{ notification_system() }}#} {% endblock content %}
+    {% block content %} {{ notification_system() }} {% endblock content %}
   </body>
   {% endblock body %}
 
