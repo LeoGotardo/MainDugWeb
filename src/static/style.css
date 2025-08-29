@@ -7,7 +7,9 @@
   --info-color: #17a2b8;
   --light-color: #f8f9fa;
   --dark-color: #2f3338;
+  --input-height: 45px;
   --border-radius: 8px;
+  --input-border-radius: 5px;
   --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -108,7 +110,7 @@ body {
   align-items: center;
   justify-content: space-between;
   border: 1px solid #0335e9;
-  border-radius: var(--border-radius);
+  border-radius: var(--input-border-radius);
   font-size: large;
   padding: 0.5rem;
   width: 80%;
@@ -125,6 +127,9 @@ body {
   justify-content: center;
   padding: 5px;
   margin-bottom: 10px;
+  padding-top: 0px !important;
+  padding-bottom: 0px !important;
+  height: var(--input-height);
   color: #000;
 }
 
@@ -141,15 +146,26 @@ body {
   display: flex;
 }
 
-input {
+input :not(#password):not(#password-confirm) {
   width: 100%;
   max-width: 500px;
   padding: 10px 5px;
   border: 0px;
+  border-radius: var(--input-border-radius);
   outline: 0px;
   font-size: 20px;
   margin-bottom: 10px;
   background-color: var(--dark-color);
+}
+
+#password #password-confirm {
+  width: 100%;
+  max-width: 500px;
+  padding: 10px 5px;
+  border: 0px;
+  font-size: 20px;
+  margin-bottom: 0px;
+  margin-top: 0px;
 }
 
 input:focus {
