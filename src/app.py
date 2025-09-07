@@ -131,7 +131,8 @@ def index():
                 case 'GET':
                     next_page = request.args.get('next')
                     if not next_page or url_parse(next_page).netloc != '':
-                        success, statistcs = database.getDeashboardInfo(current_user.id)
+                        headers = ITEM_CONFIGS['headers']['sysadmin']['passwords'] if current_user.role == 'sysadmin' else ITEM_CONFIGS['headers']['user']['passwords']
+                        success, statistcs = database.getDashboardInfo(headers=headers, userId=current_user.id)
                         if not success:
                             return redirect(url_for('internalError'))
                         

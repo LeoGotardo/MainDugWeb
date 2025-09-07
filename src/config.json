@@ -1,1 +1,38 @@
-{}
+    {
+    "headers": {
+        "sysadmin": {
+            "users": [
+                {"key": "login", "label": "Login", "sortable": true },
+                {"key": "role", "label": "Role", "sortable": true },
+                {"key": "passwordPwned", "label": "Password Pwned", "sortable": true },
+                {"key": "lastLogin", "label": "Last Login", "sortable": true },
+                {"key": "banned", "label": "Banned", "sortable": true },
+                {"key": "actions", "label": "Actions", "sortable": false, "type":"actions", "items":
+                    [
+                        {"key": "ban", "label": "Ban", "url": "banUser", "paramters": {"userId": "userId"}},
+                        {"key": "edit", "label": "Edit", "url": "editUser", "paramters": {"userId": "userId"}},
+                        {"key": "delete", "label": "Delete", "url": "deleteUser", "paramters": {"userId": "userId"}}
+                    ]
+                }
+            ]
+        },
+        "user": {
+            "passwords": [
+                {"key": "site", "label": "Site", "sortable": true },
+                {"key": "login", "label": "Login", "sortable": true },
+                {"key": "password", "label": "Password", "type": "password", "sortable": true },
+                {"key": "status", "label": "Status", "sortable": true },
+                {"key": "lastUse", "label": "Last Use", "sortable": true },
+                {"key": "whereUsed", "label": "Where Used", "sortable": true },
+                {"key": "actions", "label": "Actions", "sortable": false, "type":"actions", "items": [
+                        {"key": "info", "label": "More Info", "url": "passwordInfo", "paramters": {"passwordId": "passwordId"}},
+                        {"key": "edit", "label": "Edit", "url": "editPassword", "paramters": {"passwordId": "passwordId"}},
+                        {"key": "delete", "label": "Delete", "url": "deletePassword", "paramters": {"passwordId": "passwordId"}}
+                    ]
+                }
+
+            ],
+            ""
+        }
+    }
+}

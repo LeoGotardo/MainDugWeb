@@ -158,7 +158,7 @@ input :not(#password):not(#password-confirm) {
   background-color: var(--dark-color);
 }
 
-#password #password-confirm {
+.password-input input {
   width: 100%;
   max-width: 500px;
   padding: 10px 5px;
@@ -166,6 +166,7 @@ input :not(#password):not(#password-confirm) {
   font-size: 20px;
   margin-bottom: 0px;
   margin-top: 0px;
+  background : transparent;
 }
 
 input:focus {

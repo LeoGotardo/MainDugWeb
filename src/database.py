@@ -175,11 +175,6 @@ class Database:
                 return False, 'Invalid user'
             
             
-            passwords = self.session.query(Passwords).filter_by(user_id=id).all()
-            
-            leakedPasswords = self.session.query(Passwords).filter_by(user_id=id).filter(Passwords.status == True).all()
-            
-            safePasswords = self.session.query(Passwords).filter_by(user_id=id).filter(Passwords.status == False).all()
             
             
         except Exception as e:
@@ -204,9 +199,9 @@ class Database:
             user = self.session.query(User).filter_by(login=login).first()
             
             if user is not None:
-                verify = self.iscryptograph.isValidPass(user.password, password)
-                print(verify)
-                if verify[0]:
+                success, msg = self.iscryptograph.isValidPass(user.password, password)
+                print(success)
+                if success:
                     return True, user
                 else:
                     return False, 'Invalid credentials'
