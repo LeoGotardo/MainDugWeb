@@ -21,7 +21,7 @@ app = Config.app
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 current_user : User | None
-ITEM_CONFIGS = json.load(open('./config.json', 'r'))
+ITEM_CONFIGS = json.load(open('./src/config.json', 'r'))
 
 
 app.register_blueprint(notifications_bp)
@@ -131,12 +131,22 @@ def index():
                 case 'GET':
                     next_page = request.args.get('next')
                     if not next_page or url_parse(next_page).netloc != '':
-                        headers = ITEM_CONFIGS['headers']['sysadmin']['passwords'] if current_user.role == 'sysadmin' else ITEM_CONFIGS['headers']['user']['passwords']
+                        headers = ITEM_CONFIGS['headers']['sysadmin']['users'] if current_user.role == 'sysadmin' else ITEM_CONFIGS['headers']['user']['passwords']
                         success, statistcs = database.getDashboardInfo(headers=headers, userId=current_user.id)
                         if not success:
                             return redirect(url_for('internalError'))
-                        
-                        return render_template('index.html', deashboardInfo=statistcs)
+                        if current_user.role == 'sysadmin':
+                            users = database.getUsers(userId=current_user.id)
+                            if not users:
+                                return redirect(url_for('internalError'))   
+                            else:
+                                return render_template('index.html', deashboardInfo=statistcs, users=users)
+                        else:
+                            passwords = database.getPasswords(userId=current_user.id)
+                            if not passwords:
+                                return redirect(url_for('internalError'))
+                            else:
+                                return render_template('index.html', deashboardInfo=statistcs, passwords=passwords)
                     else:
                         return redirect(next_page)
                 case 'POST':

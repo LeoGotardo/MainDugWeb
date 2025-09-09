@@ -165,20 +165,45 @@ class Database:
                 self.session.commit()
             except Exception as e:
                 self.session.rollback()
-                return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+                return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
     
     
-    def getDashboardInfo(self, id: str, headers: dict ,userId: str, page: int = 1, perPage: int = 10, sort: str = 'date', sortOrder: str = 'asc', query: str = '') -> tuple[bool, list[User]] | tuple[bool, str]:
+    def getDashboardInfo(self, headers: dict ,userId: str, initDt: datetime = None, endDt: datetime = None, page: int =1, perPage: int = 10, sort: str = 'date', sortOrder: str = 'asc', query: str = '') -> tuple[bool, dict]:
+        """
+        Gera estatísticas do dashboard baseadas no perfil do usuário.
+        Para super users: estatísticas globais. Para outros: estatísticas da loja.
+
+        Args:
+            storeId (str): ID da loja para filtrar estatísticas
+            page (int): Página atual para paginação de logs
+            rowsPerPage (int): Quantidade de logs por página
+            userId (str): ID do usuário solicitante (determina nível de acesso)
+
+        Returns:
+            tuple[bool, dict]: (True, dados_estatisticas) com contadores e rankings,
+                            (False, mensagem_erro) se falha
+        """
         try:
-            user = self.session.query(User).filter_by(id=userId).first()
-            if user is None:
-                return False, 'Invalid user'
+            perPage = int(perPage)
+            page = int(page)
+            sort = str(sort)
+            sortOrder = str(sortOrder)
+            query = str(query)
             
             
-            
-            
+            user: User | None = self.session.query(User).filter_by(userId=userId).first()
+            if user:
+                if user.role == 'super':
+                    with Config.app.app_context():
+                        
+                        
+
+                            
+                        return True, {
+
+                        }
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
             
     
     
@@ -191,7 +216,116 @@ class Database:
             else:
                 return False, 'Invalid user'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+        
+    @canHandle
+    def getUsers(self, headers: list[dict[str, str]] = [], pagination: bool = False, query: str = None, page: int = 1, perPage: int = 10, sort: str = 'name', sortOrder: str = 'asc') -> tuple[bool, list[dict[User]]] | tuple[bool, str]:
+        try:
+            sortOptions = {
+                'login': User.login,
+                'enabled': User.enabled,
+                'passwordPwned': User.passwordPwned,
+                'role': User.role,
+            }
+            
+            sortColumn = sortOptions.get(sort, User.login)
+            
+            with Config.app.app_context():
+                base_query = self.session.query(User)
+                    
+                if query:
+                    base_query = base_query.filter(User.login.ilike(f'%{query}%'))
+                
+                # Aplicar ordenação
+                if sortOrder == 'desc':
+                    base_query = base_query.order_by(sortColumn.desc())
+                else:
+                    base_query = base_query.order_by(sortColumn.asc())
+                
+                if pagination:
+                    # Usar paginate diretamente na query
+                    paginated_result = base_query.paginate(
+                        page=page, 
+                        per_page=perPage, 
+                        error_out=False
+                    )
+                    o = base_query.all()
+                    
+                    if paginated_result.items:
+                        # Converter items para dicionário
+                        items_dict = [user.to_dict() for user in paginated_result.items]
+                        
+                        # Calcular informações de navegação
+                        current_page = paginated_result.page
+                        total_pages = paginated_result.pages
+                        
+                        # Páginas visíveis
+                        start_page = max(1, current_page - 5)
+                        end_page = min(total_pages, current_page + 5)
+                        visible_pages = list(range(start_page, end_page + 1))
+                        
+                        pag = {
+                            'items': items_dict,
+                            'headers': headers,
+                            'pagination': {
+                                'currentPage': current_page,
+                                'totalPages': total_pages,
+                                 'total': paginated_result.total,
+                                'perPage': paginated_result.per_page,
+                                'hasPrev': paginated_result.has_prev,
+                                'hasNext': paginated_result.has_next,
+                                'prevPage': current_page - 1 if paginated_result.has_prev else None,
+                                'nextPage': current_page + 1 if paginated_result.has_next else None,
+                                'visiblePages': visible_pages,
+                                'showFirst': 1 not in visible_pages,
+                                'showLast': total_pages not in visible_pages,
+                                'showLeftEllipsis': start_page > 2,
+                                'showRightEllipsis': end_page < total_pages - 1
+                            },
+                            'filters': {
+                                'query': query,
+                                'sort': sort,
+                                'sortOrder': sortOrder,
+                            }
+                        }
+                        return True, pag
+                    else:
+                        # Retornar estrutura vazia mas consistente
+                        return True, {
+                            'items': [],
+                            'headers': headers,
+                            'pagination': {
+                                'currentPage': 1,
+                                'totalPages': 0,
+                                'total': 0,
+                                'perPage': perPage,
+                                'hasPrev': False,
+                                'hasNext': False,
+                                'prevPage': None,
+                                'nextPage': None,
+                                'visiblePages': [],
+                                'showFirst': False,
+                                'showLast': False,
+                                'showLeftEllipsis': False,
+                                'showRightEllipsis': False
+                            },
+                            'filters': {
+                                'query': query,
+                                'sort': sort,
+                                'sortOrder': sortOrder,
+                            }
+                        }
+                else:
+                    # Sem paginação - retornar lista simples
+                    users = base_query.all()
+                    if users:
+                        return True, [user.to_dict() for user in users]
+                    else:
+                        return True, []
+        except Exception as e:
+            self.session.rollback()  # Garante que a transação não fique quebrada
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 
 
     def validUser(self, login: str, password: str) -> tuple[bool, User | str]:
@@ -208,7 +342,7 @@ class Database:
             else:
                 return False, 'Invalid credentials'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 
 
     def createUser(self, login: str, password: str) -> tuple[bool, User | str]:
@@ -222,7 +356,7 @@ class Database:
             else:
                 return False, 'User already exists'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
     def deleteUser(self, id: str) -> tuple[bool, str]:
@@ -237,7 +371,7 @@ class Database:
             else:
                 return False, 'User not found'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
     def updateUser(self, id: str, login: str = None, password: str = None, role: str = None) -> tuple[bool, str]:
@@ -264,7 +398,7 @@ class Database:
             else:
                 return False, 'Invalid id'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def addPassword(self, gerentId, id: str, site: str, login: str, password: str ) -> tuple[bool, str]:
@@ -286,28 +420,119 @@ class Database:
             
             return True, 'Password added'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 
 
-    def getPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
+    @canHandle
+    def getPasswords(self, userId, headers: list[dict[str, str]] = [], pagination: bool = False, query: str = None, page: int = 1, perPage: int = 10, sort: str = 'pewed', sortOrder: str = 'asc') -> tuple[bool, list[dict[User]]] | tuple[bool, str]:
         try:
-            passwords = self.session.query(Passwords).filter_by(user_id=id).all()
-            response = self.cryptograph.keyGenerator(id)
+            sortOptions = {
+                'lastUse': Passwords.lastUse,
+                'site': Passwords.site,
+                'login': Passwords.login,
+                'strength': Passwords.strength,
+                'status': Passwords.status,
+            }
             
-            if passwords is not None:
-                if response[0] == False:
-                    return False, response[1]
-                key = response[1]
-                for password in passwords:
-                    response = self.cryptograph.decryptSentence(password.password, key)
-                    if response[0] == False:
-                        return False, response[1]
-                    password.password = response[1]
-                return True, passwords
-            else:
-                return False, 'Cant find any passwords'
+            sortColumn = sortOptions.get(sort, Passwords.name)
+            
+            with Config.app.app_context():
+                base_query = self.session.query(Passwords).filter(Passwords.user_id == userId)
+                    
+                if query:
+                    base_query = base_query.filter(Passwords.name.ilike(f'%{query}%'))
+                
+                # Aplicar ordenação
+                if sortOrder == 'desc':
+                    base_query = base_query.order_by(sortColumn.desc())
+                else:
+                    base_query = base_query.order_by(sortColumn.asc())
+                
+                if pagination:
+                    # Usar paginate diretamente na query
+                    paginated_result = base_query.paginate(
+                        page=page, 
+                        per_page=perPage, 
+                        error_out=False
+                    )
+                    o = base_query.all()
+                    
+                    if paginated_result.items:
+                        # Converter items para dicionário
+                        items_dict = [password.to_dict() for password in paginated_result.items]
+                        
+                        # Calcular informações de navegação
+                        current_page = paginated_result.page
+                        total_pages = paginated_result.pages
+                        
+                        # Páginas visíveis
+                        start_page = max(1, current_page - 5)
+                        end_page = min(total_pages, current_page + 5)
+                        visible_pages = list(range(start_page, end_page + 1))
+                        
+                        pag = {
+                            'items': items_dict,
+                            'headers': headers,
+                            'pagination': {
+                                'currentPage': current_page,
+                                'totalPages': total_pages,
+                                 'total': paginated_result.total,
+                                'perPage': paginated_result.per_page,
+                                'hasPrev': paginated_result.has_prev,
+                                'hasNext': paginated_result.has_next,
+                                'prevPage': current_page - 1 if paginated_result.has_prev else None,
+                                'nextPage': current_page + 1 if paginated_result.has_next else None,
+                                'visiblePages': visible_pages,
+                                'showFirst': 1 not in visible_pages,
+                                'showLast': total_pages not in visible_pages,
+                                'showLeftEllipsis': start_page > 2,
+                                'showRightEllipsis': end_page < total_pages - 1
+                            },
+                            'filters': {
+                                'query': query,
+                                'sort': sort,
+                                'sortOrder': sortOrder,
+                                'userId': userId
+                            }
+                        }
+                        return True, pag
+                    else:
+                        # Retornar estrutura vazia mas consistente
+                        return True, {
+                            'items': [],
+                            'headers': headers,
+                            'pagination': {
+                                'currentPage': 1,
+                                'totalPages': 0,
+                                'total': 0,
+                                'perPage': perPage,
+                                'hasPrev': False,
+                                'hasNext': False,
+                                'prevPage': None,
+                                'nextPage': None,
+                                'visiblePages': [],
+                                'showFirst': False,
+                                'showLast': False,
+                                'showLeftEllipsis': False,
+                                'showRightEllipsis': False
+                            },
+                            'filters': {
+                                'query': query,
+                                'sort': sort,
+                                'sortOrder': sortOrder,
+                                'userId': userId
+                            }
+                        }
+                else:
+                    # Sem paginação - retornar lista simples
+                    users = base_query.all()
+                    if users:
+                        return True, [user.to_dict() for user in users]
+                    else:
+                        return True, []
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            self.session.rollback()  # Garante que a transação não fique quebrada
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def deletePassword(self, passwordID: str, userID: str) -> tuple[bool, str]:
@@ -325,7 +550,7 @@ class Database:
             else:
                 return False, 'Password not found'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def checkPasswordPwned(self, password: str) -> tuple[bool, str]:
@@ -359,7 +584,7 @@ class Database:
             else:
                 return False, 'Invalid user'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
     def updatePasswordStatus(self, id: str) -> tuple[bool, str]:
@@ -387,7 +612,7 @@ class Database:
             else:
                 return True, 'Passwords updated'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
     def getPassword(self, credId: str) -> tuple[bool, Passwords] | tuple[bool, str]:
@@ -399,7 +624,7 @@ class Database:
             else:
                 return False, 'Invalid password'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def pwned(self, id: str) -> tuple[bool, str]:
@@ -414,7 +639,7 @@ class Database:
             else:
                 return False, 'Invalid user'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
     def getLeakedPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
@@ -426,7 +651,7 @@ class Database:
             else:
                 return False, 'Cant find any passwords'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
     def getMostUsedPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
@@ -444,7 +669,7 @@ class Database:
             else:
                 return False, 'Cant find any passwords'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def getGoodPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
@@ -456,7 +681,7 @@ class Database:
             else:
                 return False, 'Cant find any passwords'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
     def getInfoByIP(self, passwordID: str, ip: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
@@ -489,5 +714,5 @@ class Database:
                 return False, 'Invalid password'
             
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 ''

@@ -1,57 +1,87 @@
 {
-  "manifest_version": 3,
-  "name": "SecurePass - Gerenciador de Senhas",
+  "name": "securepass-backend",
   "version": "1.0.0",
-  "description": "Gerencie suas senhas com segurança e facilidade",
+  "description": "Backend API para o SecurePass Password Manager",
+  "main": "server-enhanced.js",
+  "scripts": {
+    "start": "node server-enhanced.js",
+    "dev": "nodemon server-enhanced.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "setup": "node scripts/setup.js",
+    "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed.js",
+    "backup": "node scripts/backup.js",
+    "lint": "eslint *.js",
+    "lint:fix": "eslint *.js --fix"
+  },
+  "keywords": [
+    "password-manager",
+    "security",
+    "encryption",
+    "nodejs",
+    "postgresql",
+    "chrome-extension"
+  ],
   "author": "SecurePass Team",
-  "homepage_url": "https://securepass.com",
-  
-  "permissions": [
-    "storage",
-    "activeTab",
-    "tabs",
-    "contextMenus",
-    "notifications",
-    "clipboardWrite"
-  ],
-  
-  "host_permissions": [
-    "http://localhost:5000/*",
-    "<all_urls>"
-  ],
-  
-  "background": {
-    "service_worker": "background.js"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "dotenv": "^16.3.1",
+    "crypto": "^1.0.1",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0",
+    "winston": "^3.11.0",
+    "moment": "^2.29.4"
   },
-  
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icon16.png",
-      "32": "icon32.png",
-      "48": "icon48.png",
-      "128": "icon128.png"
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.1",
+    "@types/node": "^20.10.4"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=7.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/securepass/backend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/securepass/backend/issues"
+  },
+  "homepage": "https://securepass.com",
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverage": true,
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["text", "lcov", "html"]
+  },
+  "eslintConfig": {
+    "env": {
+      "node": true,
+      "es2021": true
     },
-    "default_title": "SecurePass - Gerenciador de Senhas"
-  },
-  
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_idle",
-      "all_frames": true
+    "extends": "eslint:recommended",
+    "parserOptions": {
+      "ecmaVersion": 12,
+      "sourceType": "module"
+    },
+    "rules": {
+      "no-unused-vars": "warn",
+      "no-console": "off",
+      "semi": ["error", "always"],
+      "quotes": ["error", "single"]
     }
-  ],
-  
-  "icons": {
-    "16": "icon16.png",
-    "32": "icon32.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
-  },
-  
-  "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
   }
 }

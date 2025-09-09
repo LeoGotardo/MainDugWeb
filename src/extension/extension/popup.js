@@ -324,7 +324,7 @@ async function exportPasswords() {
     }
     
     try {
-        const response = await fetch('http://localhost:5000/api/passwords/export', {
+        const response = await fetch('http://localhost:5000/api/passwords/export/csv', {
             headers: {
                 'Authorization': `Bearer ${currentUser.token}`
             }
@@ -375,4 +375,111 @@ function saveSettings() {
         darkMode: document.getElementById('darkMode').checked
     };
     
-    chrome.storage.
+    chrome.storage.local.set({ settings });
+}
+
+// Alternar modo escuro
+function toggleDarkMode(enabled) {
+    if (enabled) {
+        document.body.classList.add('dark-mode');
+    } else {
+        document.body.classList.remove('dark-mode');
+    }
+}
+
+// Mostrar UI autenticada
+function showAuthenticatedUI() {
+    const userInfo = document.getElementById('userInfo');
+    const userEmail = document.getElementById('userEmail');
+    const logoutBtn = document.getElementById('logoutBtn');
+    
+    if (currentUser) {
+        userEmail.textContent = currentUser.email;
+        userInfo.style.display = 'block';
+        logoutBtn.style.display = 'block';
+    }
+}
+
+// Mostrar UI não autenticada
+function showUnauthenticatedUI() {
+    const userInfo = document.getElementById('userInfo');
+    const logoutBtn = document.getElementById('logoutBtn');
+    
+    userInfo.style.display = 'none';
+    logoutBtn.style.display = 'none';
+    
+    showEmptyState('Faça login para ver suas senhas salvas');
+}
+
+// Mostrar estado vazio
+function showEmptyState(message = 'Nenhuma senha salva ainda') {
+    const listElement = document.getElementById('passwordList');
+    listElement.innerHTML = `
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+            </svg>
+            <p>${message}</p>
+        </div>
+    `;
+}
+
+// Mostrar status
+function showStatus(elementId, message, type) {
+    const element = document.getElementById(elementId);
+    
+    element.textContent = message;
+    element.className = `status-message ${type}`;
+    element.style.display = 'block';
+    
+    if (type === 'success') {
+        setTimeout(() => {
+            element.style.display = 'none';
+        }, 3000);
+    }
+}
+
+// Mostrar toast
+function showToast(message, type = 'success') {
+    // Criar elemento toast se não existir
+    let toast = document.getElementById('toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10000;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateX(100%);
+        `;
+        document.body.appendChild(toast);
+    }
+    
+    // Definir estilo baseado no tipo
+    const backgroundColor = type === 'error' ? '#dc3545' : '#28a745';
+    toast.style.backgroundColor = backgroundColor;
+    toast.textContent = message;
+    
+    // Mostrar toast
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(0)';
+    
+    // Ocultar após 3 segundos
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+    }, 3000);
+}
+
+// Tornar funções globais para uso nos event handlers inline
+window.copyPassword = copyPassword;
+window.fillPassword = fillPassword;
+window.deletePassword = deletePassword;
