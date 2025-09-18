@@ -21,7 +21,7 @@ app = Config.app
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 current_user : User | None
-ITEM_CONFIGS = json.load(open('./config.json', 'r'))
+ITEM_CONFIGS = json.load(open('./src/config.json', 'r'))
 
 
 app.register_blueprint(notifications_bp)
