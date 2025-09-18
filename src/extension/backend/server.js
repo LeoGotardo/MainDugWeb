@@ -850,3 +850,485 @@ app.get('/api/passwords/export/:format', authenticateToken, async (req, res) => 
         } else {
             res.status(400).json({ error: 'Formato não suportado. Use: csv, json ou bitwarden' });
         }
+    } catch (error) {
+        console.error('Erro ao exportar senhas:', error);
+        res.status(500).json({ error: 'Erro ao exportar senhas' });
+    }
+});
+
+// Importar senhas de CSV
+app.post('/api/passwords/import', [
+    authenticateToken,
+    body('csvData').notEmpty(),
+    handleValidationErrors
+], async (req, res) => {
+    const { csvData } = req.body;
+    
+    try {
+        const lines = csvData.split('\n');
+        const header = lines[0].toLowerCase();
+        
+        // Verificar se o CSV tem os campos necessários
+        if (!header.includes('site') || !header.includes('username') || !header.includes('password')) {
+            return res.status(400).json({ 
+                error: 'CSV deve conter pelo menos as colunas: site, username, password' 
+            });
+        }
+        
+        const imported = [];
+        const errors = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            try {
+                // Parse simples do CSV (seria melhor usar uma biblioteca)
+                const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+                
+                // Mapear valores baseado no header
+                const siteIndex = header.split(',').findIndex(h => h.includes('site'));
+                const usernameIndex = header.split(',').findIndex(h => h.includes('username'));
+                const passwordIndex = header.split(',').findIndex(h => h.includes('password'));
+                const urlIndex = header.split(',').findIndex(h => h.includes('url'));
+                const notesIndex = header.split(',').findIndex(h => h.includes('notes'));
+                const categoryIndex = header.split(',').findIndex(h => h.includes('category'));
+                
+                const site = values[siteIndex];
+                const username = values[usernameIndex];
+                const password = values[passwordIndex];
+                const url = urlIndex >= 0 ? values[urlIndex] : null;
+                const notes = notesIndex >= 0 ? values[notesIndex] : null;
+                const category = categoryIndex >= 0 ? values[categoryIndex] : null;
+                
+                if (!site || !username || !password) {
+                    errors.push(`Linha ${i + 1}: dados obrigatórios faltando`);
+                    continue;
+                }
+                
+                // Criptografar senha
+                const encryptedPassword = encrypt(password);
+                const passwordStrength = calculatePasswordStrength(password);
+                
+                // Inserir no banco (usando ON CONFLICT para evitar duplicatas)
+                await pool.query(
+                    `INSERT INTO passwords (user_id, site, url, username, encrypted_password, notes, category, password_strength) 
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+                     ON CONFLICT (user_id, site, username) 
+                     DO UPDATE SET encrypted_password = EXCLUDED.encrypted_password, 
+                                   url = EXCLUDED.url, 
+                                   notes = EXCLUDED.notes, 
+                                   category = EXCLUDED.category,
+                                   password_strength = EXCLUDED.password_strength,
+                                   updated_at = CURRENT_TIMESTAMP`,
+                    [req.user.userId, site, url, username, encryptedPassword, notes, category, passwordStrength]
+                );
+                
+                imported.push({ site, username });
+                
+            } catch (error) {
+                errors.push(`Linha ${i + 1}: ${error.message}`);
+            }
+        }
+        
+        await logSecurityEvent(req.user.userId, 'PASSWORDS_IMPORTED', true, req, { 
+            count: imported.length,
+            errors: errors.length 
+        });
+        
+        res.json({
+            message: `Importação concluída`,
+            imported: imported.length,
+            errors: errors.length,
+            details: { imported, errors }
+        });
+        
+    } catch (error) {
+        console.error('Erro ao importar senhas:', error);
+        res.status(500).json({ error: 'Erro ao importar senhas' });
+    }
+});
+
+// ROTAS DE RELATÓRIOS E AUDITORIA
+
+// Relatório de segurança
+app.get('/api/security-report', authenticateToken, async (req, res) => {
+    try {
+        // Senhas com problemas de segurança
+        const weakPasswords = await pool.query(
+            'SELECT id, site, username, password_strength FROM passwords WHERE user_id = $1 AND password_strength < 3',
+            [req.user.userId]
+        );
+        
+        // Senhas antigas (mais de 90 dias sem alteração)
+        const oldPasswords = await pool.query(
+            `SELECT id, site, username, updated_at 
+             FROM passwords 
+             WHERE user_id = $1 AND updated_at < NOW() - INTERVAL '90 days'`,
+            [req.user.userId]
+        );
+        
+        // Senhas reutilizadas
+        const duplicatePasswords = await pool.query(
+            `SELECT encrypted_password, array_agg(site) as sites, COUNT(*) as count
+             FROM passwords 
+             WHERE user_id = $1 
+             GROUP BY encrypted_password 
+             HAVING COUNT(*) > 1`,
+            [req.user.userId]
+        );
+        
+        // Senhas que nunca foram usadas
+        const unusedPasswords = await pool.query(
+            'SELECT id, site, username, created_at FROM passwords WHERE user_id = $1 AND last_used IS NULL',
+            [req.user.userId]
+        );
+        
+        // Calcular score de segurança
+        const totalPasswords = await pool.query(
+            'SELECT COUNT(*) as count FROM passwords WHERE user_id = $1',
+            [req.user.userId]
+        );
+        
+        const total = parseInt(totalPasswords.rows[0].count);
+        const weak = weakPasswords.rows.length;
+        const old = oldPasswords.rows.length;
+        const duplicate = duplicatePasswords.rows.length;
+        
+        let securityScore = 100;
+        if (total > 0) {
+            securityScore -= (weak / total) * 30; // -30 pontos máximo para senhas fracas
+            securityScore -= (old / total) * 25;  // -25 pontos máximo para senhas antigas
+            securityScore -= (duplicate / total) * 20; // -20 pontos máximo para duplicatas
+        }
+        
+        securityScore = Math.max(0, Math.round(securityScore));
+        
+        res.json({
+            securityScore,
+            totalPasswords: total,
+            issues: {
+                weakPasswords: weakPasswords.rows,
+                oldPasswords: oldPasswords.rows,
+                duplicatePasswords: duplicatePasswords.rows,
+                unusedPasswords: unusedPasswords.rows
+            },
+            recommendations: [
+                weak > 0 && `Fortaleça ${weak} senha(s) fraca(s)`,
+                old > 0 && `Atualize ${old} senha(s) antiga(s)`,
+                duplicate > 0 && `Substitua ${duplicate} senha(s) duplicada(s)`,
+                unusedPasswords.rows.length > 0 && `Considere remover senhas não utilizadas`
+            ].filter(Boolean)
+        });
+        
+    } catch (error) {
+        console.error('Erro ao gerar relatório de segurança:', error);
+        res.status(500).json({ error: 'Erro ao gerar relatório' });
+    }
+});
+
+// Logs de auditoria
+app.get('/api/audit-logs', authenticateToken, async (req, res) => {
+    const { page = 1, limit = 50, action, startDate, endDate } = req.query;
+    
+    try {
+        let query = 'SELECT * FROM security_logs WHERE user_id = $1';
+        const params = [req.user.userId];
+        let paramCount = 1;
+        
+        if (action) {
+            paramCount++;
+            query += ` AND action = ${paramCount}`;
+            params.push(action);
+        }
+        
+        if (startDate) {
+            paramCount++;
+            query += ` AND created_at >= ${paramCount}`;
+            params.push(startDate);
+        }
+        
+        if (endDate) {
+            paramCount++;
+            query += ` AND created_at <= ${paramCount}`;
+            params.push(endDate);
+        }
+        
+        query += ' ORDER BY created_at DESC';
+        
+        // Paginação
+        const offset = (page - 1) * limit;
+        query += ` LIMIT ${paramCount + 1} OFFSET ${paramCount + 2}`;
+        params.push(limit, offset);
+        
+        const result = await pool.query(query, params);
+        
+        // Contar total para paginação
+        let countQuery = 'SELECT COUNT(*) FROM security_logs WHERE user_id = $1';
+        const countParams = [req.user.userId];
+        
+        if (action) {
+            countQuery += ' AND action = $2';
+            countParams.push(action);
+        }
+        
+        const countResult = await pool.query(countQuery, countParams);
+        const total = parseInt(countResult.rows[0].count);
+        
+        res.json({
+            logs: result.rows,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+        
+    } catch (error) {
+        console.error('Erro ao buscar logs de auditoria:', error);
+        res.status(500).json({ error: 'Erro ao buscar logs' });
+    }
+});
+
+// ROTAS DE GERAÇÃO DE SENHAS
+
+// Gerar senha segura
+app.post('/api/generate-password', [
+    authenticateToken,
+    body('length').optional().isInt({ min: 8, max: 128 }),
+    body('includeUppercase').optional().isBoolean(),
+    body('includeLowercase').optional().isBoolean(),
+    body('includeNumbers').optional().isBoolean(),
+    body('includeSymbols').optional().isBoolean(),
+    body('excludeSimilar').optional().isBoolean(),
+    handleValidationErrors
+], async (req, res) => {
+    const {
+        length = 16,
+        includeUppercase = true,
+        includeLowercase = true,
+        includeNumbers = true,
+        includeSymbols = true,
+        excludeSimilar = false
+    } = req.body;
+    
+    try {
+        let chars = '';
+        
+        if (includeLowercase) {
+            chars += excludeSimilar ? 'abcdefghjkmnpqrstuvwxyz' : 'abcdefghijklmnopqrstuvwxyz';
+        }
+        
+        if (includeUppercase) {
+            chars += excludeSimilar ? 'ABCDEFGHJKMNPQRSTUVWXYZ' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        }
+        
+        if (includeNumbers) {
+            chars += excludeSimilar ? '23456789' : '0123456789';
+        }
+        
+        if (includeSymbols) {
+            chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+        }
+        
+        if (chars === '') {
+            return res.status(400).json({ error: 'Pelo menos um tipo de caractere deve ser selecionado' });
+        }
+        
+        let password = '';
+        for (let i = 0; i < length; i++) {
+            password += chars.charAt(crypto.randomInt(0, chars.length));
+        }
+        
+        const strength = calculatePasswordStrength(password);
+        
+        res.json({
+            password,
+            strength,
+            length: password.length
+        });
+        
+    } catch (error) {
+        console.error('Erro ao gerar senha:', error);
+        res.status(500).json({ error: 'Erro ao gerar senha' });
+    }
+});
+
+// ROTAS DE CONFIGURAÇÕES DO USUÁRIO
+
+// Obter configurações do usuário
+app.get('/api/user/settings', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT email, name, two_factor_enabled, is_premium, max_passwords, created_at, last_login FROM users WHERE id = $1',
+            [req.user.userId]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Erro ao buscar configurações:', error);
+        res.status(500).json({ error: 'Erro ao buscar configurações' });
+    }
+});
+
+// Atualizar perfil do usuário
+app.put('/api/user/profile', [
+    authenticateToken,
+    body('name').optional().trim().escape(),
+    body('email').optional().isEmail().normalizeEmail(),
+    handleValidationErrors
+], async (req, res) => {
+    const { name, email } = req.body;
+    
+    try {
+        const updates = [];
+        const params = [];
+        let paramCount = 0;
+        
+        if (name !== undefined) {
+            paramCount++;
+            updates.push(`name = ${paramCount}`);
+            params.push(name);
+        }
+        
+        if (email !== undefined) {
+            // Verificar se o email já existe
+            const emailExists = await pool.query(
+                'SELECT id FROM users WHERE email = $1 AND id != $2',
+                [email, req.user.userId]
+            );
+            
+            if (emailExists.rows.length > 0) {
+                return res.status(400).json({ error: 'Este email já está em uso' });
+            }
+            
+            paramCount++;
+            updates.push(`email = ${paramCount}`);
+            params.push(email);
+        }
+        
+        if (updates.length === 0) {
+            return res.status(400).json({ error: 'Nenhuma alteração fornecida' });
+        }
+        
+        updates.push('updated_at = CURRENT_TIMESTAMP');
+        params.push(req.user.userId);
+        
+        await pool.query(
+            `UPDATE users SET ${updates.join(', ')} WHERE id = ${params.length}`,
+            params
+        );
+        
+        await logSecurityEvent(req.user.userId, 'PROFILE_UPDATED', true, req);
+        
+        res.json({ message: 'Perfil atualizado com sucesso' });
+        
+    } catch (error) {
+        console.error('Erro ao atualizar perfil:', error);
+        res.status(500).json({ error: 'Erro ao atualizar perfil' });
+    }
+});
+
+// Deletar conta do usuário
+app.delete('/api/user/account', [
+    authenticateToken,
+    body('password').notEmpty(),
+    body('confirmation').equals('DELETE_MY_ACCOUNT'),
+    handleValidationErrors
+], async (req, res) => {
+    const { password } = req.body;
+    
+    try {
+        // Verificar senha
+        const result = await pool.query(
+            'SELECT password_hash FROM users WHERE id = $1',
+            [req.user.userId]
+        );
+        
+        const validPassword = await bcrypt.compare(password, result.rows[0].password_hash);
+        
+        if (!validPassword) {
+            await logSecurityEvent(req.user.userId, 'ACCOUNT_DELETE_FAILED', false, req);
+            return res.status(401).json({ error: 'Senha incorreta' });
+        }
+        
+        // Deletar usuário (CASCADE deletará senhas, logs, etc.)
+        await pool.query('DELETE FROM users WHERE id = $1', [req.user.userId]);
+        
+        await logSecurityEvent(req.user.userId, 'ACCOUNT_DELETED', true, req);
+        
+        res.json({ message: 'Conta excluída com sucesso' });
+        
+    } catch (error) {
+        console.error('Erro ao deletar conta:', error);
+        res.status(500).json({ error: 'Erro ao deletar conta' });
+    }
+});
+
+// MIDDLEWARE DE TRATAMENTO DE ERROS
+
+// 404 para rotas não encontradas
+app.use('*', (req, res) => {
+    res.status(404).json({ error: 'Rota não encontrada' });
+});
+
+// Middleware global de tratamento de erros
+app.use((err, req, res, next) => {
+    console.error('Erro não tratado:', err);
+    
+    if (err.type === 'entity.parse.failed') {
+        return res.status(400).json({ error: 'JSON inválido' });
+    }
+    
+    if (err.type === 'entity.too.large') {
+        return res.status(413).json({ error: 'Payload muito grande' });
+    }
+    
+    res.status(500).json({ error: 'Erro interno do servidor' });
+});
+
+// INICIALIZAÇÃO DO SERVIDOR
+
+async function startServer() {
+    try {
+        // Verificar conexão com o banco
+        await pool.query('SELECT NOW()');
+        console.log('✅ Conectado ao PostgreSQL');
+        
+        // Inicializar banco de dados
+        await initDatabase();
+        
+        // Iniciar servidor
+        app.listen(PORT, () => {
+            console.log(`🚀 Servidor rodando na porta ${PORT}`);
+            console.log(`📡 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`🔐 Modo de segurança: ${process.env.DB_SSL === 'true' ? 'SSL habilitado' : 'SSL desabilitado'}`);
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro ao iniciar servidor:', error);
+        process.exit(1);
+    }
+}
+
+// Manipular encerramento gracioso
+process.on('SIGINT', async () => {
+    console.log('\n🛑 Encerrando servidor...');
+    
+    try {
+        await pool.end();
+        console.log('✅ Conexões com banco fechadas');
+        process.exit(0);
+    } catch (error) {
+        console.error('❌ Erro ao fechar conexões:', error);
+        process.exit(1);
+    }
+});
+
+// Iniciar o servidor
+startServer();
