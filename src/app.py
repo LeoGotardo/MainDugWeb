@@ -136,7 +136,7 @@ def index():
                         if not success:
                             return redirect(url_for('internalError'))
                         if current_user.role == 'sysadmin':
-                            users = database.getUsers(userId=current_user.id)
+                            users = database.getUsers(userId=current_user.id, method='get', itemType='user')
                             if not users:
                                 return redirect(url_for('internalError'))   
                             else:
@@ -265,6 +265,42 @@ def account():
                 flash('Passwords are not the same.', 'danger')
                 return redirect(url_for('account'))
             
+@app.route('/home/', methods=['GET', 'POST'])
+@login_required
+def home():
+    match request.method:
+        case 'GET':
+            return render_template('index.html', tempo='20')
+        case 'POST':
+            if current_user.role == "sysadmin":
+                pass
+            else:
+                success, passwords = database.getPasswords(userId=current_user.id)
+                if success == False:
+                    flash(passwords, 'danger')
+                    return redirect(render_template('index.html'))
+                elif success == 2:
+                    return redirect(url_for('internalError', error=passwords))
+                return render_template('index.html', passwords=passwords)
+        case _:
+            return redirect(url_for('notFound'))
+        
+
+@app.route('/stats/', methods=['GET', 'POST'])
+@login_required
+def stats():
+    match request.method:
+        case 'GET':
+            success, stats = database.getStats(userId=current_user.id)
+            if success == False:
+                flash(stats, 'danger')
+                return redirect(render_template('stats.html'))
+            elif success == 2:
+                return redirect(url_for('internalError', error=stats))
+            return render_template('stats.html', stats=stats)
+        case 'POST':
+            return render_template('stats.html')
+        
 
 @app.route('/moreInfo', methods=['GET', 'DELETE'])
 @login_required

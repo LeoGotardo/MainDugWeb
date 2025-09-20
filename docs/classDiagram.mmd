@@ -1,0 +1,149 @@
+---
+title: Diagrama de classes
+---
+classDiagram
+    class User{
+        +string id 
+        +string login
+        +string password
+        +string role
+        +bool enabled
+        +bool passwordPwened
+        -to_dict()
+        -safe_dict()
+        -is_authenticated()
+        -is_active()
+        -is_anonumous()
+        -get_id()
+    }
+
+    class Passwords{
+        +sting id
+        +string user_id
+        +string login
+        +string password
+        +string size
+        +bool status
+        +datetime lastUse
+        +string whereUserd
+        -to_dict()
+        -safe_dict()
+        -is_authenticated()
+        -is_active()
+        -is_anonumous()
+        -get_id()
+    }
+
+    class Database{
+        +SQLAlchemy db
+        +scoped_session[Session] session
+        +Cryptograph cryptograph
+        +Cryptograph iscryptograph
+        -canHandle()
+        -createTables()
+        -createSysadmin()
+        -getDashboardInfo()
+        -getUser()
+        -getUsers()
+        -validUser()
+        -createUser()
+        -deleteUser()
+        -updateUser()
+        -addPassword()
+        -getPasswords()
+        -deletePassword()
+        -checkPasswordPwned()
+        -findUserLogin()
+        -updatePasswordStatus()
+        -getPassword()
+        -pwned()
+        -getLeakedPasswords()
+        -getMostUserPasswords()
+        -getGoodPasswords()
+        -getInfoByIP()
+    }
+
+    class Config{
+        Flask app
+        SQLAlchemy db
+        scoped_session[Session] session
+        string SECRET_KEY
+        string DEFAULT_PASSWORD
+    }
+
+    class Cryptograph{
+        +PasswordHasher ph
+        -keyGenerator()
+        -isvValidPass()
+        -encryptSentence()
+        -decryptSentence()
+        -encryptPass()
+    }
+
+    class Field{
+        +string name
+        +string label
+        +string type
+        +bool required
+        +string placeholder
+        +list options
+        +bool checked
+        +string dataSource
+        +bool searchable
+        +string tab
+        +string regex
+        +int maxLength
+        +string rexegCondition
+        +bool responsiveForm
+        -from_dict()
+        -to_dict()
+    }
+
+    class genForm{
+        +string itemType
+        +list[Passwords] passwords
+        +list[Users] users
+        +bool account
+        +User user
+        +bool hasValues
+        +bool hasTitle
+        -getForm()
+        -_genResponsiveForm()
+        -_genChackbox()
+        -_genDropdown()
+        -_genpassword()
+        -_genSelect()
+        -_genText()
+        -_genUrl()
+        -_genNumberInput()
+        -_compileForm()
+    }
+
+    class NotificationManager{
+        +defaultdict[list] connections
+        +threading.Lock lock
+        -add_connection()
+        -remove_connection()
+        -send_to_client()
+        -broadcast()
+    }
+
+    class SSEConnection{
+        +string client_id
+        +queue.Queue queue
+        +bool is_alive
+        +datetime last_ping
+        -put()
+        -get_messages()
+        -close()
+        -format_sse_message()
+    }
+
+    User "1" -- "0..*" Passwords : owns 
+    Database "1" -- "1" User : manages 
+    Database "1" -- "1" Passwords : manages 
+    Config "1" -- "1" Database : depends on 
+    Cryptograph "1" -- "1" Passwords : depends on 
+    NotificationManager "1" -- "1" SSEConnection : manages 
+    genForm "1" -- "0..*" Field : contains
+

@@ -1,0 +1,25 @@
+---
+title: Diagrama de entidades
+---
+erDiagram
+    User{
+        string id PK
+        string login
+        string password
+        string role
+        bool enabled
+        bool passwordPwened
+    }
+
+    Passwords{
+        sting id PK
+        string user_id FK
+        string login
+        string password
+        string size
+        bool status
+        datetime lastUse
+        string whereUserd
+    }
+
+    User ||--o{ Passwords: has

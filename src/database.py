@@ -61,8 +61,7 @@ class Passwords(UserMixin, Config.db.Model):
     whereUsed = Config.db.Column(Config.db.String(80), nullable=True)
 
     
-    def to_dict(self):
-         
+    def to_dict(self):  
         return {
             'id': self.id,
             'user_id': self.user_id,
@@ -205,7 +204,6 @@ class Database:
         except Exception as e:
             return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
             
-    
     
     def getUser(self, id: str) -> tuple[bool, User | str]:
         try:
@@ -715,4 +713,3 @@ class Database:
             
         except Exception as e:
             return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-''
