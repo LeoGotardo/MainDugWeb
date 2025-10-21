@@ -156,8 +156,9 @@ classDiagram
     User "1" -- "0..*" Passwords : owns 
     Database "1" -- "1" User : manages 
     Database "1" -- "1" Passwords : manages 
+    Database "1" -- "0..*" Filter : manages
     Config "1" -- "1" Database : depends on 
     Cryptograph "1" -- "1" Passwords : depends on 
     NotificationManager "1" -- "1" SSEConnection : manages 
     genForm "1" -- "0..*" Field : contains
-
+    Passwords "" -- "1" Filter: has

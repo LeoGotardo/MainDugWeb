@@ -72,11 +72,27 @@ body {
 .btn-danger  { background-color: var(--danger-color);  color: #fff; }
 .btn-purple  { background-color: #6200ea;           color: #fff; }
 #editBtn     { background-color: #220f3d;           color: #fff; }
+
 .btn-outline-secondary {
   border: 1px solid #000;
   background-color: transparent;
   color: #000;
 }
+
+*:focus,
+*:focus-visible {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+input, textarea, select, button {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+}
+        
+
 .btn:hover { opacity: 0.9; }
 .btn-primary:hover       { background-color: #0056b3; }
 .btn-secondary:hover     { background-color: #545b62; }
@@ -156,6 +172,12 @@ input :not(#password):not(#password-confirm) {
   font-size: 20px;
   margin-bottom: 10px;
   background-color: var(--dark-color);
+  background-color: red !important;
+}
+
+input #password-confirm:focus input #password:focus {
+  background-color: transparent !important;
+  border: none;
 }
 
 .password-input input {
@@ -169,8 +191,15 @@ input :not(#password):not(#password-confirm) {
   background : transparent;
 }
 
-input:focus {
+input:focus :not(#password):not(#password-confirm) {
   background-color: var(--dark-color);
+}
+
+input #password-confirm:focus-visible input #password:focus-visible {
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 input:-webkit-autofill,
