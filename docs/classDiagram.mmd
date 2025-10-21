@@ -20,12 +20,24 @@ classDiagram
     class Passwords{
         +sting id
         +string user_id
+        +string filter_id
         +string login
         +string password
         +string size
         +bool status
         +datetime lastUse
         +string whereUserd
+        -to_dict()
+        -safe_dict()
+        -is_authenticated()
+        -is_active()
+        -is_anonumous()
+        -get_id()
+    }
+
+    class Filter{
+        +string id
+        +string name
         -to_dict()
         -safe_dict()
         -is_authenticated()
@@ -61,6 +73,8 @@ classDiagram
         -getMostUserPasswords()
         -getGoodPasswords()
         -getInfoByIP()
+        -createFilter()
+        -deleteFIlter()
     }
 
     class Config{
