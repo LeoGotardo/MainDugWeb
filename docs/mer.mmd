@@ -13,6 +13,7 @@ erDiagram
 
     Passwords{
         sting id PK
+        str filter_id FK
         string user_id FK
         string login
         string password
@@ -20,7 +21,6 @@ erDiagram
         bool status
         datetime lastUse
         string whereUserd
-        str filter_id
     }
 
     Filters{
