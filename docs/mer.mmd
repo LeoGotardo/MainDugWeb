@@ -20,6 +20,13 @@ erDiagram
         bool status
         datetime lastUse
         string whereUserd
+        str filter_id
+    }
+
+    Filters{
+        string id PK
+        string name
     }
 
     User ||--o{ Passwords: has
+    Passwords ||--o{Filters: has
