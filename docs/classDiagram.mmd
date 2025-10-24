@@ -46,6 +46,27 @@ classDiagram
         -get_id()
     }
 
+    class Logs{
+        +string id
+        +string password_id
+        +dateTime lastUse
+        +string ip
+        +string cidate
+        +string estado
+        +string pais
+        +string ASN
+        +string OS
+        +string browser
+        +string version
+        -get_id()
+        -to_dict(
+        -is_anonumous()
+        -is_active()
+        -is_authenticated()
+        -safe_dict()
+        )
+    }
+
     class Database{
         +SQLAlchemy db
         +scoped_session[Session] session
@@ -162,3 +183,4 @@ classDiagram
     NotificationManager "1" -- "1" SSEConnection : manages 
     genForm "1" -- "0..*" Field : contains
     Passwords "" -- "1" Filter: has
+    Passwords "1" -- "0.." Logs : owns
