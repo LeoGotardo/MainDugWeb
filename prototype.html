@@ -330,6 +330,9 @@
         .navbar-brand {
              font-weight: 700;
         }
+        .navbar-brand img {
+            height: 50px;
+        }
         .badge.bg-primary {
              background-color: var(--primary-color) !important;
         }
@@ -345,6 +348,47 @@
         .btn:focus, .btn:active {
             box-shadow: 0 0 0 0.25rem rgba(var(--primary-color-rgb), 0.25);
         }
+
+        /* --- Animação do Menu Hambúrguer --- */
+        .navbar .navbar-toggler { /* Seletor mais específico para não afetar outros botões */
+            border: none;
+            padding: 0;
+        }
+        .navbar .navbar-toggler:focus {
+            box-shadow: none;
+        }
+
+        .hamburger-icon {
+            width: 28px;
+            height: 22px;
+            position: relative;
+            transform: rotate(0deg);
+            transition: .5s ease-in-out;
+            cursor: pointer;
+        }
+
+        .hamburger-icon span {
+            display: block;
+            position: absolute;
+            height: 3px;
+            width: 100%;
+            background: var(--text-primary);
+            border-radius: 3px;
+            opacity: 1;
+            left: 0;
+            transform: rotate(0deg);
+            transition: .25s ease-in-out;
+        }
+
+        .hamburger-icon span:nth-child(1) { top: 0px; }
+        .hamburger-icon span:nth-child(2) { top: 9px; }
+        .hamburger-icon span:nth-child(3) { top: 18px; }
+
+        /* Quando o menu está aberto, o Bootstrap remove a classe .collapsed do toggler */
+        .navbar .navbar-toggler:not(.collapsed) .hamburger-icon span:nth-child(1) { top: 9px; transform: rotate(135deg); }
+        .navbar .navbar-toggler:not(.collapsed) .hamburger-icon span:nth-child(2) { opacity: 0; left: -60px; }
+        .navbar .navbar-toggler:not(.collapsed) .hamburger-icon span:nth-child(3) { top: 9px; transform: rotate(-135deg); }
+
     </style>
 
     <script>
@@ -454,11 +498,15 @@
     <nav class="navbar">
         <div class="container-fluid">
             <a class="navbar-brand" href="#" onclick="showPage('page-index'); return false;">
-                <i class="bi bi-shield-lock-fill"></i>
+                <img src="./src/static/images/logo.svg" alt="">
                 MainDug
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
+                <div class="hamburger-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
             </button>
             
             <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
@@ -508,7 +556,7 @@
 
         <div id="page-login" class="page auth-container">
             <div class="text-center mb-4">
-                <i class="bi bi-shield-lock-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
+                <img src="./src/static/images/logo.svg" alt="Logo" style="height: 3rem; width: auto;">
             </div>
             <h2 class="text-center mb-4">Login</h2>
             <form onsubmit="handleLogin(event); return false;" autocomplete="off">
@@ -516,7 +564,7 @@
                     <label for="login" class="form-label">Usuário (Login)</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
-                        <input type="text" class="form-control" id="login" name="login" required>
+                        <input type="text" class="form-control" id="login" name="login" placeholder="Login" required>
                     </div>
                 </div>
                 <div class="mb-4">
@@ -540,7 +588,7 @@
 
         <div id="page-register" class="page auth-container">
             <div class="text-center mb-4">
-                <i class="bi bi-shield-lock-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
+                <img src="./src/static/images/logo.svg" alt="Logo" style="height: 3rem; width: auto;">
             </div>
             <h2 class="text-center mb-4">Criar Conta</h2>
             <form action="#" method="POST" autocomplete="off">
@@ -580,7 +628,7 @@
         
         <div id="page-forgot-password" class="page auth-container">
             <div class="text-center mb-4">
-                <i class="bi bi-shield-lock-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
+                <img src="./src/static/images/logo.svg" alt="Logo" style="height: 3rem; width: auto;">
             </div>
             <h2 class="text-center mb-4">Recuperar Senha</h2>
             <p class="text-muted text-center mb-4">Insira seu e-mail (ou login) para enviarmos um link de redefinição.</p>
@@ -1058,7 +1106,7 @@
     </main>
     
     <div class="modal fade" id="addPasswordModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Adicionar Nova Credencial</h5>
@@ -1095,7 +1143,7 @@
     </div>
     
     <div class="modal fade" id="viewPasswordModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="viewPasswordModalTitle">Visualizar Credencial</h5>
@@ -1128,7 +1176,7 @@
     </div>
 
     <div class="modal fade" id="editPasswordModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="editPasswordModalTitle">Editar Credencial</h5>
@@ -1168,7 +1216,7 @@
     </div>
 
     <div class="modal fade" id="deletePasswordModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="deletePasswordModalTitle">Confirmar Exclusão</h5>
@@ -1187,7 +1235,7 @@
     </div>
     
     <div class="modal fade" id="manageFlagsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Gerenciar Flags</h5>
@@ -1207,7 +1255,7 @@
     </div>
     
     <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Adicionar Novo Usuário</h5>
@@ -1481,12 +1529,14 @@
                     const targetId = button.getAttribute('data-target');
                     const passwordInput = document.getElementById(targetId);
                     
+                    // CORREÇÃO: Altera apenas o ícone, não o botão inteiro
+                    const icon = button.querySelector('i');
                     if (passwordInput && passwordInput.type === 'password') {
                         passwordInput.type = 'text';
-                        button.innerHTML = '<i class="bi bi-eye-slash-fill"></i>';
+                        icon.className = 'bi bi-eye-slash-fill';
                     } else if (passwordInput) {
                         passwordInput.type = 'password';
-                        button.innerHTML = '<i class="bi bi-eye-fill"></i>';
+                        icon.className = 'bi bi-eye-fill';
                     }
                 }
             });

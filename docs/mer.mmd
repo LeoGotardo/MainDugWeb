@@ -29,18 +29,19 @@ erDiagram
     }
 
     Logs{
-        +string id PK
-        +string password_id FK
-        +dateTime lastUse
-        +string ip
-        +string cidate
-        +string estado
-        +string pais
-        +string ASN
-        +string OS
-        +string browser
-        +string version
+        string id PK
+        string password_id FK
+        dateTime lastUse
+        string ip
+        string cidate
+        string estado
+        string pais
+        string ASN
+        string OS
+        string browser
+        string version
     }
 
     User ||--o{ Passwords: has
     Passwords ||--o{Filters: has
+    Passwords ||--o{ Logs: has
