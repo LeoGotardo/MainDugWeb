@@ -1,6 +1,7 @@
 // Estado da aplicação
 let currentUser = null;
 let passwords = [];
+const settingsKey = 'maindug_settings';
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
@@ -17,6 +18,7 @@ async function checkAuthStatus() {
             currentUser = { email: result.userEmail, token: result.authToken };
             showAuthenticatedUI();
             loadPasswords();
+            document.querySelector('.tab[data-tab="passwords"]').click();
         } else {
             showUnauthenticatedUI();
         }
@@ -41,7 +43,7 @@ function setupTabNavigation() {
             document.getElementById(tabName).classList.add('active');
             
             // Carregar senhas quando abrir a aba
-            if (tabName === 'passwords' && currentUser) {
+            if (tabName === 'passwords' && currentUser) { // Corrigido para carregar apenas se logado
                 loadPasswords();
             }
         });
@@ -150,7 +152,7 @@ function handleLogout() {
         currentUser = null;
         passwords = [];
         showUnauthenticatedUI();
-        document.querySelector('[data-tab="login"]').click();
+        document.querySelector('.tab[data-tab="login"]').click();
     });
 }
 
@@ -359,14 +361,14 @@ async function exportPasswords() {
 
 // Carregar configurações
 function loadSettings() {
-    chrome.storage.local.get(['settings'], (result) => {
-        const settings = result.settings || {
+    chrome.storage.local.get([settingsKey], (result) => {
+        const settings = result[settingsKey] || {
             autoSave: true,
             autoFill: true,
             notifications: true,
             darkMode: false
         };
-        
+
         document.getElementById('autoSave').checked = settings.autoSave;
         document.getElementById('autoFill').checked = settings.autoFill;
         document.getElementById('notifications').checked = settings.notifications;
@@ -387,7 +389,7 @@ function saveSettings() {
         darkMode: document.getElementById('darkMode').checked
     };
     
-    chrome.storage.local.set({ settings });
+    chrome.storage.local.set({ [settingsKey]: settings });
 }
 
 // Alternar modo escuro
@@ -402,24 +404,39 @@ function toggleDarkMode(enabled) {
 // Mostrar UI autenticada
 function showAuthenticatedUI() {
     const userInfo = document.getElementById('userInfo');
-    const userEmail = document.getElementById('userEmail');
-    const logoutBtn = document.getElementById('logoutBtn');
-    
+    const passwordsTab = document.querySelector('.tab[data-tab="passwords"]');
+    const settingsTab = document.querySelector('.tab[data-tab="settings"]');
+    const loginTab = document.querySelector('.tab[data-tab="login"]');
+
     if (currentUser) {
-        userEmail.textContent = currentUser.email;
+        document.getElementById('userEmail').textContent = currentUser.email;
         userInfo.style.display = 'block';
-        logoutBtn.style.display = 'block';
+        
+        // Mostrar abas de usuário logado
+        passwordsTab.style.display = 'flex';
+        settingsTab.style.display = 'flex';
+        
+        // Esconder aba de login
+        loginTab.style.display = 'none';
     }
 }
 
 // Mostrar UI não autenticada
 function showUnauthenticatedUI() {
     const userInfo = document.getElementById('userInfo');
-    const logoutBtn = document.getElementById('logoutBtn');
+    const passwordsTab = document.querySelector('.tab[data-tab="passwords"]');
+    const settingsTab = document.querySelector('.tab[data-tab="settings"]');
+    const loginTab = document.querySelector('.tab[data-tab="login"]');
     
     userInfo.style.display = 'none';
-    logoutBtn.style.display = 'none';
-    
+
+    // Esconder abas de usuário logado
+    passwordsTab.style.display = 'none';
+    settingsTab.style.display = 'none';
+
+    // Mostrar e ativar aba de login
+    loginTab.style.display = 'flex';
+    loginTab.click();
     showEmptyState('Faça login para ver suas senhas salvas');
 }
 
