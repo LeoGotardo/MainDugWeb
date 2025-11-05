@@ -191,25 +191,25 @@ function displayPasswords(passwordsToShow) {
     }
     
     listElement.innerHTML = passwordsToShow.map(pwd => `
-        <div class="password-item" data-id="${pwd.id}">
+        <div class="password-item" data-id="${pwd._id || pwd.id}">
             <div class="password-info">
-                <div class="password-site">${pwd.site || pwd.url}</div>
+                <div class="password-site">${pwd.site || new URL(pwd.url).hostname}</div>
                 <div class="password-username">${pwd.username}</div>
             </div>
             <div class="password-actions">
-                <button class="icon-btn" onclick="copyPassword('${pwd.id}')" title="Copiar senha">
+                <button class="icon-btn copy-btn" data-id="${pwd._id || pwd.id}" title="Copiar senha">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                         <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
                     </svg>
                 </button>
-                <button class="icon-btn" onclick="fillPassword('${pwd.id}')" title="Preencher">
+                <button class="icon-btn fill-btn" data-id="${pwd._id || pwd.id}" title="Preencher">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
                         <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </svg>
                 </button>
-                <button class="icon-btn" onclick="deletePassword('${pwd.id}')" title="Excluir">
+                <button class="icon-btn delete-btn" data-id="${pwd._id || pwd.id}" title="Excluir">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
@@ -218,11 +218,23 @@ function displayPasswords(passwordsToShow) {
             </div>
         </div>
     `).join('');
+
+    // Adicionar event listeners aos botões criados dinamicamente
+    listElement.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => copyPassword(e.currentTarget.dataset.id));
+    });
+    listElement.querySelectorAll('.fill-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => fillPassword(e.currentTarget.dataset.id));
+    });
+    listElement.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => deletePassword(e.currentTarget.dataset.id));
+    });
 }
 
 // Copiar senha
 async function copyPassword(passwordId) {
-    const pwd = passwords.find(p => p.id === passwordId);
+    // Corrigido para funcionar com _id do MongoDB ou id
+    const pwd = passwords.find(p => (p._id || p.id) == passwordId);
     if (!pwd) return;
     
     try {
@@ -244,7 +256,7 @@ async function copyPassword(passwordId) {
 
 // Preencher senha na página ativa
 async function fillPassword(passwordId) {
-    const pwd = passwords.find(p => p.id === passwordId);
+    const pwd = passwords.find(p => (p._id || p.id) == passwordId);
     if (!pwd) return;
     
     try {
@@ -289,7 +301,7 @@ async function deletePassword(passwordId) {
         });
         
         if (response.ok) {
-            passwords = passwords.filter(p => p.id !== passwordId);
+            passwords = passwords.filter(p => (p._id || p.id) != passwordId);
             displayPasswords(passwords);
             showToast('Senha excluída');
         }
@@ -478,8 +490,3 @@ function showToast(message, type = 'success') {
         toast.style.transform = 'translateX(100%)';
     }, 3000);
 }
-
-// Tornar funções globais para uso nos event handlers inline
-window.copyPassword = copyPassword;
-window.fillPassword = fillPassword;
-window.deletePassword = deletePassword;

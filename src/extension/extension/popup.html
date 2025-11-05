@@ -1,517 +1,129 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Senhas</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            width: 380px;
-            min-height: 500px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-        }
-
-        .container {
-            padding: 20px;
-        }
-
-        .header {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        .header h1 {
-            color: #667eea;
-            font-size: 24px;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .header p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .tabs {
-            display: flex;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab {
-            flex: 1;
-            padding: 12px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            color: #666;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .tab.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .tab:hover:not(.active) {
-            background: #f7f7f7;
-        }
-
-        .content {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .form-group label {
-            font-size: 13px;
-            color: #666;
-            font-weight: 500;
-        }
-
-        .form-group input {
-            padding: 10px 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .btn {
-            padding: 12px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
-            box-shadow: none;
-        }
-
-        .btn-secondary:hover {
-            background: #e0e0e0;
-        }
-
-        .password-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .password-item {
-            padding: 12px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-
-        .password-item:hover {
-            background: #f9f9f9;
-            border-color: #667eea;
-        }
-
-        .password-info {
-            flex: 1;
-        }
-
-        .password-site {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 2px;
-        }
-
-        .password-username {
-            font-size: 13px;
-            color: #666;
-        }
-
-        .password-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .icon-btn {
-            width: 32px;
-            height: 32px;
-            border: none;
-            background: #f0f0f0;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .icon-btn:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        .settings-item {
-            padding: 15px 0;
-            border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .settings-item:last-child {
-            border-bottom: none;
-        }
-
-        .settings-label {
-            font-size: 14px;
-            color: #333;
-            font-weight: 500;
-        }
-
-        .settings-description {
-            font-size: 12px;
-            color: #666;
-            margin-top: 2px;
-        }
-
-        .toggle {
-            position: relative;
-            width: 50px;
-            height: 26px;
-        }
-
-        .toggle input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: 0.4s;
-            border-radius: 26px;
-        }
-
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 20px;
-            width: 20px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: 0.4s;
-            border-radius: 50%;
-        }
-
-        .toggle input:checked + .toggle-slider {
-            background-color: #667eea;
-        }
-
-        .toggle input:checked + .toggle-slider:before {
-            transform: translateX(24px);
-        }
-
-        .status-message {
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 15px;
-            font-size: 13px;
-            text-align: center;
-            display: none;
-        }
-
-        .status-message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            display: block;
-        }
-
-        .status-message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            display: block;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #999;
-        }
-
-        .empty-state svg {
-            width: 64px;
-            height: 64px;
-            margin-bottom: 15px;
-            opacity: 0.5;
-        }
-
-        .link-website {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            color: #667eea;
-            text-decoration: none;
-            font-size: 13px;
-            margin-top: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .link-website:hover {
-            color: #764ba2;
-            text-decoration: underline;
-        }
-
-        .user-info {
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .user-email {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .loader {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .search-box {
-            position: relative;
-            margin-bottom: 15px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 10px 40px 10px 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .search-box .search-icon {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-        }
-    </style>
+    <title>SecurePass</title>
+    <link rel="stylesheet" href="popup.css">
 </head>
 <body>
+
     <div class="container">
-        <div class="header">
-            <h1>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect>
-                    <path d="M7 11V7a5 5 0 0110 0v4"></path>
-                </svg>
-                SecurePass
-            </h1>
-            <p>Gerencie suas senhas com segurança</p>
-        </div>
+        <!-- Cabeçalho -->
+        <header class="header">
+            <div class="logo">
+                <img src="../../static/images/logo.svg">
+                <h1>MainDug</h1>
+            </div>
+            <div id="userInfo" style="display: none;">
+                <span id="userEmail"></span>
+                <button id="logoutBtn" class="icon-btn" title="Sair">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
+        </header>
 
-        <div class="tabs">
-            <button class="tab active" data-tab="login">Login</button>
-            <button class="tab" data-tab="passwords">Senhas</button>
-            <button class="tab" data-tab="settings">Configurações</button>
-        </div>
+        <!-- Navegação por Abas -->
+        <nav class="tabs">
+            <button class="tab active" data-tab="passwords">
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2m-6 9c-1.1 0-2-.9-2-2s.9-2 2-2s2 .9 2 2s-.9 2-2 2M9 8V6c0-1.66 1.34-3 3-3s3 1.34 3 3v2z"/></svg>
+                Senhas
+            </button>
+            <button class="tab" data-tab="settings">
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5s3.5 1.57 3.5 3.5s-1.57 3.5-3.5 3.5"/></svg>
+                Config.
+            </button>
+            <button class="tab" data-tab="login">
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M12 4a4 4 0 1 1 0 8a4 4 0 0 1 0-8m0 10c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4"/></svg>
+                Conta
+            </button>
+        </nav>
 
-        <div class="content">
-            <!-- Tab Login -->
-            <div class="tab-content active" id="login">
-                <form class="login-form" id="loginForm">
+        <!-- Conteúdo das Abas -->
+        <main class="tab-content-container">
+            <!-- Aba de Senhas -->
+            <div id="passwords" class="tab-content active">
+                <div class="search-bar">
+                    <input type="search" id="searchPasswords" placeholder="Buscar senhas...">
+                </div>
+                <div id="passwordLoader" style="display: none;">
+                    <div class="spinner"></div>
+                </div>
+                <div id="passwordList">
+                    <!-- As senhas serão inseridas aqui pelo popup.js -->
+                </div>
+            </div>
+
+            <!-- Aba de Configurações -->
+            <div id="settings" class="tab-content">
+                <ul class="settings-list">
+                    <li>
+                        <label for="autoFill">Preenchimento automático</label>
+                        <div class="switch">
+                            <input type="checkbox" id="autoFill">
+                            <span class="slider"></span>
+                        </div>
+                    </li>
+                    <li>
+                        <label for="autoSave">Salvar senhas automaticamente</label>
+                        <div class="switch">
+                            <input type="checkbox" id="autoSave">
+                            <span class="slider"></span>
+                        </div>
+                    </li>
+                    <li>
+                        <label for="notifications">Mostrar notificações</label>
+                        <div class="switch">
+                            <input type="checkbox" id="notifications">
+                            <span class="slider"></span>
+                        </div>
+                    </li>
+                    <li>
+                        <label for="darkMode">Modo escuro</label>
+                        <div class="switch">
+                            <input type="checkbox" id="darkMode">
+                            <span class="slider"></span>
+                        </div>
+                    </li>
+                </ul>
+                <div class="settings-actions">
+                    <button id="exportData" class="btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Exportar Dados (.csv)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Aba de Login -->
+            <div id="login" class="tab-content">
+                <form id="loginForm">
                     <div class="form-group">
-                        <label for="email">E-mail</label>
-                        <input type="email" id="email" name="email" required placeholder="seu@email.com">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required>
                     </div>
                     <div class="form-group">
                         <label for="password">Senha</label>
-                        <input type="password" id="password" name="password" required placeholder="••••••••">
+                        <input type="password" id="password" required>
                     </div>
-                    <button type="submit" class="btn">Entrar</button>
-                    <button type="button" class="btn btn-secondary" id="registerBtn">Criar Conta</button>
-                    <a href="https://securepass.com" target="_blank" class="link-website">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="2" y1="12" x2="22" y2="12"></line>
-                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                        </svg>
-                        Visite nosso site
-                    </a>
+                    <div id="loginStatus" class="status-message" style="display: none;"></div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn primary">Login</button>
+                        <button type="button" id="registerBtn" class="btn">Registrar</button>
+                    </div>
                 </form>
-                <div class="status-message" id="loginStatus"></div>
             </div>
+        </main>
 
-            <!-- Tab Senhas -->
-            <div class="tab-content" id="passwords">
-                <div class="user-info" id="userInfo" style="display: none;">
-                    <div class="user-email" id="userEmail"></div>
-                </div>
-                
-                <div class="search-box">
-                    <input type="text" id="searchPasswords" placeholder="Buscar senhas...">
-                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
-                    </svg>
-                </div>
-
-                <div class="password-list" id="passwordList">
-                    <div class="empty-state">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
-                        </svg>
-                        <p>Faça login para ver suas senhas salvas</p>
-                    </div>
-                </div>
-                
-                <div class="loader" id="passwordLoader"></div>
-            </div>
-
-            <!-- Tab Configurações -->
-            <div class="tab-content" id="settings">
-                <div class="settings-item">
-                    <div>
-                        <div class="settings-label">Salvar senhas automaticamente</div>
-                        <div class="settings-description">Perguntar ao detectar novos formulários</div>
-                    </div>
-                    <label class="toggle">
-                        <input type="checkbox" id="autoSave" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
-                <div class="settings-item">
-                    <div>
-                        <div class="settings-label">Preenchimento automático</div>
-                        <div class="settings-description">Preencher campos de login automaticamente</div>
-                    </div>
-                    <label class="toggle">
-                        <input type="checkbox" id="autoFill" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
-                <div class="settings-item">
-                    <div>
-                        <div class="settings-label">Notificações</div>
-                        <div class="settings-description">Alertas de segurança e atualizações</div>
-                    </div>
-                    <label class="toggle">
-                        <input type="checkbox" id="notifications" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
-                <div class="settings-item">
-                    <div>
-                        <div class="settings-label">Modo escuro</div>
-                        <div class="settings-description">Interface com tema escuro</div>
-                    </div>
-                    <label class="toggle">
-                        <input type="checkbox" id="darkMode">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
-                <button class="btn" id="exportData" style="width: 100%; margin-top: 20px;">
-                    Exportar Senhas
-                </button>
-                
-                <button class="btn btn-secondary" id="logoutBtn" style="width: 100%; margin-top: 10px; display: none;">
-                    Sair
-                </button>
-            </div>
-        </div>
+        <!-- Elemento Toast para notificações -->
+        <div id="toast"></div>
     </div>
 
     <script src="popup.js"></script>
