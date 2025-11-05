@@ -2,7 +2,7 @@
 <html lang="pt-br"> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Protótipo MainDug v8 (Interativo)</title>
+    <title>MainDug</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,6 +10,7 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="./src/static/images/logo.svg">
     
     <style>
         /* As variáveis de cor são definidas por JS no <head> */
@@ -57,6 +58,14 @@
             background-color: var(--card-bg) !important;
             border-bottom: 1px solid var(--custom-border-color);
             transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .accordion-item{
+            margin-bottom: 10px;
+        }
+
+        .accordion-header{
+            margin-bottom: 10px;
         }
         
         .offcanvas, .modal-content, .auth-container, .stat-card, .accordion-item, .content-box {
@@ -117,27 +126,29 @@
             font-weight: 500;
             margin-bottom: 0.25rem;
         }
-        
         .form-control-color {
             width: 100%;
             height: 48px;
             padding: .375rem;
         }
         
-        /* MUDANÇA: Input-group para ícones de login */
-        .input-group.password-wrapper {
+        /* NOVO: Wrapper para qualquer input com ícone interno */
+        .password-wrapper {
             position: relative;
-            flex-wrap: nowrap; 
         }
+
         .password-wrapper .form-control {
             border-top-right-radius: var(--border-radius-md) !important;
             border-bottom-right-radius: var(--border-radius-md) !important;
+            /* Adiciona padding à direita para não sobrepor o texto com o ícone */
+            padding-right: 2.5rem; 
         }
+
         .password-wrapper .toggle-password {
             position: absolute;
-            right: 1rem;
+            right: 0.9rem; /* 10% less than 1rem */
             top: 50%;
-            transform: translateY(-50%);
+            transform: translateY(-50%); /* Centraliza verticalmente */
             background: none;
             border: none;
             color: var(--text-secondary);
@@ -155,11 +166,28 @@
         .input-group > .form-control {
             border-left: none;
         }
+        .input-group.password-wrapper {
+            flex-wrap: nowrap; 
+        }
         .input-group:not(.password-wrapper) > .form-control {
             border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
         }
         .input-group.password-wrapper > .form-control {
              border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+        }
+
+        /* NOVO: Correção para input-group com ícone à direita (como a busca) */
+        .input-group > .form-control:not(:last-child) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        .input-group > .input-group-text:last-child {
+            border-left: none;
+            border-right: 1px solid var(--custom-border-color);
+            border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+        }
+        .input-group > .form-control:not(:first-child) {
+            border-left: none;
         }
 
         /* --- Componente de Imagem (Circular) --- */
@@ -168,8 +196,8 @@
             background-color: var(--input-bg);
             color: var(--text-secondary);
             transition: background-color 0.2s ease, border-color 0.2s ease;
-            width: 150px;
-            height: 150px;
+            width: 135px; /* 10% less than 150px */
+            height: 135px; /* 10% less than 150px */
             border-radius: 50%;
             overflow: hidden;
             cursor: pointer;
@@ -197,7 +225,7 @@
 
         /* --- Dashboard --- */
         .stat-card {
-             padding: 1.5rem;
+             padding: 1.35rem; /* 10% less than 1.5rem */
         }
         .stat-card h5 {
              font-weight: 500;
@@ -242,7 +270,7 @@
         }
         
         .table td, .table th {
-             padding: 1rem 0.75rem;
+             padding: 0.9rem 0.675rem; /* 10% less */
              border-bottom: 1px solid var(--custom-border-color);
              border-top: none;
              vertical-align: middle;
@@ -267,7 +295,7 @@
             display: flex;
             overflow-x: auto;
             white-space: nowrap;
-            padding-bottom: 10px; /* Espaço para a scrollbar não colar */
+            padding-bottom: 9px; /* 10% less than 10px */
             margin-bottom: 1rem;
             /* Esconde a scrollbar visualmente */
             -ms-overflow-style: none;  /* IE and Edge */
@@ -277,17 +305,17 @@
             display: none; /* Chrome, Safari, Opera */
         }
         .flag-filter-scroll .btn {
-            margin-right: 0.5rem;
+            margin-right: 0.45rem; /* 10% less than 0.5rem */
         }
         
         .btn {
             border-radius: var(--border-radius-md);
-            padding: 0.6rem 1.25rem;
+            padding: 0.54rem 1.125rem; /* 10% less */
             font-weight: 500;
             transition: filter 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
         }
         .btn-sm {
-            padding: 0.25rem 0.6rem;
+            padding: 0.225rem 0.54rem; /* 10% less */
             border-radius: 6px;
         }
         .btn-xs { /* MUDANÇA: Botão extra pequeno para flags */
@@ -331,7 +359,7 @@
              font-weight: 700;
         }
         .navbar-brand img {
-            height: 50px;
+            height: 30px;
         }
         .badge.bg-primary {
              background-color: var(--primary-color) !important;
@@ -343,7 +371,7 @@
             border-color: var(--primary-color);
             border-width: 2px;
             box-shadow: none;
-            padding: calc(0.65rem - 1px) calc(1rem - 1px);
+            padding: calc(0.585rem - 1px) calc(0.9rem - 1px); /* 10% less */
         }
         .btn:focus, .btn:active {
             box-shadow: 0 0 0 0.25rem rgba(var(--primary-color-rgb), 0.25);
@@ -358,36 +386,36 @@
             box-shadow: none;
         }
 
-        .hamburger-icon {
-            width: 28px;
-            height: 22px;
+        .navbar-toggler-icon {
+            width: 25.2px; /* 10% less than 28px */
+            height: 19.8px; /* 10% less than 22px */
             position: relative;
             transform: rotate(0deg);
             transition: .5s ease-in-out;
             cursor: pointer;
+            display: block; /* Ensure it takes up space */
         }
 
-        .hamburger-icon span {
+        .navbar-toggler-icon span {
             display: block;
             position: absolute;
             height: 3px;
-            width: 100%;
+            width: 90%; /* 10% less than 100% */
             background: var(--text-primary);
             border-radius: 3px;
-            opacity: 1;
             left: 0;
             transform: rotate(0deg);
             transition: .25s ease-in-out;
         }
-
-        .hamburger-icon span:nth-child(1) { top: 0px; }
-        .hamburger-icon span:nth-child(2) { top: 9px; }
-        .hamburger-icon span:nth-child(3) { top: 18px; }
+        
+        .navbar-toggler-icon span:nth-child(1) { top: 0px; }
+        .navbar-toggler-icon span:nth-child(2) { top: 9px; opacity: 1; } /* Ensure opacity is 1 by default */
+        .navbar-toggler-icon span:nth-child(3) { top: 18px; }
 
         /* Quando o menu está aberto, o Bootstrap remove a classe .collapsed do toggler */
-        .navbar .navbar-toggler:not(.collapsed) .hamburger-icon span:nth-child(1) { top: 9px; transform: rotate(135deg); }
-        .navbar .navbar-toggler:not(.collapsed) .hamburger-icon span:nth-child(2) { opacity: 0; left: -60px; }
-        .navbar .navbar-toggler:not(.collapsed) .hamburger-icon span:nth-child(3) { top: 9px; transform: rotate(-135deg); }
+        .navbar .navbar-toggler:not(.collapsed) .navbar-toggler-icon span:nth-child(1) { top: 9px; transform: rotate(135deg); }
+        .navbar .navbar-toggler:not(.collapsed) .navbar-toggler-icon span:nth-child(2) { opacity: 0; left: -60px; }
+        .navbar .navbar-toggler:not(.collapsed) .navbar-toggler-icon span:nth-child(3) { top: 9px; transform: rotate(-135deg); }
 
     </style>
 
@@ -502,10 +530,7 @@
                 MainDug
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
-                <div class="hamburger-icon">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                <div class="navbar-toggler-icon">
                 </div>
             </button>
             
@@ -556,7 +581,7 @@
 
         <div id="page-login" class="page auth-container">
             <div class="text-center mb-4">
-                <img src="./src/static/images/logo.svg" alt="Logo" style="height: 3rem; width: auto;">
+                <img src="./src/static/images/logo.svg" alt="Logo" style="height: 2.7rem; width: auto;">
             </div>
             <h2 class="text-center mb-4">Login</h2>
             <form onsubmit="handleLogin(event); return false;" autocomplete="off">
@@ -588,7 +613,7 @@
 
         <div id="page-register" class="page auth-container">
             <div class="text-center mb-4">
-                <img src="./src/static/images/logo.svg" alt="Logo" style="height: 3rem; width: auto;">
+                <img src="./src/static/images/logo.svg" alt="Logo" style="height: 2.7rem; width: auto;">
             </div>
             <h2 class="text-center mb-4">Criar Conta</h2>
             <form action="#" method="POST" autocomplete="off">
@@ -628,7 +653,7 @@
         
         <div id="page-forgot-password" class="page auth-container">
             <div class="text-center mb-4">
-                <img src="./src/static/images/logo.svg" alt="Logo" style="height: 3rem; width: auto;">
+                <img src="./src/static/images/logo.svg" alt="Logo" style="height: 2.7rem; width: auto;">
             </div>
             <h2 class="text-center mb-4">Recuperar Senha</h2>
             <p class="text-muted text-center mb-4">Insira seu e-mail (ou login) para enviarmos um link de redefinição.</p>
@@ -901,7 +926,7 @@
                                 <label for="profilePic" class="form-label">Foto de Perfil </label>
                                 <div class="image-input-preview mx-auto" title="Clique para alterar">
                                     <img src="" alt="Preview">
-                                    <span class="image-input-placeholder">
+                                    <span class="image-input-placeholder" style="font-size: 2.7rem;">
                                         <i class="bi bi-person-bounding-box" style="font-size: 3rem;"></i>
                                         <span class="mt-2">Clique para alterar</span>
                                     </span>
@@ -942,11 +967,6 @@
                                         <i class="bi bi-eye-fill"></i>
                                     </button>
                                 </div>
-                            </div>
-                            
-                            <div class="form-check form-switch my-4">
-                                <input class="form-check-input" type="checkbox" role="switch" id="acc-2fa" name="acc-2fa" checked>
-                                <label class="form-check-label" for="acc-2fa">Ativar Autenticação de Dois Fatores (2FA)</label>
                             </div>
                             
                             <hr class="my-4">
