@@ -1,0 +1,558 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{hyperref}
+\usepackage{lmodern}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage[backend=biber, style=abnt]{biblatex}
+\addbibresource{referencias.bib}
+
+
+% Configurações de espaçamento
+\onehalfspacing
+\setlength{\parindent}{1.25cm}
+
+% Configurações de seções
+\titleformat{\section}{\normalfont\fontsize{14}{16}\bfseries\centering}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\fontsize{12}{14}\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalfont\fontsize{12}{14}\bfseries}{\thesubsubsection}{1em}{}
+
+% Configurações do sumário
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\cftsubsecleader}{\cftdotfill{\cftdotsep}}
+
+\begin{document}
+
+% Página de título
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\fontsize{14}{16}\selectfont\bfseries INSTITUTO FEDERAL DO PARANÁ}
+    
+    \vspace{3cm}
+    
+    {\fontsize{14}{16}\selectfont\bfseries LEONARDO DA SILVA GOTARDO}
+    
+    \vspace{0.5cm}
+    
+    \vspace{4cm}
+    
+    {\fontsize{16}{18}\selectfont\bfseries MAINDUG: APLICAÇÃO WEB DE
+    \\GERENCIAMENTO DE SENHAS}
+    
+    \vfill
+    
+    {\fontsize{14}{16}\selectfont\bfseries LONDRINA\\2024}
+\end{titlepage}
+
+% Segunda página de título
+\newpage
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\fontsize{14}{16}\selectfont\bfseries INSTITUTO FEDERAL DO PARANÁ}
+    
+    \vspace{3cm}
+    
+    {\fontsize{14}{16}\selectfont\bfseries LEONARDO DA SILVA GOTARDO}
+    
+    \vspace{0.5cm}
+    
+    \vspace{3cm}
+    
+    {\fontsize{16}{18}\selectfont\bfseries MAINDUG: APLICAÇÃO WEB DE\\GERENCIAMENTO DE SENHAS}
+    
+    \vspace{2cm}
+    
+    \begin{flushright}
+        \begin{minipage}{0.5\textwidth}
+            \raggedright
+            {\fontsize{12}{14}\selectfont
+            Trabalho de Conclusão de Curso apresentado ao Curso Superior de Tecnologia em Análise e Desenvolvimento de Sistemas do Instituto Federal do Paraná -- Campus Londrina, como requisito parcial de avaliação.
+            
+            \vspace{1cm}
+            
+            Orientador: Augusto Luengo Pereira Nunes}
+        \end{minipage}
+    \end{flushright}
+    
+    \vfill
+    
+    {\fontsize{14}{16}\selectfont\bfseries LONDRINA\\2024}
+\end{titlepage}
+
+% Resumo
+\newpage
+\section*{\centering RESUMO}
+
+O crescente volume de credenciais exigidas por plataformas digitais e serviços online tem imposto aos usuários o desafio de gerenciar, de forma segura e prática, um grande volume de informações de acesso. Essa necessidade torna-se ainda mais relevante diante da crescente preocupação com a privacidade e da dependência de soluções proprietárias, que limitam a autonomia dos indivíduos sobre seus próprios dados. Nesse contexto, foi desenvolvido o MainDug, uma aplicação web de código aberto voltada ao gerenciamento de credenciais com foco em transparência, privacidade, flexibilidade e segurança. Diferentemente de soluções tradicionais, o sistema permite que o usuário decida como e onde seus dados serão armazenados, podendo optar por hospedar a aplicação em servidores particulares, integrar a sistemas externos ou modificar os mecanismos de criptografia de acordo com suas necessidades. Entre os principais recursos, destacam-se o armazenamento seguro por meio de algoritmos de criptografia, a possibilidade de personalização da infraestrutura e uma interface intuitiva que favorece a adoção por diferentes perfis de usuários. Dessa forma, o MainDug busca oferecer uma alternativa transparente e confiável, reduzindo a dependência de serviços centralizados e promovendo o fortalecimento da autonomia digital e do direito à privacidade.
+
+\vspace{1cm}
+
+\textbf{Palavras-chave:} Gerenciador de senhas, privacidade digital, código aberto, criptografia, segurança da informação.
+
+% Sumário
+\newpage
+\tableofcontents
+
+% Corpo do documento
+\newpage
+
+\section{Introdução}
+
+Desde o surgimento da internet, na segunda metade do século XX, o mundo passou por uma importante e inesquecível transformação. Inicialmente criada para ser uma rede que interligava computadores em ambientes militares e acadêmicos, a internet evoluiu rapidamente para se tornar um dos principais pilares da sociedade moderna. Com a criação do World Wide Web (W3C) na década de 1990, as possibilidades de uso se expandiram exponencialmente, permitindo a criação de plataformas e serviços que impactaram profundamente tanto na vida pessoal quanto em ambientes corporativos dentro de empresas. Entre os avanços mais significativos, destaca-se o desenvolvimento de sistemas que exigem credenciais de acesso, tais como e-mails, redes sociais, serviços financeiros e aplicações empresariais. Essas plataformas, ao longo do tempo, não apenas se popularizaram, mas também se tornaram indispensáveis para as operações cotidianas de indivíduos e organizações.
+
+Com o crescimento acelerado de tais ferramentas digitais, o número de senhas que um usuário é obrigado a manter consigo também aumentou drasticamente. Essa realidade, embora reflita o avanço tecnológico, trouxe consigo desafios críticos relacionados à segurança da informação e à usabilidade. Em contextos empresariais, a situação se torna ainda mais sensível, dado o esquecimento ou a perda de senhas por parte dos funcionários, que pode resultar em consequências graves, como a interrupção e perdas de processos e documentos internos importantes, comprometimento de dados sigilosos ou até mesmo a violação de sistemas essenciais para o negócio. Casos de grandes empresas que sofreram prejuízos expressivos devido a credenciais comprometidas ilustram a relevância deste problema, destacando a necessidade de soluções mais eficazes para a gestão de senhas.
+
+\subsection{Objetivo}
+Nesse contexto, o presente trabalho propõe o desenvolvimento do MainDug, uma aplicação de código aberto voltada para o gerenciamento seguro de credenciais, com ênfase na privacidade e na autonomia do usuário. Diferentemente de abordagens tradicionais, o projeto oferece maior liberdade de configuração, permitindo que cada indivíduo defina a forma de utilização de acordo com suas vontades e necessidades específicas. Entre as possibilidades, destacam-se a hospedagem em servidores particulares, a configuração de Proxies de segurança, a alteração dos mecanismos de criptografia e a integração com serviços complementares.
+
+A proposta visa, portanto, disponibilizar uma alternativa transparente, segura e personalizável, que contribua para a redução da dependência de soluções centralizadas e para o fortalecimento do direito à privacidade digital. Para a efetivação do produto, serão consideradas as seguintes etapas:
+
+\begin{itemize}
+    \item Levantamento e análise dos usuários com foco em privacidade;
+    \item Modelagem do sistema e da aplicação web;
+    \item Teste de viabilidade e análise de integração em diferentes cenários de uso.
+\end{itemize}
+
+\newpage
+
+\section{Soluções Correlatas}
+
+Com o objetivo de compreender melhor o cenário atual e identificar soluções já consolidadas no mercado, foi realizada uma pesquisa exploratória sobre os sites e sistemas especializados em gerenciamento de senhas ativos atualmente. Para isso, utilizou-se a ferramenta de busca (\cite{google}), com as seguintes palavras-chave: gerenciador de senhas, password manager, aplicativos de segurança de credenciais e armazenamento seguro de senhas.
+
+Os principais resultados retornados pela ferramenta foram analisados segundo critérios de proximidade com o tema deste trabalho, funcionalidades disponibilizadas, nível de segurança, modelo de distribuição (proprietário ou código aberto), experiência do usuário e relevância no mercado. A partir dessa análise, destacaram-se como soluções representativas: LastPass, 1Password, Bitwarden.
+
+Para avaliar aspectos técnicos e de usabilidade, os sistemas foram testados considerando métricas de desempenho, acessibilidade e segurança. Além disso, investigaram-se os recursos de personalização e o grau de autonomia oferecido ao usuário, fatores centrais para este estudo.
+
+\subsection{LastPass}
+
+O LastPass (site: https://www.lastpass.com/pt) é um dos gerenciadores de senhas mais conhecidos e amplamente utilizados em escala global. Sua proposta é simplificar o armazenamento de credenciais por meio de sincronização entre múltiplos dispositivos, permitindo ao usuário acessar suas senhas em qualquer lugar. O aplicativo tem diversas ferramentas para gerenciamento e compartilhamento das credenciais. Com ele, você pode criar senhas fortes, compartilhar credenciais, salvar formas de pagamento como cartões de crédito e débito. O aplicativo também verifica a complexidade das senhas e pode armazenar notas de texto criptografadas, documentos ou outros dados sensíveis. Também possui uma versão mobile que sincroniza todas as informações pela conta do usuário. A empresa também é conhecida por operar no modelo \textit{zero-knowledge}, o que significa que nem mesmo os funcionários do LastPass podem acessar as informações armazenadas no aplicativo, uma vez que quem criptografa os dados é o próprio dispositivo do usuário, fazendo com que os dados já sejam armazenados criptografados. Para criptografia, o LastPass usa, em grande parte, o algoritmo AES-256. Um dos melhores algoritmos para criptografia atualmente. Tornando ataques como os de \textit{brute-force} quase impossíveis.
+
+Pontos positivos:
+
+\begin{itemize}
+    \item Interface amigável e de fácil utilização, mesmo para usuários com pouca experiência técnica; (Figura 1)
+    \item Disponibilidade em diversas plataformas, incluindo navegadores, sistemas móveis e \textit{desktops};
+    \item Recursos adicionais, como geração de senhas fortes e armazenamento seguro de notas.
+\end{itemize}
+
+Pontos negativos:
+
+\begin{itemize}
+    \item Modelo de negócio baseado em assinatura, o que pode ser um impeditivo para alguns usuários;
+    \item Histórico de incidentes de segurança com relatos de vazamentos de dados, que comprometem a confiança de parte da comunidade;
+    \item Estrutura fechada, não permitindo personalizações ou auditorias independentes do código.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \caption{Interface principal (site) - Fonte: lastpass.com, 2025}
+    \includegraphics[width=1\linewidth]{Captura de tela de 2025-09-30 10-32-04.png}
+    \label{fig:placeholder}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Importação de senhas via outros serviços}
+    \includegraphics[width=1\linewidth]{Captura de tela de 2025-09-30 11-01-57.png}
+    \label{fig:placeholder2}
+\end{figure}
+
+\newpage
+
+\subsection{1Password}
+
+O 1Password (site: https://www.lastpass.com/pt) destaca-se pelo foco em usabilidade e experiência do usuário. É frequentemente recomendado em ambientes corporativos devido às suas funções de compartilhamento de credenciais e controle de permissões entre equipes. Assim como outros concorrentes, o 1Password possui também cofres seguros para armazenamento de formas de pagamento, como cartões de crédito e débito, anotações de texto seguras, anotações também sobre os cartões salvos, como limite ou data de emissão e documentos como CPF ou RG. O 1Password também possui a criptografia AES-256 uma das melhores atualmente. Diferente de outros concorrentes, o 1Password oferece a função de chave-mestra que consiste em uma chave secreta única de 128 Bits que é gerada no primeiro uso, fica armazenada no dispositivo e é necessária junto da senha mestra para abertura do aplicativo. Assim como a grande maioria dos seus concorrentes, o 1Password também possui uma extensão para navegador e opera em modelo de \textit{zero-knowledge}. Ele também conta com o Whacthtower, ferramenta responsável por monitorar vazamentos em sites, senhas fracas ou comprometidas, senhas repetidas e autenticação de dois fatores. Outra função que diferencia o 1Password de outros concorrentes é o 'Modo Viagem', que, quando ativo, esconde temporariamente cofres tidos como não seguros em todos os dispositivos até a desativação.
+
+Pontos positivos:
+
+\begin{itemize}
+    \item Experiência de uso intuitiva, com design bem estruturado (Figura 3);
+    \item Funcionalidades voltadas para empresas, como cofre compartilhado e monitoramento de acesso (Figura 4);
+    \item Reputação sólida no mercado em termos de segurança e confiabilidade.
+    \item Observação de vazamentos (Figura 5);
+\end{itemize}
+Pontos negativos:
+
+\begin{itemize}
+    \item Sistema proprietário, sem possibilidade de auditoria pública do código-fonte;
+    \item Dependência de assinatura paga, não oferecendo uma versão gratuita robusta;
+    \item Menor flexibilidade para usuários que buscam autonomia e personalização do armazenamento de dados.
+\end{itemize}
+
+\newpage
+
+\begin{figure}[H]
+    \centering
+    \caption{Interface principal (aplicativo) - Fonte: 1password.com, 2025}
+    \includegraphics[width=1\linewidth]{image.png}
+    \label{fig:placeholder3}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Interface empresarial (aplicativo) - Fonte: 1password.com, 2025}
+    \includegraphics[width=1\linewidth]{imagem_2025-10-05_150904297.png}
+    \label{fig:placeholder4}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Whatchtower (aplicativo) - Fonte: 1password.com, 2025}
+    \includegraphics[width=1\linewidth]{image2.png}
+    \label{fig:placeholder5}
+\end{figure}
+
+\newpage
+
+\subsection{Google senhas}
+
+O Google Senhas é o gerenciador de senhas integrado ao ecossistema Google, disponível nativamente nos dispositivos Android e no navegador Chrome. Esse é o gerenciador de senhas mais comumente usado. Ele conta com integração completa com os aplicativos do Google e backup/sincronização automática com todos os dispositivos conectados à mesma conta do Google. Assim como outros concorrentes, o Google Senhas também usa criptografia de ponta a ponta, políticas de \textit{zero-knowladge} e conta com ferramentas de preenchimento automático de formulários, geração de senhas seguras, alertas de senhas fracas, comprometidas em vazamento de dados ou até senhas reutilizadas em mais de um site. Além de ferramentas básicas de gerenciamento de credenciais, o Google Senhas conta também com ferramentas para armazenamento seguro de anotações e oferece compartilhamento de credenciais via Family Link, possibilitando que membros de um mesmo grupo familiar compartilhem senhas selecionadas de forma segura.
+
+Pontos positivos:
+
+\begin{itemize}
+    \item Vem disponível nativamente nos dispositivos Android e navegador Chrome;
+    \item Tem compatibilidade com enumeras plataformas como celulares e notebooks;
+    \item Sistema integrado de detecção de vazamentos de senhas e \textit{dataleaks} (Figura 7);
+\end{itemize}
+
+Pontos negativos:
+
+\begin{itemize}
+    \item Grande dependência do ecossistema Google;
+    \item Problemas com privacidade, afinal a mesma depende exclusivamente das politicas de privacidade da Google;
+    \item Poucas funcionalidades em comparação a outros concorrentes (Figura 6);
+\end{itemize}
+
+\newpage
+\begin{figure}[H]
+    \centering
+    \caption{Menu principal - Fonte: passwords.google.com, 2025}
+    \includegraphics[width=1\linewidth]{imagem_2025-10-05_153847021.png}
+    \label{fig:placeholder6}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \caption{Pagina de senhas comprometidas - Fonte: passwords.google.com}
+    \includegraphics[width=1\linewidth]{imagem_2025-10-05_155325647.png}
+    \label{fig:placeholder7}
+\end{figure}
+
+ \newpage
+
+\section{Metodologia}
+
+A metodologia adotada para o desenvolvimento do projeto MainDug foi estruturada em etapas, combinando uma abordagem de pesquisa exploratória para o levantamento de requisitos com um modelo de desenvolvimento de software iterativo e incremental, focado na prototipagem. Esta abordagem permitiu a análise contínua e o refinamento da aplicação ao longo do seu ciclo de vida.
+
+O projeto foi dividido nas seguintes fases principais:
+
+\subsection{Fase 1: Pesquisa e Levantamento de Requisitos}
+
+Esta fase inicial teve como objetivo compreender o domínio do problema e o cenário atual dos gerenciadores de senhas. Para isso, foi realizada uma pesquisa exploratória e bibliográfica sobre segurança da informação, privacidade digital e criptografia.
+
+Conforme detalhado na Seção 2 (Soluções Correlatas), foi conduzida uma análise comparativa (benchmarking) das principais soluções de mercado (LastPass, 1Password, Google Senhas). Esta análise foi fundamental para: \begin{itemize} \item Identificar funcionalidades essenciais (ex: geração de senhas, armazenamento seguro, preenchimento automático). \item Compreender os pontos fortes e fracos das soluções existentes (ex: modelos de negócio, histórico de segurança, nível de personalização). \item Definir o diferencial do MainDug, com foco em código aberto, autonomia do usuário e privacidade. \end{itemize}
+
+Os dados coletados nesta análise serviram como base para a elicitação dos requisitos funcionais (RF) e não funcionais (RNF) do sistema, que estão detalhados na Seção 4 (Resultados).
+
+\subsection{Fase 2: Modelagem e Design do Sistema}
+
+Após a definição dos requisitos, iniciou-se a fase de modelagem, que traduziu as necessidades do usuário em uma arquitetura técnica. Esta etapa utilizou a Unified Modeling Language (UML) para a modelagem orientada a objetos e o Modelo de Entidade-Relacionamento para o banco de dados.
+
+Foram desenvolvidos os seguintes artefatos (apresentados na Seção 4): \begin{itemize} \item \textbf{Diagramas de Caso de Uso:} Para descrever as interações dos atores (Usuário e Administrador) com o sistema. \item \textbf{Diagrama de Classes:} Para representar a estrutura estática do sistema, suas classes, atributos e relacionamentos. \item \textbf{Diagrama de Entidade-Relacionamento (DER):} Para projetar a estrutura lógica do banco de dados PostgreSQL, garantindo a integridade e o relacionamento correto entre as entidades (User, Password, Filter, etc.). \end{itemize}
+
+Paralelamente, foi realizado o design da interface do usuário (UI) e da experiência do usuário (UX), resultando nos protótipos de tela que guiaram a implementação do \textit{webservice}.
+
+\section{Resultados}
+
+\subsection{Requisitos Funcionais}
+\begin{table}[h!]
+    \centering
+    \caption{Lista de Requisitos funcionais}
+    \label{tab:functional_requirements}
+    \begin{tabular}{|l|p{0.6\textwidth}|c|}
+        \toprule
+        \textbf{ID} & \textbf{Descrição} & \textbf{Prioridade} \\
+        \midrule
+        FR-001 & Login & Alta \\
+        FR-002 & Cadastro & Alta \\
+        FR-003 & Geração de senha segura & Alta \\
+        FR-004 & Monitoramento de uso do autocomplete pela extensão & Média \\
+        FR-005 & Monitoramento de vazamento de credenciais & Média \\
+        FR-006 & Contagem de senhas reutilizadas & Baixa \\
+        FR-007 & Edição de credenciais de acesso ao webservice & Média \\
+        FR-008 & Verificação da força/complexidade das senhas cadastradas & Média \\
+        FR-09 & Busca de credencial via filtro, como site/login & Alta \\
+        FR-010 & Recuperação de senha via e-mail & Média \\
+        FR-011 & Categorizar senhas em pastas ou filtros & Baixa \\
+        FR-012 & Gerenciar credenciais & Alta \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Requisitos não Funcionais}
+\begin{table}[h!]
+    \centering
+    \caption{Lista de Requisitos não funcionais}
+    \label{tab:non_functional_requirements}
+    \begin{tabular}{|l|p{0.6\textwidth}|c|}
+        \toprule
+        \textbf{ID} & \textbf{Descrição} & \textbf{Prioridade} \\
+        \midrule
+        NFR-001 & Criptografia \textit{one-way} para as senhas & Alta \\
+        NFR-002 & Criptografia \textit{both-ways} para credenciais & Alta \\
+        NFR-003 & Responsividade do \textit{webservice} & Média \\
+        NFR-004 & Sanitização de dados recebidos pela API & Alta \\
+        NFR-005 & Disponibilidade mínima de 99\% do sistema & Média \\
+        NFR-006 & Tempo de resposta < 500ms & Media \\
+        NFR-007 & Compatibilidade com os principais navegadores (Chrome, Firefox e Edge) & Alta \\
+        NFR-005 & Persistência dos cadastros salvos & Alta \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Diagrama de casos de uso}
+
+\subsubsection{Usuário}
+\begin{figure}[H]
+    \centering
+    \caption{Diagrama de casos de uso do usuário.}
+    \includegraphics[width=1\linewidth]{useCaseUser.png}
+    \label{fig:placeholder8}
+\end{figure}
+
+O usuário tem acesso ao \textit{Webservice} e à extensão do navegador. Na extensão, o usuário pode usar o autocomplete, cadastrar uma nova credencial e, independentemente do usuário, a ação de login é salva e enviada ao \textit{Webservice}. Já no \textit{Webservice}, o usuário pode consultar quais senhas são repetidas, quais foram vazadas, ser redirecionado ao site da senha repetida ou vazada, verificar logs ou alterações recentes nas credenciais, gerenciar sua conta ou recuperar a senha.
+
+\subsubsection{Administrador}
+\begin{figure}[H]
+    \centering
+    \caption{Diagrama de casos de uso do administrador.}
+    \includegraphics[width=1\linewidth]{useCaseAdmin.png}
+    \label{fig:placeholder9}
+\end{figure}
+
+O administrador possui acesso apenas ao \textit{Webservice}; lá, ele pode gerenciar usuários, banindo-os, enviar e-mail de recuperação de senha e monitorar as estatísticas dos usuários.
+
+\subsection{Estrategias de segurança}
+
+\begin{itemize}
+    \item Mimisismo da database
+    \item Criptografia \textit{one-way} para a senha-mestra.
+    \item Criptografia \textit{both-ways} para as credenciais e login.
+\end{itemize}
+
+\subsection{Tecnologias}
+Nesta sessão irei descrever as tecnologias escolhidas para o desenvolvimento do MainDug e a razão para essas escolhas.
+
+\subsubsection{Python}
+A escolha do Python como linguagem de programação principal para o back-end do MainDug se deve a múltiplos fatores. Primeiramente, sua sintaxe clara e legível (conhecida como "Pythonic") facilita a manutenção do código e, crucialmente para um projeto de código aberto, permite que a comunidade realize auditorias de segurança de forma mais eficaz.
+
+Além disso, o Python possui um ecossistema robusto e maduro, com vastas bibliotecas de terceiros, especialmente no que tange à segurança e criptografia (como bcrypt). Isso permitiu a implementação de algoritmos de criptografia fortes (RNF-001, RNF-002) sem a necessidade de reinventar soluções de segurança, garantindo o uso de padrões já testados e validados pela indústria.   
+
+\subsubsection{Flask}
+Flask foi selecionado como o micro-framework web para a construção da API e do webservice do MainDug. Diferente de frameworks monolíticos, o Flask adota uma abordagem minimalista e flexível, fornecendo as ferramentas essenciais para roteamento e gerenciamento de requisições sem impor uma estrutura rígida de projeto.
+
+Essa flexibilidade foi um requisito fundamental para o MainDug, alinhando-se ao objetivo de autonomia e personalização. Ele permite um controle granular sobre os componentes da aplicação, facilitando a integração de bibliotecas específicas, como o SQLAlchemy, e a implementação de mecanismos de segurança personalizados (RNF-004), sendo ideal para construir uma API leve, de alto desempenho e focada em segurança.
+
+
+\subsubsection{SQLAlchemy}
+SQLAlchemy foi adotado como o Mapeador Objeto-Relacional (ORM) e toolkit SQL. A principal função do SQLAlchemy neste projeto é abstrair a comunicação com o banco de dados, permitindo que a lógica de negócios seja escrita em classes Python (como as classes User e Password no Diagrama de Classes) em vez de consultas SQL manuais.
+
+A principal vantagem de segurança ao usar um ORM como o SQLAlchemy é a prevenção nativa contra ataques de Injeção de SQL (SQL Injection), pois ele parametriza automaticamente todas as consultas. Além disso, o SQLAlchemy é agnóstico em relação ao SGBD, o que significa que, embora o PostgreSQL tenha sido escolhido para este projeto, a aplicação pode ser facilmente adaptada por um usuário para rodar em outros bancos, como MySQL ou SQLite, reforçando o pilar da flexibilidade.
+
+\subsubsection{PostgreSQL}
+Para o Sistema de Gerenciamento de Banco de Dados (SGBD), optou-se pelo PostgreSQL. Esta escolha é justificada por ser um dos sistemas de banco de dados relacional de código aberto mais avançados e confiáveis do mundo, alinhando-se perfeitamente com a filosofia open-source do MainDug.
+
+O PostgreSQL é renomado por sua robustez, integridade de dados e conformidade estrita com os padrões SQL. Para uma aplicação que gerencia dados sensíveis como credenciais, sua arquitetura madura e seus recursos avançados de segurança (como controle de acesso granular e extensibilidade) fornecem uma fundação sólida e confiável para o armazenamento persistente (RNF-005) e seguro dos dados criptografados dos usuários.
+
+\newpage
+
+\subsection{Diagrama de classes}
+
+\begin{figure}[H]
+    \centering
+    \caption{Diagrama de classes.}
+    \includegraphics[width=0.4\linewidth]{classDiagram.png}
+    \label{fig:placeholder10}
+\end{figure}
+
+\subsubsection{User Class}
+Modelo da tabela de usuários para gerenciamento dentro do código. A classe também conta com um método extra para exportar todas as informações de um usuário via dicionário e outro método para exportar apenas dados não sensíveis. E age como uma referência da entidade que está dentro do banco de dados para orientação dentro do código. Também é responsável por definir os parâmetros e regras da tabela dentro do banco de dados.
+
+\subsubsection{Password Class}
+Modelo da tabela de credenciais salvas para gerenciamento dentro do código. Dentro da classe também existe um método para extração dos dados completos do registro. Assim como a tabela de User, essa tabela age como um modelo de objeto para gerenciamento das entidades e definições de regras dentro do banco de dados.
+
+\subsubsection{Filter Class}
+Modelo da tabela de filtros para gerenciamento dentro do código. Possui também um método para exportar as informações como dicionário. Também funciona como modelo de regras e gerenciamento para as entidades da tabela Filter dentro da database.
+
+\subsubsection{Database Class}
+Classe principal de gerenciamento da database. Nela estão concentrados todos os métodos de gerenciamento de dados dentro do aplicativo. Também a partir dela é feita toda a recuperação de dados ao \textit{front-end}.
+
+\subsubsection{Config Class}
+Classe usada para definir variáveis globais e configurações do Flask e SQLAlchemy. Dentro dessa classe se encontram algumas das variáveis mais importantes do aplicativo, como variáveis de ambiente, sessão principal da database, nome do aplicativo ou a URL do banco de dados. Variáveis utilizadas dentro de todo o código. 
+
+\subsubsection{Field Class}
+Dataclass responsável por padronizar formulários recebidos via JSON. É a partir dela que a estrutura básica dos formulários é criada e os parâmetros sanitizados.
+
+\subsubsection{GenForm Class}
+Classe com todos os templates de componentes HTML destinados à criação de formulários. Essa classe recebe os dados da Field Class e converte dicionários em formulários prontos para serem exibidos ao usuário com o objetivo de facilitar o processo e padronizar a criação de formulários.
+
+\subsubsection{NotificationMenager Class}
+Classe responsável por gerenciar mensagens e notificações exibidas aos usuários dentro do \textit{webservice}. Essa é a classe principal do sistema de notificação. Nela são armazenadas as listas de clientes e os estados de suas conexões. Por ela são enviadas as notificações para os clientes, de forma privada ou em \textit{broadcast}.
+
+\subsubsection{SSEConnection Class}
+Classe destinada ao gerenciamento das conexões entre o servidor e os usuários para envio de alertas e notificações dentro do \textit{webservice}.A classe controla a conexão individual de cada cliente. Essa também monitora as mensagens pendentes para envio e o estado de cada mensagem já enviada.
+
+\subsection{Diagrama de entidades relacional}
+
+\begin{figure}[H]
+    \centering
+    \caption{Diagrama de entidades relacional.}
+    \includegraphics[width=0.5\linewidth]{derDiagram.png}
+    \label{fig:placeholder11}
+\end{figure}
+
+\subsubsection{User}
+A tabela User gerencia as contas de acesso ao próprio sistema gerenciador. Ela armazena as credenciais de login (login, password) do usuário, seu nível de permissão (role) e se a conta está ativa (enabled) ou se sua senha foi comprometida (\textit{passwordPwened}).
+
+\subsubsection{Password}
+Esta é a tabela principal do "cofre", onde são armazenadas as credenciais salvas pelo usuário. Cada registro representa um login/senha de um serviço externo (login, password, whereUserd), vinculando-se ao User (o dono) e a uma categoria+.
+
+\subsubsection{Filters}
+Filters é uma tabela auxiliar simples usada para organizar as senhas. Ela armazena os nomes das categorias (como "Trabalho", "Pessoal" e "Redes Sociais") que são associadas aos registros na tabela Passwords para facilitar a busca e a organização.
+
+\subsubsection{Logs}
+A tabela Logs é crucial para a auditoria de segurança. Ela registra um histórico detalhado de cada vez que uma credencial da tabela Passwords é utilizada, armazenando informações vitais como o IP, a geolocalização (cidade, país), o sistema operacional e o navegador de quem realizou o acesso.
+
+\section{Protótipos de tela}
+
+\subsection{Webservice}
+
+\subsubsection{Tela de login}
+\begin{figure}[H]
+    \centering
+    \caption{Tela de login.}
+    \includegraphics[width=1\linewidth]{telaLogn.png}
+    \label{fig:placeholder12}
+\end{figure}
+Tela de login: Esta é responsável por fornecer o login ao usuário (FR-001). Ela contêm um campo para login/nome de usuário e outro para sua senha mestra. Também possui um botão destinado ao envio do formulário, links para a pagina de cadastro e para a pagina de recuperação de senha. 
+
+
+\subsubsection{Tela de Cadastro}
+\begin{figure}[H]
+    \centering
+    \caption{Tela de cadastro..}
+    \includegraphics[width=1\linewidth]{telaCadastro.png}
+    \label{fig:placeholder13}
+\end{figure}
+
+Tela de cadastro: Responsável por permitir que o usuário crie um cadastro no aplicativo (FR-002). Ela possui três campos, respectivamente para login/e-mail, senha-mestra e confirmação da senha-mestra. Possui também um botão para envio de formulário e links para login e recuperação de senha.
+
+\subsubsection{Tela de recuperação de senha.}
+\begin{figure}[H]
+    \centering
+    \caption{Tela de recuperação de senha.}
+    \includegraphics[width=1\linewidth]{telaRecuperar.png}
+    \label{fig:placeholder14}
+\end{figure}
+
+Tela de recuperação de senha: Dentro desta pagina há apenas um campo para o usuário inserir o login/e-mail, um botão para enviar o formulário e links para as paginas de login e cadastro. Sua função é permitir que o usuario recupere o acesso a conta à partir do e-mail/login (FR-010).
+
+\subsubsection{Tela do Dashboard.}
+\begin{figure}[H]
+    \centering
+    \caption{Tela principal do webservice.}
+    \includegraphics[width=1\linewidth]{telaDashboard.png}
+    \label{fig:placeholder15}
+\end{figure}
+
+Tela do Dashboard: Destinada a mostrar as informações principais do aplicativo ao usuário. Nela, você encontrará uma tabela com suas credenciais salvas, opções para filtrar as credenciais na tabela (FR-009) e botões para editar, excluir (FR-012) e monitorar suas credenciais salvas. Também há uma \textit{navbar} com links para a pagina de edição da sua conta, saída da conta, mudança de tema entre claro/escuro e a pagina de estatísticas.
+
+\subsubsection{Tela de adição de credencial.}
+\begin{figure}[H]
+    \centering
+    \caption{Tela de adição de credenciais.}
+    \includegraphics[width=1\linewidth]{telaAddCred.png}
+    \label{fig:placeholder16}
+\end{figure}
+
+Tela de adição de credenciais: Esta pagina aparece como um \textit{popup} e é responsável por permitir a adição de credenciais dentro do sistema via webservice (FR-012). No formulario do \textit{popup} existem quatro campos para o usuário preencher que são destinados respectivamente, login da credencial dentro do site de terceiros, a senha para essa credencial, endereço web desse site e as flags ou filtros para esse cadastro e, por fim a pagina também possui um botão para salvar a credencial.
+
+\subsubsection{Tela de gerenciamento de filtros.}
+\begin{figure}[H]
+    \centering
+    \caption{Tela de gerenciamento de filtros.}
+    \includegraphics[width=1\linewidth]{telaEstatisticas.png}
+    \label{fig:placeholder17}
+\end{figure}
+
+Tela de gerenciamento de filtros: Pagina responsável por criar e deletar filtros para as credenciais. É composta por uma lista com todos os filtros, um botão para apagar cada um dos filtros e um botão para sair. As mudanças são salvas automaticamente no \textit{back-end}. 
+
+\subsubsection{Tela de registros de credencial.}
+\begin{figure}[H]
+    \centering
+    \caption{Tela de registros de credencial.}
+    \includegraphics[width=1\linewidth]{telaLogs.png}
+    \label{fig:placeholder18}
+\end{figure}
+
+Tela de registros de credencial: Pagina responsável por mostrar ao usuário todos os registros relacionados à essa credencial, como uso do \textit{autocomplete}, vazamentos detectados e edição da credencial.
+
+\subsubsection{Tela de perfil.}
+\begin{figure}[H]
+    \centering
+    \caption{Tela das configurações de perfil.}
+    \includegraphics[width=1\linewidth]{telaPerfil.png}
+    \label{fig:placeholder19}
+\end{figure}
+
+Tela de perfil: Pagina destinada a todo o gerenciamento do perfil e conta do usuário (RF-007). Esta possui cinco campos para preenchimento, quatro deles destinados aos dados do usuário respectivamente, para o login, senha, confirmação de senha e e-mail para recuperação da senha-mestra, já o último pode ser usado para personalizar a cor secundaria do site e, assim como os outros formulários, esta possui um botão para salvar as alterações.
+
+\subsubsection{Tela de exclusão de credencial.}
+
+\begin{figure}[H]
+    \centering
+    \caption{Tela de exclusão.}
+    \includegraphics[width=1\linewidth]{telaDelete.png}
+    \label{fig:placeholder20}
+\end{figure}
+
+
+\subsubsection{Tela de visualização das credencial.}
+\begin{figure}[H]
+    \centering
+    \caption{Tela de visualização.}
+    \includegraphics[width=1\linewidth]{telaView.png}
+    \label{fig:placeholder21}
+\end{figure}
+
+\subsubsection{Tela de edição.}
+\begin{figure}[H]
+    \centering
+    \caption{Tela de edição de credencial.}
+    \includegraphics[width=1\linewidth]{telaEdit.png}
+    \label{fig:placeholder22}
+\end{figure}
+
+
+\subsection{Extensão}
+
+
+\section{Conclusões}
+
+\section{Referencias}
+
+
+\end{document}

@@ -36,6 +36,14 @@ body.dark-mode {
     color: var(--text-dark);
 }
 
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
 /* --- Container Principal --- */
 .container {
     padding: 16px;
@@ -60,18 +68,6 @@ body.dark-mode {
 
 .logo svg {
     color: var(--primary-color);
-}
-
-#userInfo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    color: #718096;
-}
-
-body.dark-mode #userInfo {
-    color: #a0aec0;
 }
 
 /* --- Botões --- */
@@ -109,20 +105,6 @@ body.dark-mode .btn:hover {
 
 .btn.primary:hover {
     background-color: var(--primary-dark);
-}
-
-.icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    color: #a0aec0;
-    border-radius: 50%;
-}
-
-.icon-btn:hover {
-    color: var(--primary-color);
-    background-color: rgba(102, 126, 234, 0.1);
 }
 
 /* --- Abas (Tabs) --- */
@@ -263,84 +245,36 @@ body.dark-mode .password-username {
     gap: 4px;
 }
 
-/* --- Configurações --- */
-.settings-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+/* --- Página da Conta --- */
+.account-info {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-}
-
-.settings-list li {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
 }
 
-.settings-actions {
-    margin-top: 24px;
-    border-top: 1px solid var(--border-light);
-    padding-top: 16px;
-}
-
-body.dark-mode .settings-actions {
-    border-color: var(--border-dark);
-}
-
-.settings-actions .btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-/* --- Componente Switch --- */
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 40px;
-    height: 22px;
-}
-
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 22px;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 16px;
-    width: 16px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: .4s;
+.profile-pic {
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary-color);
 }
 
-input:checked + .slider {
-    background-color: var(--primary-color);
+.username {
+    font-size: 18px;
+    font-weight: 600;
 }
 
-input:checked + .slider:before {
-    transform: translateX(18px);
+.account-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.account-actions .btn {
+    width: 100%;
 }
 
 /* --- Estados (Vazio, Loading, Status) --- */
@@ -382,25 +316,3 @@ input:checked + .slider:before {
 .status-message.success { background-color: var(--success-color); color: white; }
 .status-message.error { background-color: var(--error-color); color: white; }
 .status-message.info { background-color: var(--info-color); color: white; }
-
-/* --- Toast --- */
-#toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 12px 20px;
-    border-radius: var(--border-radius);
-    color: white;
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 10000;
-    opacity: 0;
-    transition: opacity 0.3s, transform 0.3s;
-    pointer-events: none;
-}
-
-#toast.show {
-    opacity: 1;
-    transform: translate(-50%, -10px);
-}
