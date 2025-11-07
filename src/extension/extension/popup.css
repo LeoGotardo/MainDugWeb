@@ -2,8 +2,8 @@
 :root {
     --primary-color: #ff8c42;
     --primary-dark: #e67a2e;
-    --secondary-color: #667eea;
-    --secondary-dark: #5a67d8;
+    --secondary-color: #ea9f66;
+    --secondary-dark: #d88c5a;
     --background-light: #f7fafc;
     --background-dark: #1a202c;
     --text-light: #1a202c;
@@ -22,7 +22,7 @@
     --text-primary: #333;
     --custom-border-color: #ccc;
     --card-bg: #ffffff;
-    --primary-color: #007bff;
+    --primary-color: #ff7300;
     }
 
     /* 3. Seus estilos originais (corretos) */
