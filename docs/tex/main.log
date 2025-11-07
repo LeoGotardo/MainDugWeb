@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex 2025.11.5)  5 NOV 2025 20:34
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex 2025.11.5)  6 NOV 2025 21:39
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1003,12 +1003,12 @@ File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 [5{C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-ts1.enc}]
 
 [6]
-<Captura de tela de 2025-09-30 10-32-04.png, id=305, 1880.02374pt x 963.6pt>
+<Captura de tela de 2025-09-30 10-32-04.png, id=300, 1880.02374pt x 963.6pt>
 File: Captura de tela de 2025-09-30 10-32-04.png Graphic file (type png)
 <use Captura de tela de 2025-09-30 10-32-04.png>
 Package pdftex.def Info: Captura de tela de 2025-09-30 10-32-04.png  used on input line 161.
 (pdftex.def)             Requested size: 455.24411pt x 233.3272pt.
-<Captura de tela de 2025-09-30 11-01-57.png, id=307, 1880.02374pt x 963.6pt>
+<Captura de tela de 2025-09-30 11-01-57.png, id=302, 1880.02374pt x 963.6pt>
 File: Captura de tela de 2025-09-30 11-01-57.png Graphic file (type png)
 <use Captura de tela de 2025-09-30 11-01-57.png>
 Package pdftex.def Info: Captura de tela de 2025-09-30 11-01-57.png  used on input line 168.
@@ -1030,12 +1030,12 @@ l.172 \newpage
                <./Captura de tela de 2025-09-30 11-01-57.png>]
 
 [9]
-<image.png, id=324, 365.11406pt x 261.22594pt>
+<image.png, id=319, 365.11406pt x 261.22594pt>
 File: image.png Graphic file (type png)
 <use image.png>
 Package pdftex.def Info: image.png  used on input line 199.
 (pdftex.def)             Requested size: 455.24411pt x 325.72643pt.
-<imagem_2025-10-05_150904297.png, id=325, 499.8675pt x 338.26375pt>
+<imagem_2025-10-05_150904297.png, id=320, 499.8675pt x 338.26375pt>
 File: imagem_2025-10-05_150904297.png Graphic file (type png)
 <use imagem_2025-10-05_150904297.png>
 Package pdftex.def Info: imagem_2025-10-05_150904297.png  used on input line 206.
@@ -1048,7 +1048,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) has
                                                   \__shipout_drop_firstpage_...
 l.209 
        <./image.png>]
-<image2.png, id=332, 380.17032pt x 271.76532pt>
+<image2.png, id=327, 380.17032pt x 271.76532pt>
 File: image2.png Graphic file (type png)
 <use image2.png>
 Package pdftex.def Info: image2.png  used on input line 213.
@@ -1070,12 +1070,12 @@ l.217 \newpage
                <./image2.png>]
 
 [13]
-<imagem_2025-10-05_153847021.png, id=349, 1300.86pt x 661.47125pt>
+<imagem_2025-10-05_153847021.png, id=344, 1300.86pt x 661.47125pt>
 File: imagem_2025-10-05_153847021.png Graphic file (type png)
 <use imagem_2025-10-05_153847021.png>
 Package pdftex.def Info: imagem_2025-10-05_153847021.png  used on input line 243.
 (pdftex.def)             Requested size: 455.24411pt x 231.48813pt.
-<imagem_2025-10-05_155325647.png, id=350, 1321.93875pt x 660.4675pt>
+<imagem_2025-10-05_155325647.png, id=345, 1321.93875pt x 660.4675pt>
 File: imagem_2025-10-05_155325647.png Graphic file (type png)
 <use imagem_2025-10-05_155325647.png>
 Package pdftex.def Info: imagem_2025-10-05_155325647.png  used on input line 250.
@@ -1095,7 +1095,7 @@ l.254  \newpage
                 <./imagem_2025-10-05_153847021.png> <./imagem_2025-10-05_155325647.png>]
 
 [15]
-<useCaseUser.png, id=361, 1493.58pt x 1487.5575pt>
+<useCaseUser.png, id=356, 1493.58pt x 1487.5575pt>
 File: useCaseUser.png Graphic file (type png)
 <use useCaseUser.png>
 Package pdftex.def Info: useCaseUser.png  used on input line 332.
@@ -1113,7 +1113,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has 
                                                   \__shipout_drop_firstpage_...
 l.335 
       ]
-<useCaseAdmin.png, id=368, 675.52374pt x 411.5375pt>
+<useCaseAdmin.png, id=363, 675.52374pt x 411.5375pt>
 File: useCaseAdmin.png Graphic file (type png)
 <use useCaseAdmin.png>
 Package pdftex.def Info: useCaseAdmin.png  used on input line 342.
@@ -1142,7 +1142,7 @@ l.362 A
 [19]
 
 [20]
-<classDiagram.png, id=390, 716.6775pt x 2324.685pt>
+<classDiagram.png, id=385, 716.6775pt x 2324.685pt>
 File: classDiagram.png Graphic file (type png)
 <use classDiagram.png>
 Package pdftex.def Info: classDiagram.png  used on input line 387.
@@ -1157,7 +1157,7 @@ l.393
        <./classDiagram.png>]
 
 [22]
-<derDiagram.png, id=401, 900.36375pt x 2324.685pt>
+<derDiagram.png, id=396, 900.36375pt x 2324.685pt>
 File: derDiagram.png Graphic file (type png)
 <use derDiagram.png>
 Package pdftex.def Info: derDiagram.png  used on input line 423.
@@ -1172,7 +1172,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{figure.11}) ha
                                                   \__shipout_drop_firstpage_...
 l.429 
        <./derDiagram.png>]
-<telaLogn.png, id=413, 978.65625pt x 496.10344pt>
+<telaLogn.png, id=408, 978.65625pt x 496.10344pt>
 File: telaLogn.png Graphic file (type png)
 <use telaLogn.png>
 Package pdftex.def Info: telaLogn.png  used on input line 447.
@@ -1180,7 +1180,7 @@ Package pdftex.def Info: telaLogn.png  used on input line 447.
 
 
 [25]
-<telaCadastro.png, id=418, 1318.9275pt x 660.4675pt>
+<telaCadastro.png, id=413, 1318.9275pt x 660.4675pt>
 File: telaCadastro.png Graphic file (type png)
 <use telaCadastro.png>
 Package pdftex.def Info: telaCadastro.png  used on input line 457.
@@ -1193,7 +1193,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{figure.12}) ha
                                                   \__shipout_drop_firstpage_...
 l.460 
        <./telaLogn.png>]
-<telaRecuperar.png, id=425, 992.20688pt x 494.59781pt>
+<telaRecuperar.png, id=420, 992.20688pt x 494.59781pt>
 File: telaRecuperar.png Graphic file (type png)
 <use telaRecuperar.png>
 Package pdftex.def Info: telaRecuperar.png  used on input line 467.
@@ -1206,7 +1206,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{figure.13}) ha
                                                   \__shipout_drop_firstpage_...
 l.470 
        <./telaCadastro.png>]
-<telaDashboard.png, id=431, 989.19562pt x 499.11469pt>
+<telaDashboard.png, id=426, 989.19562pt x 499.11469pt>
 File: telaDashboard.png Graphic file (type png)
 <use telaDashboard.png>
 Package pdftex.def Info: telaDashboard.png  used on input line 477.
@@ -1219,7 +1219,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{figure.14}) ha
                                                   \__shipout_drop_firstpage_...
 l.480 
        <./telaRecuperar.png>]
-<telaAddCred.png, id=438, 989.19562pt x 492.33937pt>
+<telaAddCred.png, id=433, 989.19562pt x 492.33937pt>
 File: telaAddCred.png Graphic file (type png)
 <use telaAddCred.png>
 Package pdftex.def Info: telaAddCred.png  used on input line 487.
@@ -1232,7 +1232,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{figure.15}) ha
                                                   \__shipout_drop_firstpage_...
 l.490 
        <./telaDashboard.png>]
-<telaEstatisticas.png, id=446, 989.19562pt x 499.11469pt>
+<telaEstatisticas.png, id=441, 989.19562pt x 499.11469pt>
 File: telaEstatisticas.png Graphic file (type png)
 <use telaEstatisticas.png>
 Package pdftex.def Info: telaEstatisticas.png  used on input line 497.
@@ -1245,7 +1245,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{figure.16}) ha
                                                   \__shipout_drop_firstpage_...
 l.500 
        <./telaAddCred.png>]
-<telaLogs.png, id=453, 989.19562pt x 502.12593pt>
+<telaLogs.png, id=448, 989.19562pt x 502.12593pt>
 File: telaLogs.png Graphic file (type png)
 <use telaLogs.png>
 Package pdftex.def Info: telaLogs.png  used on input line 507.
@@ -1258,7 +1258,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{figure.17}) ha
                                                   \__shipout_drop_firstpage_...
 l.510 
        <./telaEstatisticas.png>]
-<telaPerfil.png, id=460, 1323.94624pt x 658.46pt>
+<telaPerfil.png, id=455, 1323.94624pt x 658.46pt>
 File: telaPerfil.png Graphic file (type png)
 <use telaPerfil.png>
 Package pdftex.def Info: telaPerfil.png  used on input line 517.
@@ -1276,15 +1276,15 @@ pdfTeX warning (ext4): destination with the same identifier (name{figure.19}) ha
                                                   \__shipout_drop_firstpage_...
 l.522 
        <./telaLogs.png> <./telaPerfil.png>]
-<telaDelete.png, id=468, 1315.91624pt x 661.47125pt>
+<telaDelete.png, id=463, 1315.91624pt x 661.47125pt>
 File: telaDelete.png Graphic file (type png)
 <use telaDelete.png>
 Package pdftex.def Info: telaDelete.png  used on input line 528.
 (pdftex.def)             Requested size: 455.24411pt x 228.8336pt.
-<telaView.png, id=469, 1321.93875pt x 663.47874pt>
+<telaView.png, id=464, 1321.93875pt x 663.47874pt>
 File: telaView.png Graphic file (type png)
 <use telaView.png>
-Package pdftex.def Info: telaView.png  used on input line 537.
+Package pdftex.def Info: telaView.png  used on input line 539.
 (pdftex.def)             Requested size: 455.24411pt x 228.48532pt.
 
 
@@ -1292,43 +1292,30 @@ Package pdftex.def Info: telaView.png  used on input line 537.
 pdfTeX warning (ext4): destination with the same identifier (name{figure.20}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.540 
+l.542 
        <./telaDelete.png>]
-<telaEdit.png, id=475, 1320.935pt x 662.475pt>
-File: telaEdit.png Graphic file (type png)
-<use telaEdit.png>
-Package pdftex.def Info: telaEdit.png  used on input line 545.
-(pdftex.def)             Requested size: 455.24411pt x 228.31151pt.
-
 
 [34
 pdfTeX warning (ext4): destination with the same identifier (name{figure.21}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.558 \end{document}
-                    
-pdfTeX warning (ext4): destination with the same identifier (name{figure.22}) has been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.558 \end{document}
-                     <./telaView.png> <./telaEdit.png>]
-
-[35] (main.aux)
+l.554 \end{document}
+                     <./telaView.png>] (main.aux)
  ***********
 LaTeX2e <2025-06-01> patch level 1
 L3 programming layer <2020/03/25>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 89D91C553B3200B8681EF359C55DCACC;7757.
+(rerunfilecheck)             Checksum: 01DB987DE0056E13C08B49BDC12EF765;7601.
 Package logreq Info: Writing requests to 'main.run.xml'.
 \openout1 = `main.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 29611 strings out of 468080
- 573330 string characters out of 5426740
- 1451664 words of memory out of 5000000
- 57697 multiletter control sequences out of 15000+600000
+ 29599 strings out of 468080
+ 573121 string characters out of 5426740
+ 1450609 words of memory out of 5000000
+ 57688 multiletter control sequences out of 15000+600000
  664295 words of font info for 60 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  84i,11n,97p,1521b,6025s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -1336,9 +1323,9 @@ Here is how much of TeX's memory you used:
 pdfTeX warning (dest): name{cite.0@google} has been referenced but does not exist, replaced by a fixed one
 
 <C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbx12.pfb><C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmr12.pfb><C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmri12.pfb>
-Output written on main.pdf (37 pages, 1478455 bytes).
+Output written on main.pdf (36 pages, 1427802 bytes).
 PDF statistics:
- 533 PDF objects out of 1000 (max. 8388607)
- 113 named destinations out of 1000 (max. 500000)
- 539 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 519 PDF objects out of 1000 (max. 8388607)
+ 110 named destinations out of 1000 (max. 500000)
+ 526 words of extra memory for PDF output out of 10000 (max. 10000000)
 

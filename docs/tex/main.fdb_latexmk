@@ -1,12 +1,12 @@
 # Fdb version 4
-["biber main"] 1762385239.03527 "main.bcf" "main.bbl" "main" 1762385694.93307 0
-  "main.bcf" 1762385694 113807 2c75734eaff7e1374583f64d39800a66 "pdflatex"
+["biber main"] 1762385239.03527 "main.bcf" "main.bbl" "main" 1762475953.55998 0
+  "main.bcf" 1762475953 113807 2c75734eaff7e1374583f64d39800a66 "pdflatex"
   "referencias.bib" 1762381405 1252 4e5fc26958a38db62b80daa95d1262fd ""
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1762385690.69825 "c:/Users/Leo/Desktop/Projects/MainDugWeb/docs/tex/main.tex" "main.pdf" "main" 1762385694.9342 0
+["pdflatex"] 1762475949.55284 "c:/Users/Leo/Desktop/Projects/MainDugWeb/docs/tex/main.tex" "main.pdf" "main" 1762475953.56091 0
   "C:/Users/Leo/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1762385234 80909 eab91d9745dd2edfd62a31d53cd5fe15 ""
   "C:/Users/Leo/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1762385144 13320899 aa0bc31e7263c75c8688f18c9a491efd ""
   "C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-rm.enc" 1256929440 2327 9d6df24f9c4f7368395224341a95523a ""
@@ -175,7 +175,7 @@
   "C:/Users/Leo/AppData/Local/Programs/MiKTeX/tex/latex/xpatch/xpatch.sty" 1585221260 8510 7803f78066c4f9d008405191a4b43073 ""
   "Captura de tela de 2025-09-30 10-32-04.png" 1762381391 223830 d3162d5ed90067bfbcabceba3d0ca8fd ""
   "Captura de tela de 2025-09-30 11-01-57.png" 1762381393 132414 a16419594e40e9b1d96ee5976959a47f ""
-  "c:/Users/Leo/Desktop/Projects/MainDugWeb/docs/tex/main.tex" 1762385686 35932 8ec48f1696ae11d4ff5c5832c04c8de7 ""
+  "c:/Users/Leo/Desktop/Projects/MainDugWeb/docs/tex/main.tex" 1762475939 35618 b11fafe554b9832a064e1d5a46b27277 ""
   "classDiagram.png" 1762381394 261297 837e7c7fade4b8d5fc5e7f36dfdccb8e ""
   "derDiagram.png" 1762381396 185400 129bb990fba17b70fd8a6fb123768d90 ""
   "image.png" 1762381397 82939 24d0dca04a6720365454553dbe0bf7e7 ""
@@ -183,17 +183,16 @@
   "imagem_2025-10-05_150904297.png" 1762381401 67400 79cf91a2176ab3e98a7888a28d055140 ""
   "imagem_2025-10-05_153847021.png" 1762381402 45053 f727ac289ba8f4f52b894c32396849b8 ""
   "imagem_2025-10-05_155325647.png" 1762381404 34708 f492ce30cfe7f9367ca215a9d91e4704 ""
-  "main.aux" 1762385694 12942 86d02b04658be4f2aad905071b184ea3 "pdflatex"
+  "main.aux" 1762475953 12576 34937f9823ddcaec11f7884c7a064c9a "pdflatex"
   "main.bbl" 1762385308 1370 da28b33f5df699f772eceb87e429d6c9 "biber main"
-  "main.out" 1762385694 7757 89d91c553b3200b8681ef359c55dcacc "pdflatex"
-  "main.run.xml" 1762385694 2483 2d8f64f6e944ba7291da572943d6fd0c "pdflatex"
-  "main.tex" 1762385686 35932 8ec48f1696ae11d4ff5c5832c04c8de7 ""
-  "main.toc" 1762385694 4619 7a8dc7bd4d5d96872e01d984bca56efd "pdflatex"
+  "main.out" 1762475953 7601 01db987de0056e13c08b49bdc12ef765 "pdflatex"
+  "main.run.xml" 1762475953 2483 2d8f64f6e944ba7291da572943d6fd0c "pdflatex"
+  "main.tex" 1762475939 35618 b11fafe554b9832a064e1d5a46b27277 ""
+  "main.toc" 1762475953 4523 0595498c3ccca2da91f377357d3d3d6f "pdflatex"
   "telaAddCred.png" 1762381407 75736 70df5a335d86862a07454991e1dc16e9 ""
   "telaCadastro.png" 1762381410 26080 ad8a57383f98170cd22b97220208411c ""
   "telaDashboard.png" 1762381411 67850 906c1e9edb843a1c26f0b159eb242104 ""
   "telaDelete.png" 1762381412 68230 a2091e0afbd530a0ad1bc2d23b0d3cae ""
-  "telaEdit.png" 1762381413 68057 2f247f878d2d58e65ccb1cbf228b0900 ""
   "telaEstatisticas.png" 1762381415 45510 89db92a4ad83104d16a24fb1c81803da ""
   "telaLogn.png" 1762381418 29895 958d941c62d16e095b9b95b707418be4 ""
   "telaLogs.png" 1762381420 40091 0f9db901f8d0b52a4cc1009fb161e253 ""

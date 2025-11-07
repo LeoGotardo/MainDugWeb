@@ -47,7 +47,6 @@
 \contentsline {subsubsection}{\numberline {5.1.8}Tela de perfil.}{32}{subsubsection.5.1.8}%
 \contentsline {subsubsection}{\numberline {5.1.9}Tela de exclusão de credencial.}{33}{subsubsection.5.1.9}%
 \contentsline {subsubsection}{\numberline {5.1.10}Tela de visualização das credencial.}{34}{subsubsection.5.1.10}%
-\contentsline {subsubsection}{\numberline {5.1.11}Tela de edição.}{34}{subsubsection.5.1.11}%
-\contentsline {subsection}{\numberline {5.2}Extensão}{35}{subsection.5.2}%
-\contentsline {section}{\numberline {6}Conclusões}{35}{section.6}%
-\contentsline {section}{\numberline {7}Referencias}{35}{section.7}%
+\contentsline {subsection}{\numberline {5.2}Extensão}{34}{subsection.5.2}%
+\contentsline {section}{\numberline {6}Conclusões}{34}{section.6}%
+\contentsline {section}{\numberline {7}Referencias}{34}{section.7}%
