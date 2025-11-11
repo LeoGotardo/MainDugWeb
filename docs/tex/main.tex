@@ -129,7 +129,7 @@ A proposta visa, portanto, disponibilizar uma alternativa transparente, segura e
 
 \section{Soluções Correlatas}
 
-Com o objetivo de compreender melhor o cenário atual e identificar soluções já consolidadas no mercado, foi realizada uma pesquisa exploratória sobre os sites e sistemas especializados em gerenciamento de senhas ativos atualmente. Para isso, utilizou-se a ferramenta de busca (\cite{google}), com as seguintes palavras-chave: gerenciador de senhas, password manager, aplicativos de segurança de credenciais e armazenamento seguro de senhas.
+Com o objetivo de compreender melhor o cenário atual e identificar soluções já consolidadas no mercado, foi realizada uma pesquisa exploratória sobre os sites e sistemas especializados em gerenciamento de senhas ativos atualmente. Para isso, utilizou-se a ferramenta de busca google, com as seguintes palavras-chave: gerenciador de senhas, password manager, aplicativos de segurança de credenciais e armazenamento seguro de senhas.
 
 Os principais resultados retornados pela ferramenta foram analisados segundo critérios de proximidade com o tema deste trabalho, funcionalidades disponibilizadas, nível de segurança, modelo de distribuição (proprietário ou código aberto), experiência do usuário e relevância no mercado. A partir dessa análise, destacaram-se como soluções representativas: LastPass, 1Password, Bitwarden.
 
@@ -137,7 +137,7 @@ Para avaliar aspectos técnicos e de usabilidade, os sistemas foram testados con
 
 \subsection{LastPass}
 
-O LastPass (site: https://www.lastpass.com/pt) é um dos gerenciadores de senhas mais conhecidos e amplamente utilizados em escala global. Sua proposta é simplificar o armazenamento de credenciais por meio de sincronização entre múltiplos dispositivos, permitindo ao usuário acessar suas senhas em qualquer lugar. O aplicativo tem diversas ferramentas para gerenciamento e compartilhamento das credenciais. Com ele, você pode criar senhas fortes, compartilhar credenciais, salvar formas de pagamento como cartões de crédito e débito. O aplicativo também verifica a complexidade das senhas e pode armazenar notas de texto criptografadas, documentos ou outros dados sensíveis. Também possui uma versão mobile que sincroniza todas as informações pela conta do usuário. A empresa também é conhecida por operar no modelo \textit{zero-knowledge}, o que significa que nem mesmo os funcionários do LastPass podem acessar as informações armazenadas no aplicativo, uma vez que quem criptografa os dados é o próprio dispositivo do usuário, fazendo com que os dados já sejam armazenados criptografados. Para criptografia, o LastPass usa, em grande parte, o algoritmo AES-256. Um dos melhores algoritmos para criptografia atualmente. Tornando ataques como os de \textit{brute-force} quase impossíveis.
+O LastPass \cite{lastpass} é um dos gerenciadores de senhas mais conhecidos e amplamente utilizados em escala global. Sua proposta é simplificar o armazenamento de credenciais por meio de sincronização entre múltiplos dispositivos, permitindo ao usuário acessar suas senhas em qualquer lugar. O aplicativo tem diversas ferramentas para gerenciamento e compartilhamento das credenciais. Com ele, você pode criar senhas fortes, compartilhar credenciais, salvar formas de pagamento como cartões de crédito e débito. O aplicativo também verifica a complexidade das senhas e pode armazenar notas de texto criptografadas, documentos ou outros dados sensíveis. Também possui uma versão mobile que sincroniza todas as informações pela conta do usuário. A empresa também é conhecida por operar no modelo \textit{zero-knowledge}, o que significa que nem mesmo os funcionários do LastPass podem acessar as informações armazenadas no aplicativo, uma vez que quem criptografa os dados é o próprio dispositivo do usuário, fazendo com que os dados já sejam armazenados criptografados. Para criptografia, o LastPass usa, em grande parte, o algoritmo AES-256. Um dos melhores algoritmos para criptografia atualmente. Tornando ataques como os de \textit{brute-force} quase impossíveis.
 
 Pontos positivos:
 
@@ -173,7 +173,7 @@ Pontos negativos:
 
 \subsection{1Password}
 
-O 1Password (site: https://www.lastpass.com/pt) destaca-se pelo foco em usabilidade e experiência do usuário. É frequentemente recomendado em ambientes corporativos devido às suas funções de compartilhamento de credenciais e controle de permissões entre equipes. Assim como outros concorrentes, o 1Password possui também cofres seguros para armazenamento de formas de pagamento, como cartões de crédito e débito, anotações de texto seguras, anotações também sobre os cartões salvos, como limite ou data de emissão e documentos como CPF ou RG. O 1Password também possui a criptografia AES-256 uma das melhores atualmente. Diferente de outros concorrentes, o 1Password oferece a função de chave-mestra que consiste em uma chave secreta única de 128 Bits que é gerada no primeiro uso, fica armazenada no dispositivo e é necessária junto da senha mestra para abertura do aplicativo. Assim como a grande maioria dos seus concorrentes, o 1Password também possui uma extensão para navegador e opera em modelo de \textit{zero-knowledge}. Ele também conta com o Whacthtower, ferramenta responsável por monitorar vazamentos em sites, senhas fracas ou comprometidas, senhas repetidas e autenticação de dois fatores. Outra função que diferencia o 1Password de outros concorrentes é o 'Modo Viagem', que, quando ativo, esconde temporariamente cofres tidos como não seguros em todos os dispositivos até a desativação.
+O 1Password \cite{onepassword} destaca-se pelo foco em usabilidade e experiência do usuário. É frequentemente recomendado em ambientes corporativos devido às suas funções de compartilhamento de credenciais e controle de permissões entre equipes. Assim como outros concorrentes, o 1Password possui também cofres seguros para armazenamento de formas de pagamento, como cartões de crédito e débito, anotações de texto seguras, anotações também sobre os cartões salvos, como limite ou data de emissão e documentos como CPF ou RG. O 1Password também possui a criptografia AES-256 uma das melhores atualmente. Diferente de outros concorrentes, o 1Password oferece a função de chave-mestra que consiste em uma chave secreta única de 128 Bits que é gerada no primeiro uso, fica armazenada no dispositivo e é necessária junto da senha mestra para abertura do aplicativo. Assim como a grande maioria dos seus concorrentes, o 1Password também possui uma extensão para navegador e opera em modelo de \textit{zero-knowledge}. Ele também conta com o Whacthtower, ferramenta responsável por monitorar vazamentos em sites, senhas fracas ou comprometidas, senhas repetidas e autenticação de dois fatores. Outra função que diferencia o 1Password de outros concorrentes é o 'Modo Viagem', que, quando ativo, esconde temporariamente cofres tidos como não seguros em todos os dispositivos até a desativação.
 
 Pontos positivos:
 
@@ -218,7 +218,7 @@ Pontos negativos:
 
 \subsection{Google senhas}
 
-O Google Senhas é o gerenciador de senhas integrado ao ecossistema Google, disponível nativamente nos dispositivos Android e no navegador Chrome. Esse é o gerenciador de senhas mais comumente usado. Ele conta com integração completa com os aplicativos do Google e backup/sincronização automática com todos os dispositivos conectados à mesma conta do Google. Assim como outros concorrentes, o Google Senhas também usa criptografia de ponta a ponta, políticas de \textit{zero-knowladge} e conta com ferramentas de preenchimento automático de formulários, geração de senhas seguras, alertas de senhas fracas, comprometidas em vazamento de dados ou até senhas reutilizadas em mais de um site. Além de ferramentas básicas de gerenciamento de credenciais, o Google Senhas conta também com ferramentas para armazenamento seguro de anotações e oferece compartilhamento de credenciais via Family Link, possibilitando que membros de um mesmo grupo familiar compartilhem senhas selecionadas de forma segura.
+O Google Senhas \cite{google_passwords} é o gerenciador de senhas integrado ao ecossistema Google, disponível nativamente nos dispositivos Android e no navegador Chrome. Esse é o gerenciador de senhas mais comumente usado. Ele conta com integração completa com os aplicativos do Google e backup/sincronização automática com todos os dispositivos conectados à mesma conta do Google. Assim como outros concorrentes, o Google Senhas também usa criptografia de ponta a ponta, políticas de \textit{zero-knowladge} e conta com ferramentas de preenchimento automático de formulários, geração de senhas seguras, alertas de senhas fracas, comprometidas em vazamento de dados ou até senhas reutilizadas em mais de um site. Além de ferramentas básicas de gerenciamento de credenciais, o Google Senhas conta também com ferramentas para armazenamento seguro de anotações e oferece compartilhamento de credenciais via Family Link, possibilitando que membros de um mesmo grupo familiar compartilhem senhas selecionadas de forma segura.
 
 Pontos positivos:
 
@@ -318,7 +318,7 @@ Paralelamente, foi realizado o design da interface do usuário (UI) e da experi�
         NFR-005 & Disponibilidade mínima de 99\% do sistema & Média \\
         NFR-006 & Tempo de resposta < 500ms & Media \\
         NFR-007 & Compatibilidade com os principais navegadores (Chrome, Firefox e Edge) & Alta \\
-        NFR-005 & Persistência dos cadastros salvos & Alta \\
+        NFR-008 & Persistência dos cadastros salvos & Alta \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -348,9 +348,9 @@ O administrador possui acesso apenas ao \textit{Webservice}; lá, ele pode geren
 \subsection{Estrategias de segurança}
 
 \begin{itemize}
-    \item Mimisismo da database
-    \item Criptografia \textit{one-way} para a senha-mestra.
-    \item Criptografia \textit{both-ways} para as credenciais e login.
+    \item \textbf{Mimisismo da database: O mimisismo dadatabase faz com que seja aplicada alguma criptografia ou ofuscação não só nos dados armazenados, mas também nos nomes dos atributos e tabelas. Isso faz com que mesmo com acesso ao banco de dados, o invasor não consiga determinar quais dados estão armazenados.}
+    \item \textbf{Criptografia da Senha-Mestra (\textit{one-way}):} A senha-mestra do usuário, que dá acesso ao cofre, é protegida usando um algoritmo de \textit{hash} adaptativo (como o bcrypt ou Argon2). Esta abordagem, recomendada pelo OWASP \cite{owasp_password}, torna a senha ilegível e computacionalmente inviável de ser revertida, protegendo-a contra ataques de força bruta mesmo em caso de vazamento do banco de dados.
+    \item \item \textbf{Criptografia do Cofre (\textit{both-ways}):} Para as credencias de login dentro do aplicativo como senha-mestra são protegidas por criptografia sem recuperação (como bcrypt). Seguindo as diretrizes do OWASP \cite{owasp_crypto_storage} para armazenamento criptográfico, a chave de decodificação é derivada da senha-mestra do usuário. Isso garante que os dados no banco de dados permaneçam indecifráveis para qualquer um que não possua a senha-mestra, implementando um modelo \textit{zero-knowledge}.
 \end{itemize}
 
 \subsection{Tecnologias}
@@ -362,20 +362,20 @@ A escolha do Python como linguagem de programação principal para o back-end do
 Além disso, o Python possui um ecossistema robusto e maduro, com vastas bibliotecas de terceiros, especialmente no que tange à segurança e criptografia (como bcrypt). Isso permitiu a implementação de algoritmos de criptografia fortes (RNF-001, RNF-002) sem a necessidade de reinventar soluções de segurança, garantindo o uso de padrões já testados e validados pela indústria.   
 
 \subsubsection{Flask}
-Flask foi selecionado como o micro-framework web para a construção da API e do webservice do MainDug. Diferente de frameworks monolíticos, o Flask adota uma abordagem minimalista e flexível, fornecendo as ferramentas essenciais para roteamento e gerenciamento de requisições sem impor uma estrutura rígida de projeto.
+Flask \cite{flask_docs} foi selecionado como o micro-framework web para a construção da API e do webservice do MainDug. Diferente de frameworks monolíticos, o Flask adota uma abordagem minimalista e flexível, fornecendo as ferramentas essenciais para roteamento e gerenciamento de requisições sem impor uma estrutura rígida de projeto.
 
 Essa flexibilidade foi um requisito fundamental para o MainDug, alinhando-se ao objetivo de autonomia e personalização. Ele permite um controle granular sobre os componentes da aplicação, facilitando a integração de bibliotecas específicas, como o SQLAlchemy, e a implementação de mecanismos de segurança personalizados (RNF-004), sendo ideal para construir uma API leve, de alto desempenho e focada em segurança.
 
 
 \subsubsection{SQLAlchemy}
-SQLAlchemy foi adotado como o Mapeador Objeto-Relacional (ORM) e toolkit SQL. A principal função do SQLAlchemy neste projeto é abstrair a comunicação com o banco de dados, permitindo que a lógica de negócios seja escrita em classes Python (como as classes User e Password no Diagrama de Classes) em vez de consultas SQL manuais.
+SQLAlchemy \cite{sqlalchemy} foi adotado como o Mapeador Objeto-Relacional (ORM) e toolkit SQL. A principal função do SQLAlchemy neste projeto é abstrair a comunicação com o banco de dados, permitindo que a lógica de negócios seja escrita em classes Python (como as classes User e Password no Diagrama de Classes) em vez de consultas SQL manuais.
 
-A principal vantagem de segurança ao usar um ORM como o SQLAlchemy é a prevenção nativa contra ataques de Injeção de SQL (SQL Injection), pois ele parametriza automaticamente todas as consultas. Além disso, o SQLAlchemy é agnóstico em relação ao SGBD, o que significa que, embora o PostgreSQL tenha sido escolhido para este projeto, a aplicação pode ser facilmente adaptada por um usuário para rodar em outros bancos, como MySQL ou SQLite, reforçando o pilar da flexibilidade.
+A principal vantagem de segurança ao usar um ORM como o SQLAlchemy é a prevenção nativa contra ataques de Injeção de SQL (SQL Injection)é a prevenção nativa contra ataques de Injeção de SQL (SQL Injection), que é consistentemente classificada como uma das vulnerabilidades mais críticas pela OWASP \cite{owasp_top10}, pois ele parametriza automaticamente todas as consultas. Além disso, o SQLAlchemy é agnóstico em relação ao SGBD, o que significa que, embora o PostgreSQL tenha sido escolhido para este projeto, a aplicação pode ser facilmente adaptada por um usuário para rodar em outros bancos, como MySQL ou SQLite, reforçando o pilar da flexibilidade.
 
 \subsubsection{PostgreSQL}
 Para o Sistema de Gerenciamento de Banco de Dados (SGBD), optou-se pelo PostgreSQL. Esta escolha é justificada por ser um dos sistemas de banco de dados relacional de código aberto mais avançados e confiáveis do mundo, alinhando-se perfeitamente com a filosofia open-source do MainDug.
 
-O PostgreSQL é renomado por sua robustez, integridade de dados e conformidade estrita com os padrões SQL. Para uma aplicação que gerencia dados sensíveis como credenciais, sua arquitetura madura e seus recursos avançados de segurança (como controle de acesso granular e extensibilidade) fornecem uma fundação sólida e confiável para o armazenamento persistente (RNF-005) e seguro dos dados criptografados dos usuários.
+O PostgreSQL é renomado por sua robustez, integridade de dados e conformidade estrita com os padrões SQL. Para uma aplicação que gerencia dados sensíveis como credenciais, sua arquitetura madura e seus recursos avançados de segurança (como controle de acesso granular e extensibilidade) fornecem uma fundação sólida e confiável para o armazenamento persistente (RNF-005) e seguro dos dados criptografados dos usuários \cite{postgresql}.
 
 \newpage
 
@@ -544,48 +544,56 @@ Pagina destinada a visualização de uma credencial. Ela aparece como popup e é
 
 
 \subsection{Extensão}
-\subsection{Popup de login}
+Para interagir com o navegador do usuário, foi desenvolvida uma extensão web compatível com a API de extensões do Google Chrome \cite{chrome_extensions}.
+
+\subsubsection{Popup de login}
 \begin{figure}[H]
     \centering
     \caption{Popup de login.}
-    \includegraphics[width=1\linewidth]{loginExPage.png}
+    \includegraphics[width=0.5\linewidth]{loginExPage.png}
     \label{fig:placeholder22}
 \end{figure}
 
 Tela da extensão web destinada ao login do usuário. É a primeira pagina que aparece quando o usuario instala a extensão, ela possuí dois campos, um para login e outro para senha, nela também existem dois botões, um para enviar o formulálrio e outro para se registrar no serviço que redireciona o usuário ao site oficial.
 
-\subsection{Popup da tela inicial}
+\subsubsection{Popup da tela inicial}
 \begin{figure}[H]
     \centering
     \caption{Popup da tela inicial.}
-    \includegraphics[width=1\linewidth]{homeExPage.png}
+    \includegraphics[width=0.5\linewidth]{homeExPage.png}
     \label{fig:placeholder23}
 \end{figure}
 
 Popup gerado pela extensão web que se torna a pagina inicial do aplicativo enquanto o usuário estiver logado. Dentro dele o usuário pode ver todas as credenciais salvas e copiar-las.m
 
 
-\subsection{Popup de configurações}
+\subsubsection{Popup de configurações}
 \begin{figure}[H]
     \centering
     \caption{Popup da configuração.}
-    \includegraphics[width=1\linewidth]{configExPage.png}
+    \includegraphics[width=0.5\linewidth]{configExPage.png}
     \label{fig:placeholder25}
 \end{figure}
 
+Tela responsavel pela configuração do comportamento da extensão web. Dentro desta pagina existem quatro opções de personalização, sendo respectivamente, o preenchimento automatico de senhas (FR-004), a geração de senhas seguras (FR-003), o salvamento de credenciais automatico, o recebimento de notificações e o modo escuro da extensão. Cada uma dessas opções pode ser ativada ou desativada pelo usuário. Além destas opções, aqui o usuário tambem pode exportar suas credenciais salvas em um arquivo '.csv'.
 
-\subsection{Popup de conta}
+\subsubsection{Popup de conta}
 \begin{figure}[H]
     \centering
     \caption{Popup de conta.}
-    \includegraphics[width=1\linewidth]{accountExPage.png}
+    \includegraphics[width=0.5\linewidth]{accountExPage.png}
     \label{fig:placeholder24}
 \end{figure}
 
+Tela destinada ao gerenciamento da conta do usuário dentro da extensão web. Nela o usuario pode sair da conta atual ou ser redireciona
 
+\newpage
 \section{Conclusões}
+O desenvolvimento do MainDug demonstrou ser uma resposta técnica viável e necessária ao crescente problema da centralização de dados e da perda de autonomia do usuário em serviços de gerenciamento de credenciais. Este trabalho atingiu seu objetivo principal ao projetar e prototipar uma arquitetura de código aberto que, diferentemente das soluções proprietárias analisadas, coloca o controle da infraestrutura e dos dados criptografados diretamente nas mãos do usuário. Embora o protótipo atual sirva como uma fundação robusta, o caminho para uma aplicação pronta para produção exigirá auditorias de segurança independentes e a expansão para plataformas móveis, como sugerido para trabalhos futuros. Em suma, o MainDug cumpre sua proposta de valor, não apenas como uma aplicação funcional, mas como uma prova de conceito de que é possível desenhar sistemas que fortalecem ativamente o direito à privacidade e a soberania digital do indivíduo na era da informação.
 
-\section{Referencias}
 
+\newpage
+\nocite{*}
+\printbibliography[title={Referências}]
 
 \end{document}

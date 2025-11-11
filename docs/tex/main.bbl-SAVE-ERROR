@@ -57,6 +57,7 @@
       \field{urlyear}{2025}
       \field{year}{2025}
       \field{urldateera}{ce}
+      \true{nocite}
       \verb{urlraw}
       \verb https://developer.chrome.com/docs/extensions/develop
       \endverb
@@ -123,6 +124,7 @@
       \field{urlyear}{2025}
       \field{year}{2023}
       \field{urldateera}{ce}
+      \true{nocite}
       \verb{urlraw}
       \verb https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
       \endverb
@@ -145,6 +147,7 @@
       \field{urlyear}{2025}
       \field{year}{2021}
       \field{urldateera}{ce}
+      \true{nocite}
       \verb{urlraw}
       \verb https://owasp.org/www-project-top-ten/
       \endverb
@@ -189,6 +192,7 @@
       \field{urlyear}{2025}
       \field{year}{2025}
       \field{urldateera}{ce}
+      \true{nocite}
       \verb{urlraw}
       \verb https://www.sqlalchemy.org
       \endverb
@@ -211,6 +215,7 @@
       \field{urlyear}{2025}
       \field{year}{2025}
       \field{urldateera}{ce}
+      \true{nocite}
       \verb{urlraw}
       \verb https://flask.palletsprojects.com/en/stable
       \endverb
@@ -233,6 +238,7 @@
       \field{urlyear}{2025}
       \field{year}{2025}
       \field{urldateera}{ce}
+      \true{nocite}
       \verb{urlraw}
       \verb https://www.postgresql.org
       \endverb
