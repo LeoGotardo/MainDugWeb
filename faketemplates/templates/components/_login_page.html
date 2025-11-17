@@ -1,0 +1,31 @@
+<div id="page-login" class="page auth-container">
+    <div class="text-center mb-4">
+        <img src="./src/static/images/logo.svg" alt="Logo" style="height: 2.7rem; width: auto;">
+    </div>
+    <h2 class="text-center mb-4">Login</h2>
+    <form onsubmit="handleLogin(event); return false;" autocomplete="off">
+        <div class="mb-3">
+            <label for="login" class="form-label">Usuário (Login)</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                <input type="text" class="form-control" id="login" name="login" placeholder="Login" required>
+            </div>
+        </div>
+        <div class="mb-4">
+            <label for="password" class="form-label">Senha</label>
+            <div class="input-group password-wrapper">
+                <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Sua senha mestra" required autocomplete="current-password">
+                <button type="button" class="toggle-password" data-target="password">
+                    <i class="bi bi-eye-fill"></i>
+                </button>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 mt-3 py-3">Entrar</button>
+        <div id="login-feedback" class="text-danger text-center mt-3 fw-medium"></div>
+        <div class="text-center mt-4">
+            <p class="text-muted">Ainda não tem uma conta? <a href="#" onclick="showPage('page-register'); return false;">Registre-se</a></p>
+            <p class="text-muted"><a href="#" onclick="showPage('page-forgot-password'); return false;">Esqueceu a senha?</a></p>
+        </div>
+    </form>
+</div>

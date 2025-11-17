@@ -1,40 +1,49 @@
-{% set placeholder = "password" %}
-{% set req = True %}
+{{ include 'components/_base.html' }}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/logo.png') }}">
-    <title>Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://meyerweb.com/eric/tools/css/reset/reset.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        body {
-            background-image: url("{{ url_for('static', filename='images/background.png') }}");
-            background-repeat: repeat; /* repete a imagem */
-            background-position: top left; /* posição inicial */
-            margin: 0;
-            height: 100vh;
-        }
-    </style>
-</head>
-<body class="full-center" id="login">
-    <div class="login-container">
-        <h2 class="text-center mb-1">Login</h2>
-        <form method="POST" action="{{ url_for('index') }}">
-            <div class="form-group">
-                <label for="login">Username</label>
-                <input class="common-input" type="text" placeholder="Username" name="login" id="login" required>
-                {% set placeholder = "Password" %}
-                {% set to = "password" %}
-                {% include "components/_passwordInput.html" %}
-            </div>  
-            <button type="submit" class="login-button">Login</button>
-            {% include 'components/_flash.html' %}
-        </form>
-    </div>
-</body>
-</html>
+{% block title %}
+<title>Login</title>
+{% endblock %}
+
+{% block content %}
+{{ super() }}
+    <main class="container my-5">
+        <div id="page-login" class="page auth-container">
+            <div class="text-center mb-4">
+                <img src="./src/static/images/logo.svg" alt="Logo" style="height: 2.7rem; width: auto;">
+            </div>
+            <h2 class="text-center mb-4">Login</h2>
+            <form onsubmit="handleLogin(event); return false;" autocomplete="off">
+                <div class="mb-3">
+                    <label for="login" class="form-label">Usuário (Login)</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                        <input type="text" class="form-control" id="login" name="login" placeholder="Login" required>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="password" class="form-label">Senha</label>
+                    <div class="input-group password-wrapper">
+                        <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                        <input type="password" class="form-control" id="password" name="password" placeholder="Sua senha mestra" required autocomplete="current-password">
+                        <button type="button" class="toggle-password" data-target="password">
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mt-3 py-3">Entrar</button>
+                <div id="login-feedback" class="text-danger text-center mt-3 fw-medium"></div>
+                <div class="text-center mt-4">
+                    <p class="text-muted">Ainda não tem uma conta? <a href="#" onclick="showPage('page-register'); return false;">Registre-se</a></p>
+                    <p class="text-muted"><a href="#" onclick="showPage('page-forgot-password'); return false;">Esqueceu a senha?</a></p>
+                </div>
+            </form>
+        </div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% endblock %}

@@ -2,7 +2,7 @@ import base64, argon2, sys
 
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
-from hashlib import sha2560
+from hashlib import sha256
 
 class Cryptograph:
     def __init__(self) -> None:

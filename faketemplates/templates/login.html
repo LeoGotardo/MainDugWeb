@@ -1,0 +1,40 @@
+{% set placeholder = "password" %}
+{% set req = True %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/logo.png') }}">
+    <title>Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://meyerweb.com/eric/tools/css/reset/reset.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background-image: url("{{ url_for('static', filename='images/background.png') }}");
+            background-repeat: repeat; /* repete a imagem */
+            background-position: top left; /* posição inicial */
+            margin: 0;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body class="full-center" id="login">
+    <div class="login-container">
+        <h2 class="text-center mb-1">Login</h2>
+        <form method="POST" action="{{ url_for('index') }}">
+            <div class="form-group">
+                <label for="login">Username</label>
+                <input class="common-input" type="text" placeholder="Username" name="login" id="login" required>
+                {% set placeholder = "Password" %}
+                {% set to = "password" %}
+                {% include "components/_passwordInput.html" %}
+            </div>  
+            <button type="submit" class="login-button">Login</button>
+            {% include 'components/_flash.html' %}
+        </form>
+    </div>
+</body>
+</html>

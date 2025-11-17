@@ -1,0 +1,88 @@
+<div id="page-stats" class="page">
+    <h1 class="mb-4">Estatísticas de Segurança</h1>
+    <div class="row g-4 mb-5">
+        <div class="col-md-6 col-lg-4">
+            <div class="stat-card text-center">
+                <h5 class="text-danger">Senhas Fracas</h5>
+                <div class="stat-value text-danger">2</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+            <div class="stat-card text-center">
+                <h5 class="text-warning">Senhas Reutilizadas</h5>
+                <div class="stat-value text-warning">3</div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+            <div class="stat-card text-center">
+                <h5 class="text-info">Vazamentos Detectados</h5>
+                <div class="stat-value text-info">1</div>
+            </div>
+        </div>
+    </div>
+    
+    <h2 class="mt-5 mb-3">Detalhes</h2>
+    <div class="accordion" id="statsAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseWeak">
+                    Senhas Fracas (2)
+                </button>
+            </h2>
+            <div id="collapseWeak" class="accordion-collapse collapse" data-bs-parent="#statsAccordion">
+                <div class="accordion-body">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            facebook.com
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editPasswordModal"
+                                data-site="facebook.com" data-user="usuario.face" data-pass="123456" data-flags="social">
+                                Alterar
+                            </button>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            servidor-antigo.com
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editPasswordModal"
+                                data-site="servidor-antigo.com" data-user="root" data-pass="root123" data-flags="trabalho">
+                                Alterar
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReused">
+                    Senhas Reutilizadas (3)
+                </button>
+            </h2>
+            <div id="collapseReused" class="accordion-collapse collapse" data-bs-parent="#statsAccordion">
+                <div class="accordion-body">
+                    <ul class="list-group">
+                        <li class="list-group-item">Senha "123456" usada em facebook.com, twitter.com, linkedin.com</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLeaked">
+                    Vazamentos Detectados (1)
+                </button>
+            </h2>
+            <div id="collapseLeaked" class="accordion-collapse collapse" data-bs-parent="#statsAccordion">
+                <div class="accordion-body">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center text-danger">
+                            Sua senha para "facebook.com" foi encontrada em um vazamento de dados.
+                            <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#editPasswordModal"
+                                data-site="facebook.com" data-user="usuario.face" data-pass="123456" data-flags="social">
+                                Alterar Imediatamente
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
