@@ -87,6 +87,79 @@ class Passwords(UserMixin, Config.db.Model):
     @property
     def get_id(self):
         return str(self.id)
+    
+    
+class Logs(UserMixin, Config.db.Model):
+    __tablename__ = 'Logs'
+    id = Config.db.Column(Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
+    password_id = Config.db.Column(Config.db.String(36), Config.db.ForeignKey('Passwords.id'), nullable=False)
+    lastUse = Config.db.Column(Config.db.DateTime, nullable=True)
+    ip = Config.db.Column(Config.db.String(15), nullable=True)
+    cidate = Config.db.Column(Config.db.String(15), nullable=True)
+    estado = Config.db.Column(Config.db.String(15), nullable=True)
+    pais = Config.db.Column(Config.db.String(15), nullable=True)
+    ASN = Config.db.Column(Config.db.String(15), nullable=True)
+    OS = Config.db.Column(Config.db.String(15), nullable=True)
+    browser = Config.db.Column(Config.db.String(15), nullable=True)
+    version = Config.db.Column(Config.db.String(15), nullable=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'password_id': self.password_id,
+            'lastUse': self.lastUse,
+            'ip': self.ip,
+            'cidate': self.cidate,
+            'estado': self.estado,
+            'pais': self.pais,
+            'ASN': self.ASN,
+            'OS': self.OS,
+            'browser': self.browser,
+            'version': self.version,
+        }   
+    
+    @property  
+    def is_authenticated(self):
+        return True
+    
+    @property
+    def is_active(self):
+        return True
+    
+    @property
+    def is_anonymous(self):
+        return False
+    
+    @property
+    def get_id(self):
+        return str(self.id)
+
+
+class Filters(UserMixin, Config.db.Model):
+    id = Config.db.Column(Config.db.Integer, primary_key=True)
+    name = Config.db.Column(Config.db.String(50), nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+        }
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_active(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
+    @property
+    def get_id(self):
+        return str(self.id)
 
 class Database:
     def __init__(self) -> None:

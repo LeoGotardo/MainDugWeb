@@ -1,4 +1,4 @@
-{% include 'components/_base.html' %}
+{% extends 'base.html' %}
 
 {% block  %}
 <div id="page-register" class="page auth-container">
@@ -36,7 +36,7 @@
     </div>
     <button type="submit" class="btn btn-primary w-100 mt-3 py-3">Registrar</button>
     <div class="text-center mt-4">
-        <p class="text-muted">Já tem uma conta? <a href="#" onclick="showPage('page-login'); return false;">Faça login</a></p>
+        <p class="text-muted">Já tem uma conta? <a href="#" onclick="{{ url_for('login') }}">Faça login</a></p>
     </div>
 </form>
 </div>

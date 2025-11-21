@@ -1,7 +1,7 @@
 <nav class="navbar">
     <div class="container-fluid">
         <a class="navbar-brand" href="#" onclick="showPage('page-index'); return false;">
-            <img src="./src/static/images/logo.svg" alt="">
+            <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="">
             MainDug
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
@@ -17,21 +17,21 @@
             <div class="offcanvas-body">
                 <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                     <li class="nav-item" id="nav-guest-login">
-                        <a class="nav-link" href="#" onclick="showPage('page-login'); return false;">Login</a>
+                        <a class="nav-link" href="/login">Login</a>
                     </li>
                     <li class="nav-item" id="nav-guest-register">
-                        <a class="nav-link" href="#" onclick="showPage('page-register'); return false;">Registrar</a>
+                        <a class="nav-link" href="/signup">Registrar</a>
                     </li>
                     
                     <li class="nav-item" id="nav-user-dashboard">
-                        <a class="nav-link" href="#" onclick="showPage('page-index'); return false;"><i class="bi bi-house-door-fill"></i> Dashboard</a>
+                        <a class="nav-link" href="/dashboard" ><i class="bi bi-house-door-fill"></i> Dashboard</a>
                     </li>
                     <li class="nav-item" id="nav-user-stats">
-                        <a class="nav-link" href="#" onclick="showPage('page-stats'); return false;"><i class="bi bi-bar-chart-line-fill"></i> Estatísticas</a>
+                        <a class="nav-link" href="/stats" ><i class="bi bi-bar-chart-line-fill"></i> Estatísticas</a>
                     </li>
                     
                     <li class="nav-item" id="nav-user-account"> 
-                            <a class="nav-link" href="#" onclick="showPage('page-account'); return false;"><i class="bi bi-person-circle"></i> Minha Conta (<span id="nav-username">Usuário</span>)</a>
+                            <a class="nav-link" href="/account"><i class="bi bi-person-circle"></i> Minha Conta (<span id="nav-username">Usuário</span>)</a>
                     </li>
                     
                     <li class="nav-item"> 
@@ -43,7 +43,7 @@
                     <li class="nav-item" id="nav-user-separator"><hr></li>
                     
                     <li class="nav-item" id="nav-user-logout"> 
-                        <a class="nav-link" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Sair</a>
+                        <a class="nav-link" href="/logout"></a><i class="bi bi-box-arrow-right"></i> Sair</a>
                     </li>
                 </ul>
             </div>

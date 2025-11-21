@@ -1,0 +1,741 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if errorCode %}Erro {{ errorCode }}{% else %}Erro{% endif %}
+{% endblock %}
+
+{% block content %}
+    <style>
+        /* Apenas estilos específicos para a página de erro */
+        .error-container {
+            background: var(--light-color, #ffffff) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+            max-width: 600px !important;
+            width: 100% !important;
+            margin: 2rem auto !important;
+            padding: 3rem !important;
+            text-align: center !important;
+            position: relative !important;
+            overflow: hidden !important;
+            animation: slideIn 0.6s ease-out !important;
+        }
+
+        .error-container::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 4px !important;
+            background: linear-gradient(90deg, var(--primary-color, #6366f1), var(--accent-color, #10b981)) !important;
+        }
+
+        .error-icon {
+            width: 120px !important;
+            height: 120px !important;
+            margin: 0 auto 2rem !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 3rem !important;
+            color: #ffffff !important;
+            position: relative !important;
+            animation: pulse 2s infinite !important;
+        }
+
+        .error-404 .error-icon {
+            background: linear-gradient(135deg, #f59e0b, #fb923c) !important;
+        }
+
+        .error-500 .error-icon {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+        }
+
+        .error-403 .error-icon {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1) !important;
+        }
+
+        .error-401 .error-icon {
+            background: linear-gradient(135deg, #f97316, #f59e0b) !important;
+        }
+
+        .error-container:not([class*="error-"]) .error-icon {
+            background: linear-gradient(135deg, #64748b, #475569) !important;
+        }
+
+        .error-code {
+            font-size: 5rem !important;
+            font-weight: 800 !important;
+            color: var(--primary-color, #6366f1) !important;
+            margin-bottom: 1rem !important;
+            line-height: 1 !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        }
+
+        .error-title {
+            font-size: 2.5rem !important;
+            font-weight: 700 !important;
+            color: var(--dark-color, #1e293b) !important;
+            margin-bottom: 1rem !important;
+            line-height: 1.2 !important;
+        }
+
+        .error-message {
+            font-size: 1.1rem !important;
+            color: var(--gray-color, #64748b) !important;
+            margin-bottom: 2.5rem !important;
+            line-height: 1.7 !important;
+            max-width: 400px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+
+        .error-actions {
+            display: flex !important;
+            gap: 1rem !important;
+            flex-wrap: wrap !important;
+            justify-content: center !important;
+            margin-bottom: 2rem !important;
+        }
+
+        .error-container .btn-clean {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            padding: 0.875rem 2rem !important;
+            border-radius: 12px !important;
+            font-weight: 500 !important;
+            text-decoration: none !important;
+            transition: all 0.3s ease !important;
+            border: none !important;
+            cursor: pointer !important;
+            font-size: 1rem !important;
+            position: relative !important;
+            overflow: hidden !important;
+            min-width: 140px !important;
+            justify-content: center !important;
+        }
+
+        .error-container .btn-primary-clean {
+            background: linear-gradient(135deg, var(--primary-color, #6366f1), var(--primary-dark, #4f46e5)) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+        }
+
+        .error-container .btn-primary-clean:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+            color: #ffffff !important;
+            text-decoration: none !important;
+        }
+
+        .error-container .btn-secondary-clean {
+            background:  #f1f5f9 !important;
+            color: var(--gray-color, #64748b) !important;
+            border: 1px solid #e2e8f0 !important;
+        }
+
+        .error-container .btn-secondary-clean:hover {
+            background: #e2e8f0 !important;
+            transform: translateY(-1px) !important;
+            color: var(--dark-color, #1e293b) !important;
+            text-decoration: none !important;
+        }
+
+        .floating-shapes {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            pointer-events: none !important;
+            overflow: hidden !important;
+            z-index: -1 !important;
+        }
+
+        .shape {
+            position: absolute !important;
+            opacity: 0.05 !important;
+            animation: float 6s ease-in-out infinite !important;
+        }
+
+        .shape:nth-child(1) {
+            top: 20% !important;
+            left: 10% !important;
+            animation-delay: 0s !important;
+            font-size: 2rem !important;
+            color: var(--primary-color, #6366f1) !important;
+        }
+
+        .shape:nth-child(2) {
+            top: 60% !important;
+            right: 15% !important;
+            animation-delay: 2s !important;
+            font-size: 1.5rem !important;
+            color: var(--accent-color, #10b981) !important;
+        }
+
+        .shape:nth-child(3) {
+            bottom: 20% !important;
+            left: 20% !important;
+            animation-delay: 4s !important;
+            font-size: 1.8rem !important;
+            color: var(--warning-color, #f59e0b) !important;
+        }
+
+        /* Debug styles */
+        .debug-details-compact {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            max-width: 800px;
+            margin: 2rem auto;
+        }
+        
+        .debug-header-compact {
+            background: linear-gradient(135deg, #1e293b, #374151);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .debug-title-compact {
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .debug-toggle {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+        
+        .debug-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .debug-content-compact {
+            padding: 20px;
+            display: none;
+        }
+        
+        .debug-content-compact.show {
+            display: block;
+        }
+        
+        .debug-grid-compact {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .debug-item-compact {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        
+        .debug-label-compact {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .debug-value-compact {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            color: #1f2937;
+            word-break: break-all;
+        }
+        
+        .debug-code-compact {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            margin: 15px 0;
+            white-space: pre-wrap;
+        }
+        
+        .debug-solution-compact {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .debug-solution-compact h5 {
+            color: #065f46;
+            margin: 0 0 10px 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        
+        .debug-action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .debug-btn-compact {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .debug-btn-compact:hover {
+            background: #4f46e5;
+            transform: translateY(-1px);
+        }
+        
+        .debug-btn-compact.success {
+            background: #10b981;
+        }
+        
+        .debug-btn-compact.success:hover {
+            background: #059669;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        @media (max-width: 640px) {
+            .error-container {
+                padding: 2rem 1.5rem !important;
+                margin: 1rem !important;
+            }
+            
+            .error-code {
+                font-size: 4rem !important;
+            }
+            
+            .error-title {
+                font-size: 2rem !important;
+            }
+            
+            .error-actions {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            
+            .debug-grid-compact {
+                grid-template-columns: 1fr;
+            }
+            
+            .debug-header-compact {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .debug-action-buttons {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .error-title {
+                font-size: 1.75rem !important;
+            }
+            
+            .error-message {
+                font-size: 1rem !important;
+            }
+            
+            .error-code {
+                font-size: 3.5rem !important;
+            }
+        }
+    </style>
+
+    <div class="error-container text-center error-{{ errorCode }}">
+        <!-- Formas decorativas de fundo -->
+        <div class="floating-shapes">
+            <div class="shape">●</div>
+            <div class="shape">▲</div>
+            <div class="shape">■</div>
+        </div>
+
+        <!-- Ícone dinâmico baseado no código de erro -->
+        <div class="error-icon">
+            {% if errorCode == 404 %}
+                <i class="fas fa-search"></i>
+            {% elif errorCode == 500 %}
+                <i class="fas fa-tools"></i>
+            {% elif errorCode == 403 %}
+                <i class="fas fa-lock"></i>
+            {% elif errorCode == 401 %}
+                <i class="fas fa-user-lock"></i>
+            {% else %}
+                <i class="fas fa-exclamation-triangle"></i>
+            {% endif %}
+        </div>
+
+        <!-- Código do erro -->
+        <div class="error-code">
+            {% if errorCode %}{{ errorCode }}{% else %}!{% endif %}
+        </div>
+
+        <!-- Título do erro -->
+        <h1 class="error-title">
+            {% if errorCode == 404 %}
+                Página não encontrada
+            {% elif errorCode == 500 %}
+                Erro interno
+            {% elif errorCode == 403 %}
+                Acesso negado
+            {% elif errorCode == 401 %}
+                Não autorizado
+            {% else %}
+                Algo deu errado...
+            {% endif %}
+        </h1>
+
+        <!-- Mensagem do erro -->
+        <p class="error-message">
+            {% if errorMessage %}
+                {{ errorMessage }}
+            {% elif errorCode == 404 %}
+                A página que você procura não existe.
+            {% elif errorCode == 500 %}
+                Estamos trabalhando para resolver este problema.
+            {% elif errorCode == 403 %}
+                Você não tem permissão para acessar esta página.
+            {% elif errorCode == 401 %}
+                É necessário fazer login para continuar.
+            {% else %}
+                Tente novamente em alguns minutos.
+            {% endif %}
+        </p>
+
+        <!-- Botões de ação -->
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary-clean btn-clean">
+                <i class="fas fa-home"></i>
+                Página inicial
+            </a>
+            
+            {% if errorCode != 404 %}
+            <button onclick="history.back()" class="btn btn-secondary-clean btn-clean">
+                <i class="fas fa-arrow-left"></i>
+                Voltar
+            </button>
+            {% endif %}
+            
+            {% if errorCode == 500 %}
+            <button onclick="location.reload()" class="btn btn-secondary-clean btn-clean">
+                <i class="fas fa-refresh"></i>
+                Tentar novamente
+            </button>
+            {% endif %}
+
+            {% if errorCode == 401 %}
+            <a href="{{ url_for('login') if url_for else '/login' }}" class="btn btn-primary-clean btn-clean">
+                <i class="fas fa-sign-in-alt"></i>
+                Fazer login
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Componente Debug Compacto -->
+    {% if debugInfo %}
+    <div class="debug-details-compact">
+        <div class="debug-header-compact">
+            <div class="debug-title-compact">
+                <i class="fas fa-terminal"></i>
+                Debug: {{ debugInfo.type or 'TypeError' }} em {{ debugInfo.function or 'função desconhecida' }}
+            </div>
+            <button class="debug-toggle" onclick="toggleDebugDetails()" id="debugToggleBtn">
+                <i class="fas fa-chevron-down"></i> Detalhes
+            </button>
+        </div>
+        
+        <div class="debug-content-compact" id="debugContent">
+            <!-- Informações Básicas -->
+            <div class="debug-grid-compact">
+                <div class="debug-item-compact">
+                    <div class="debug-label-compact">Arquivo</div>
+                    <div class="debug-value-compact">{{ debugInfo.file or 'N/A' }}</div>
+                </div>
+                <div class="debug-item-compact">
+                    <div class="debug-label-compact">Linha</div>
+                    <div class="debug-value-compact">{{ debugInfo.line or 'N/A' }}</div>
+                </div>
+                <div class="debug-item-compact">
+                    <div class="debug-label-compact">Função</div>
+                    <div class="debug-value-compact">{{ debugInfo.function or 'N/A' }}</div>
+                </div>
+                <div class="debug-item-compact">
+                    <div class="debug-label-compact">Tipo de Erro</div>
+                    <div class="debug-value-compact">{{ debugInfo.type or 'TypeError' }}</div>
+                </div>
+            </div>
+            
+            <!-- Código Problemático -->
+            {% if debugInfo.code %}
+            <div class="debug-code-compact">
+                <strong>Código problemático:</strong><br>
+                {{ debugInfo.code }}
+            </div>
+            {% endif %}
+            
+            <!-- Análise Rápida -->
+            <div class="debug-solution-compact">
+                <h5><i class="fas fa-lightbulb"></i> Análise Rápida</h5>
+                <p style="margin: 0; font-size: 0.9rem; color: #374151;">
+                    {% if 'list indices must be integers' in (errorMessage or '') %}
+                        <strong>Problema:</strong> O código está tentando acessar uma lista como se fosse um dicionário.<br>
+                        <strong>Solução:</strong> Verificar se a variável é uma lista antes de acessar ou converter para o formato esperado.
+                    {% elif 'object' in (errorMessage or '') and 'has no attribute' in (errorMessage or '') %}
+                        <strong>Problema:</strong> Tentativa de acessar atributo/método que não existe no objeto.<br>
+                        <strong>Solução:</strong> Verificar se o objeto tem o atributo antes de acessar.
+                    {% elif 'nl2br' in (errorMessage or '') %}
+                        <strong>Problema:</strong> Filtro 'nl2br' não existe no Jinja2.<br>
+                        <strong>Solução:</strong> Usar filtro 'replace' ou criar filtro customizado.
+                    {% else %}
+                        <strong>Problema:</strong> Erro de tipo de dados ou template não identificado automaticamente.<br>
+                        <strong>Solução:</strong> Verificar os tipos de dados e sintaxe do template.
+                    {% endif %}
+                </p>
+            </div>
+            
+            <!-- Correção Sugerida para nl2br -->
+            {% if 'nl2br' in (errorMessage or '') %}
+            <div class="debug-code-compact">
+                <strong>Correção sugerida:</strong><br>
+                # ANTES (problemático):<br>
+                {{ "{{ debugInfo.traceback | e | nl2br }}" }}<br>
+                <br>
+                # DEPOIS (corrigido):<br>
+                {{ "{{ debugInfo.traceback | e | replace('\\n', '<br>') | safe }}" }}<br>
+                <br>
+                # Ou simplesmente:<br>
+                {{ "{{ debugInfo.traceback }}" }}
+            </div>
+            {% endif %}
+            
+            <!-- Correção Sugerida para stores -->
+            {% if 'stores' in (debugInfo.code or '') and 'items' in (debugInfo.code or '') %}
+            <div class="debug-code-compact">
+                <strong>Correção sugerida:</strong><br>
+                # Verificação de tipo segura<br>
+                if isinstance(stores, dict) and 'items' in stores:<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;store_list = stores['items']<br>
+                elif isinstance(stores, list):<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;store_list = stores<br>
+                else:<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;store_list = []<br>
+                <br>
+                for store in store_list:<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;# seu código aqui
+            </div>
+            {% endif %}
+            
+            <!-- Informações da Requisição -->
+            {% if debugInfo.request %}
+            <div class="debug-grid-compact">
+                <div class="debug-item-compact">
+                    <div class="debug-label-compact">URL</div>
+                    <div class="debug-value-compact">{{ debugInfo.request.url or 'N/A' }}</div>
+                </div>
+                <div class="debug-item-compact">
+                    <div class="debug-label-compact">Método</div>
+                    <div class="debug-value-compact">{{ debugInfo.request.method or 'N/A' }}</div>
+                </div>
+                <div class="debug-item-compact">
+                    <div class="debug-label-compact">IP</div>
+                    <div class="debug-value-compact">{{ debugInfo.request.remoteAddr or 'N/A' }}</div>
+                </div>
+                <div class="debug-item-compact">
+                    <div class="debug-label-compact">Timestamp</div>
+                    <div class="debug-value-compact">{{ moment().format('YYYY-MM-DD HH:mm:ss') if moment else 'N/A' }}</div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Ações -->
+            <div class="debug-action-buttons">
+                <button class="debug-btn-compact" onclick="copyDebugInfo()">
+                    <i class="fas fa-copy"></i> Copiar Info
+                </button>
+                <button class="debug-btn-compact" onclick="showFullTraceback()">
+                    <i class="fas fa-list"></i> Ver Traceback
+                </button>
+                <button class="debug-btn-compact" onclick="reloadPage()">
+                    <i class="fas fa-redo"></i> Tentar Novamente
+                </button>
+            </div>
+            
+            <!-- Traceback Completo (Escondido por padrão) -->
+            {% if debugInfo.traceback %}
+            <div id="fullTraceback" style="display: none; margin-top: 15px;">
+                <div class="debug-code-compact" style="max-height: 300px; overflow-y: auto;">
+                    <strong>Traceback completo:</strong><br>
+                    {{ debugInfo.traceback | replace('\n', '<br>') | safe }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        let v = '{{ debugInfo | tojson | safe }}'
+        console.log(v);
+        {% if errorCode == 500 and auto_reload %}
+        setTimeout(function() {
+            if (confirm('Tentar recarregar a página?')) {
+                location.reload();
+            }
+        }, 30000);
+        {% endif %}
+
+        {% if errorCode and track_errors %}
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'error', {
+                'errorCode': '{{ errorCode }}',
+                'error_page': window.location.pathname
+            });
+        }
+        {% endif %}
+
+        // Adiciona efeitos aos botões
+        document.querySelectorAll('.error-container .btn-clean').forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Easter egg: clique 5 vezes no ícone
+        let clicks = 0;
+        document.querySelector('.error-icon').addEventListener('click', function() {
+            clicks++;
+            if (clicks >= 5) {
+                this.innerHTML = '<i class="fas fa-heart"></i>';
+                this.style.background = 'linear-gradient(135deg, #ec4899, #be185d)';
+                document.querySelector('.error-title').textContent = 'Você encontrou um easter egg! 🎉';
+                document.querySelector('.error-message').textContent = 'Obrigado por ter paciência com os erros. Nossa equipe trabalha duro para melhorar sempre! 💪';
+            }
+        });
+
+        // Funções de debug
+        function toggleDebugDetails() {
+            const content = document.getElementById('debugContent');
+            const button = document.getElementById('debugToggleBtn');
+            
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                button.innerHTML = '<i class="fas fa-chevron-down"></i> Detalhes';
+            } else {
+                content.classList.add('show');
+                button.innerHTML = '<i class="fas fa-chevron-up"></i> Ocultar';
+            }
+        }
+
+        function copyDebugInfo() {
+            const debugData = {
+                error: '{{ debugInfo.type or "TypeError" if debugInfo else "N/A" }}',
+                message: '{{ errorMessage or "" }}',
+                file: '{{ debugInfo.file or "" if debugInfo else "" }}',
+                line: '{{ debugInfo.line or "" if debugInfo else "" }}',
+                function: '{{ debugInfo.function or "" if debugInfo else "" }}',
+                code: '{{ debugInfo.code or "" if debugInfo else "" }}',
+                timestamp: new Date().toISOString()
+            };
+            
+            const textToCopy = `
+        DEBUG INFO:
+        Erro: ${debugData.error}
+        Mensagem: ${debugData.message}
+        Arquivo: ${debugData.file}:${debugData.line}
+        Função: ${debugData.function}
+        Código: ${debugData.code}
+        Timestamp: ${debugData.timestamp}
+            `.trim();
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const button = event.target.closest('.debug-btn-compact');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+                button.classList.add('success');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('success');
+                }, 2000);
+            });
+        }
+
+        function showFullTraceback() {
+            const traceback = document.getElementById('fullTraceback');
+            const button = event.target.closest('.debug-btn-compact');
+            
+            if (traceback && traceback.style.display === 'none') {
+                traceback.style.display = 'block';
+                button.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar Traceback';
+            } else if (traceback) {
+                traceback.style.display = 'none';
+                button.innerHTML = '<i class="fas fa-list"></i> Ver Traceback';
+            }
+        }
+
+        function reloadPage() {
+            if (confirm('Tentar recarregar a página?')) {
+                window.location.reload();
+            }
+        }
+    </script>
+{% endblock %}

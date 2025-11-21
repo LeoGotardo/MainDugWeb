@@ -7,7 +7,7 @@ from ntfy import notifications_bp
 from dataclasses import dataclass
 from functools import wraps
 
-import requests, json, os
+import requests, json, os, traceback, sys
 
 try:
     from werkzeug.urls import url_parse
@@ -102,26 +102,69 @@ def load_user(user_id):
     return user
 
 
-@app.errorhandler(404)
-def pageNotFound(error):
-    return render_template('404.html'), 404
-
-@app.errorhandler(500)
-def internalServerError(error):
-    return render_template('500.html', error=error), 500
-
-
-@app.errorhandler(403)
-def forbidden(error):
-    return render_template('403.html'), 403
-
-@app.route('/404', methods=['GET'])
-def notFound():
-    return render_template('404.html'), 404
-
-@app.route('/500', methods=['GET'])
-def internalError():
-    return render_template('500.html', error=request.args.get('error')), 500
+def setup_error_handlers(app):
+    """Configura todos os error handlers da aplicação"""
+    
+    @app.errorhandler(Exception)
+    def handleException(e):
+        """Handler para todas as exceções não tratadas"""
+        
+        # Obtém informações detalhadas do traceback
+        excType, excValue, excTraceback = sys.exc_info()
+        
+        # Extrai informações do último frame (onde ocorreu o erro)
+        if excTraceback:
+            lastFrame = traceback.extract_tb(excTraceback)[-1]
+            errorFile = lastFrame.filename
+            errorLine = lastFrame.lineno
+            errorFunction = lastFrame.name
+            errorCode = lastFrame.line if lastFrame.line else "N/A"
+        else:
+            errorFile = "Desconhecido"
+            errorLine = "N/A"
+            errorFunction = "N/A"
+            errorCode = "N/A"
+        
+        # Formata o traceback completo como string
+        fullTraceback = ''.join(traceback.format_exception(excType, excValue, excTraceback))
+        
+        # Log completo do erro com informações extras
+        app.logger.error(f'Exceção não tratada: {e}')
+        app.logger.error(f'Arquivo: {errorFile}')
+        app.logger.error(f'Linha: {errorLine}')
+        app.logger.error(f'Função: {errorFunction}')
+        app.logger.error(f'Código: {errorCode}')
+        app.logger.error(f'Traceback completo:\n{fullTraceback}')
+        
+        # Em desenvolvimento, inclui detalhes do erro
+        errorDetails = None
+        debugInfo = None
+        
+        if app.config.get('DEBUG') or current_user.role in ['sysadmin', 'super']:
+            errorDetails = str(e)
+            debugInfo = {
+                'file': errorFile.split('/')[-1] if errorFile else 'N/A',  # Apenas nome do arquivo
+                'line': errorLine,
+                'function': errorFunction,
+                'code': errorCode,
+                'fullPath': errorFile,
+                'traceback': fullTraceback
+            }
+        
+        # Verifica se é uma exceção HTTP
+        if hasattr(e, 'code'):
+            return render_template('error/generic.html',
+                                errorCode=e.code,
+                                errorMessage=getattr(e, 'description', 'Erro desconhecido'),
+                                errorDetails=errorDetails,
+                                debugInfo=debugInfo), e.code
+        
+        # Para exceções não-HTTP, retorna erro 500
+        return render_template('error/generic.html',
+                            errorCode=500,
+                            erroMessage="Ocorreu um erro inesperado. Nossa equipe foi notificada.",
+                            errorDetails=errorDetails,
+                            debugInfo=debugInfo), 500
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -210,11 +253,32 @@ def logout():
     return redirect(url_for('index'))
 
 
-@app.route('/register/', methods=['GET', 'POST'])
-def register():
+@app.route('/forgotPassword/', methods=['GET', 'POST'])
+def forgotPassword():
     match request.method:
         case 'GET':
-            return render_template('register.html')
+            return render_template('forgotPassword.html')
+        case 'POST':
+            login = request.form.get('login')
+            
+            if login:
+                success, user = database.findUserLogin(login)
+                
+                if success == False:
+                    flash(user, 'danger')
+                    return redirect(url_for('forgotPassword'))
+                else:
+                    return redirect(url_for('forgotPassword'))
+            else:
+                flash('Login is required.', 'danger')
+                return redirect(url_for('forgotPassword'))
+
+
+@app.route('/signup/', methods=['GET', 'POST'])
+def signup():
+    match request.method:
+        case 'GET':
+            return render_template('signup.html')
         case 'POST':
             login = request.form.get('login')
             password = request.form.get('password')
@@ -226,14 +290,14 @@ def register():
                     
                     if success == False:
                         flash(user, 'danger')
-                        return redirect(url_for('register'))
+                        return redirect(url_for('signup'))
                     else:
                         login_user(user, remember=True)
                         flash(user, 'success')
                         return redirect(url_for('index'))
                 else:
                     flash('Passwords are not the same.', 'danger')
-                    return redirect(url_for('register'))
+                    return redirect(url_for('signup'))
                 
 
 @app.route('/account/', methods=['GET', 'POST'])

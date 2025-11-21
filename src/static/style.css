@@ -78,8 +78,6 @@ h1, h2, h3, h4, h5, h6 {
     filter: var(--bs-btn-close-white-filter);
 }
 
-.page { display: none; }
-.page.active { display: block; }
 
 /* MUDANÇA: Auth container centralizado e com max-width */
 .auth-container {

@@ -213,15 +213,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Lógica do Seletor de Cor ---
     const colorPicker = document.getElementById('accent-color-picker');
-    colorPicker.value = localStorage.getItem(COLOR_KEY) || '#0d6efd';
-    colorPicker.addEventListener('input', function(e) {
-        const newColor = e.target.value;
-        const currentTheme = root.getAttribute('data-bs-theme');
-        applyAppTheme(newColor, currentTheme);
-    });
-    colorPicker.addEventListener('change', function(e) {
-        localStorage.setItem(COLOR_KEY, e.target.value);
-    });
+    if (colorPicker) {
+        colorPicker.value = localStorage.getItem(COLOR_KEY) || '#0d6efd';
+        colorPicker.addEventListener('input', function(e) {
+            const newColor = e.target.value;
+            const currentTheme = root.getAttribute('data-bs-theme');
+            applyAppTheme(newColor, currentTheme);
+        });
+        colorPicker.addEventListener('change', function(e) {
+            localStorage.setItem(COLOR_KEY, e.target.value);
+        });
+    }
 
 
     // --- Lógica do Componente _passwordInput ---
