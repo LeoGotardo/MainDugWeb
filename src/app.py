@@ -278,7 +278,7 @@ def forgotPassword():
 def signup():
     match request.method:
         case 'GET':
-            return render_template('signup.html')
+            return render_template('register.html')
         case 'POST':
             login = request.form.get('login')
             password = request.form.get('password')

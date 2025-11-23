@@ -1,12 +1,12 @@
-<nav class="navbar">
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
     <div class="container-fluid">
-        <a class="navbar-brand" href="#" onclick="showPage('page-index'); return false;">
-            <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="">
+        <a class="navbar-brand" href="{{ url_for('index') }}">
+            <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="MainDug Logo" height="30">
             MainDug
         </a>
+        
         <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
-            <div class="navbar-toggler-icon">
-            </div>
+            <span class="navbar-toggler-icon"></span>
         </button>
         
         <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
@@ -16,35 +16,54 @@
             </div>
             <div class="offcanvas-body">
                 <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-                    <li class="nav-item" id="nav-guest-login">
-                        <a class="nav-link" href="/login">Login</a>
-                    </li>
-                    <li class="nav-item" id="nav-guest-register">
-                        <a class="nav-link" href="/signup">Registrar</a>
-                    </li>
-                    
-                    <li class="nav-item" id="nav-user-dashboard">
-                        <a class="nav-link" href="/dashboard" ><i class="bi bi-house-door-fill"></i> Dashboard</a>
-                    </li>
-                    <li class="nav-item" id="nav-user-stats">
-                        <a class="nav-link" href="/stats" ><i class="bi bi-bar-chart-line-fill"></i> Estatísticas</a>
-                    </li>
-                    
-                    <li class="nav-item" id="nav-user-account"> 
-                            <a class="nav-link" href="/account"><i class="bi bi-person-circle"></i> Minha Conta (<span id="nav-username">Usuário</span>)</a>
-                    </li>
+                    {% if not current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">
+                                <i class="bi bi-box-arrow-in-right"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('signup') }}">
+                                <i class="bi bi-person-plus-fill"></i> Registrar
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('dashboard') }}">
+                                <i class="bi bi-house-door-fill"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('stats') }}">
+                                <i class="bi bi-bar-chart-line-fill"></i> Estatísticas
+                            </a>
+                        </li>
+                        <li class="nav-item"> 
+                            <a class="nav-link" href="{{ url_for('account') }}">
+                                <i class="bi bi-person-circle"></i> Minha Conta 
+                                {% if current_user.login %}
+                                    (<span id="nav-username">{{ current_user.login }}</span>)
+                                {% endif %}
+                            </a>
+                        </li>
+                    {% endif %}
                     
                     <li class="nav-item"> 
                         <a href="#" class="nav-link" id="theme-switcher" title="Mudar tema">
-                            <i class="bi bi-sun-fill"></i> <span id="theme-switcher-text">Mudar Tema</span>
+                            <i class="bi bi-sun-fill"></i> <span>Tema Claro</span>
                         </a>
                     </li>
-
-                    <li class="nav-item" id="nav-user-separator"><hr></li>
                     
-                    <li class="nav-item" id="nav-user-logout"> 
-                        <a class="nav-link" href="/logout"></a><i class="bi bi-box-arrow-right"></i> Sair</a>
-                    </li>
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li class="nav-item"> 
+                            <a class="nav-link" href="{{ url_for('logout') }}">
+                                <i class="bi bi-box-arrow-right"></i> Sair
+                            </a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
