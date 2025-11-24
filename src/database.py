@@ -240,7 +240,7 @@ class Database:
                 return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
     
     
-    def getDashboardInfo(self, headers: dict ,userId: str, initDt: datetime = None, endDt: datetime = None, page: int =1, perPage: int = 10, sort: str = 'date', sortOrder: str = 'asc', query: str = '') -> tuple[bool, dict]:
+    def getDashboardInfo(self, userId: str, initDt: datetime = None, endDt: datetime = None, page: int =1, perPage: int = 10, sort: str = 'date', sortOrder: str = 'asc', query: str = '') -> tuple[bool, dict]:
         """
         Gera estatísticas do dashboard baseadas no perfil do usuário.
         Para super users: estatísticas globais. Para outros: estatísticas da loja.

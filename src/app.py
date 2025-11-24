@@ -174,22 +174,33 @@ def index():
                 case 'GET':
                     next_page = request.args.get('next')
                     if not next_page or url_parse(next_page).netloc != '':
-                        headers = ITEM_CONFIGS['headers']['sysadmin']['users'] if current_user.role == 'sysadmin' else ITEM_CONFIGS['headers']['user']['passwords']
-                        success, statistcs = database.getDashboardInfo(headers=headers, userId=current_user.id)
-                        if not success:
-                            return redirect(url_for('internalError'))
-                        if current_user.role == 'sysadmin':
-                            users = database.getUsers(userId=current_user.id, method='get', itemType='user')
-                            if not users:
-                                return redirect(url_for('internalError'))   
-                            else:
-                                return render_template('index.html', deashboardInfo=statistcs, users=users)
-                        else:
-                            passwords = database.getPasswords(userId=current_user.id)
-                            if not passwords:
-                                return redirect(url_for('internalError'))
-                            else:
-                                return render_template('index.html', deashboardInfo=statistcs, passwords=passwords)
+                        success, statistcs = database.getDashboardInfo(userId=current_user.id)
+                        match success:
+                            case False:
+                                flash(statistcs, 'danger')
+                                return render_template('index.html', deashboardInfo={})
+                            case 2:
+                                raise Exception(statistcs)
+                            case True:
+                                if current_user.role == 'sysadmin':
+                                    users = database.getUsers(userId=current_user.id, method='get', itemType='user')
+                                    if users == False:
+                                        flash(users, 'danger')
+                                        return render_template('index.html', deashboardInfo=statistcs, users={})
+                                    elif users == True:
+                                        return render_template('index.html', deashboardInfo=statistcs, users=users)
+                                    elif users == 2:
+                                        raise Exception(users)
+                                else:
+                                    passwords = database.getPasswords(userId=current_user.id)
+                                    match passwords:
+                                        case False:
+                                            flash(passwords, 'danger')
+                                            return render_template('index.html', deashboardInfo=statistcs, passwords={})
+                                        case True:
+                                            return render_template('index.html', deashboardInfo=statistcs, passwords=passwords)
+                                        case 2:
+                                            raise Exception(passwords)
                     else:
                         return redirect(next_page)
                 case 'POST':
@@ -197,28 +208,7 @@ def index():
                 case _:
                     return redirect(url_for('notFound'))
         else:
-            match request.method:
-                case 'GET':
-                    return render_template('login.html')
-                case 'POST':
-                    login = request.form.get('login')
-                    password = request.form.get('password')
-                    
-                    if login and password:
-                        success, user = database.validUser(login, password)
-                        
-                        if success:
-                            login_user(user)
-                            flash('Login successful', 'success')
-                            return redirect(url_for('index'))
-                        else:
-                            flash(user, 'danger')
-                            return redirect(url_for('login'))
-                    else:
-                        flash('Login failed', 'danger')
-                        return redirect(url_for('login'))
-                case _:
-                    return redirect(url_for('notFound'))
+            redirect(url_for('login'))
 
 
 @app.route('/login/', methods=['GET', 'POST'])
@@ -237,8 +227,7 @@ def login():
                     flash('Sussesful login', 'success')
                     return redirect(url_for('index'))
                 else:
-                    flash('Login failed', 'danger')
-                    return redirect(url_for('login'))
+                    raise Exception(user)
             else:
                 flash('Login failed', 'danger')
                 return redirect(url_for('login'))
@@ -267,6 +256,8 @@ def forgotPassword():
                 if success == False:
                     flash(user, 'danger')
                     return redirect(url_for('forgotPassword'))
+                elif success == 2:
+                    raise Exception(user)
                 else:
                     return redirect(url_for('forgotPassword'))
             else:
@@ -291,6 +282,8 @@ def signup():
                     if success == False:
                         flash(user, 'danger')
                         return redirect(url_for('signup'))
+                    elif success == 2:
+                        raise Exception(user)
                     else:
                         login_user(user, remember=True)
                         flash(user, 'success')
@@ -298,6 +291,9 @@ def signup():
                 else:
                     flash('Passwords are not the same.', 'danger')
                     return redirect(url_for('signup'))
+            else:
+                flash('Login is required.', 'danger')
+                return redirect(url_for('signup'))
                 
 
 @app.route('/account/', methods=['GET', 'POST'])
@@ -387,287 +383,6 @@ def moreInfo():
             jsonify({'success': True, 'msg': msg})
         case _:
             return redirect(url_for('notFound'))
-
-        
-def generateForm(itemType: str, customForm: str | None = None, hidden: bool = False, hiddenValue: str = '', hiddenId: str = '', customTitle: str | None = None, products: list = [], rpis: list = [], integrations: list = [], stores: list = [], account: bool = False, user: User | None = None, hasTitle: bool = True, title: str | None = None) -> str:
-    config = ITEM_CONFIGS[itemType]
-    final = ''
-    hasImg = False
-    if customForm:
-        config = customForm[itemType]
-
-
-    def getUserValue(fieldName: str, account: bool = False, user: User | None = None) -> str:
-        """Retorna o valor do campo do usuário se account for True"""
-        if not account or not user:
-            return ""
-        
-        # Mapear nomes de campos para diferentes possibilidades
-        field_mappings = {
-            'product': ['productId', 'selectedProduct', 'product_id'],
-            'store': ['storeId', 'selectedStore', 'store_id'],
-            'rpi': ['rpiId', 'selectedRpi', 'rpi_id'],
-            # 'integration': ['integrationId', 'selectedIntegration', 'integration_id'] TODO: FEATURE CUSTOM INTEGRATION
-        }
-        
-        # Primeiro tenta o nome direto do campo
-        if fieldName in user:
-            return str(user[fieldName])
-        
-        # Depois tenta os mapeamentos
-        for field_type, possible_fields in field_mappings.items():
-            if fieldName.lower().startswith(field_type):
-                for possible_field in possible_fields:
-                    if possible_field in user and user[possible_field]:
-                        return str(user[possible_field])
-        
-        return ""
-    
-    
-    def genCheckbox(field: Field, account: bool = False, user: User | None = None):
-        # Para checkbox, verifica se o valor do usuário é True/truthy
-        isChecked = field.checked
-        if account and user and field.name in user:
-            isChecked = bool(user[field.name])
-        
-        checkbox = render_template('components/_switch.html', 
-                                 required=field.required,
-                                 label=field.label, 
-                                 id=field.name, 
-                                 checked=isChecked)
-        return checkbox
-    
-    
-    def genClientIdInput():
-        return """<input type="hidden" name="client_id" id="clientIdInput">
-                <script>document.getElementById('clientIdInput').value = window.notificationSystem.getClientId();</script>"""
-    
-
-    def genPassword(field: Field, account: bool = False, user: User | None = None):
-        # Password nunca deve ser preenchido automaticamente
-        return render_template('components/_passwordInput.html', 
-                             placeholder=field.placeholder, 
-                             to=field.name, 
-                             autocomplete='off',
-                             required=field.required)
-    
-    
-    def genSelect(field: Field, account: bool = False, user: User | None = None):
-        match field.options:
-            case 'integrations':
-                field.options = integrations
-                for option in field.options:
-                    option['value'] = option['integrationId']
-            case 'stores':
-                field.options = stores
-                for option in field.options:
-                    option['value'] = option['storeId']
-                    if 'cardType' not in option:
-                        option['cardType'] = 'prepaid'
-            case 'rpis':
-                field.options = rpis
-                for option in field.options:
-                    option['value'] = option['rpiId']
-
-        selectedValue = getUserValue(field.name, account, user)
-        
-        options = ''
-        for opt in field.options:
-            selected = 'selected' if str(opt['value']) == selectedValue else ''
-            
-            dataAttributes = ''
-            if 'cardType' in opt:
-                dataAttributes += f' data-payment-type="{opt["cardType"]}"'
-            if 'storeId' in opt:
-                dataAttributes += f' data-store-id="{opt["storeId"]}"'
-            
-            options += f'<option value="{opt["value"]}" {selected}{dataAttributes}>{opt["name"]}</option>'
-        
-        template = f'''
-            <div class="form-group my-3 select-container">
-                <label for="{field.name}">{field.label} {"*" if field.required else ""}</label>
-                <select class="form-control form-input select-input" id="{field.name}" name="{field.name}" {"required" if field.required else ""}>
-                    <option value="" disabled="" {"selected" if not selectedValue else ""}>Selecione uma opção...</option>
-                    {options}
-                </select>
-            </div>
-        '''
-        return template
-
-    
-    def genText(field: Field, account: bool = False, user: User | None = None):
-        fieldValue = getUserValue(field.name, account, user)
-        
-        if field.regex:
-            text = render_template('components/_regexText.html',
-                                 field=field, 
-                                 value=fieldValue)
-        else:
-            text = f'''
-                <div class="form-group my-3">
-                    <label for="{field.name}">{field.label} {"*" if field.required else ""}</label>
-                    <input type="text" class="form-control form-input" id="{field.name}" name="{field.name}" 
-                           placeholder="{field.placeholder}" value="{fieldValue}" 
-                           {"required" if field.required else ""} autocomplete="off">
-                </div>
-            '''
-        return text
-    
-    def genUrl(field: Field, account: bool = False, user: User | None = None):
-        fieldValue = getUserValue(field.name, account, user)
-        
-        url = f'''
-            <div class="form-group my-3">
-                <label for="{field.name}">{field.label} {"*" if field.required else ""}</label>
-                <input type="url" class="form-control form-input" id="{field.name}" name="{field.name}" 
-                       placeholder="{field.placeholder}" value="{fieldValue}" 
-                       {"required" if field.required else ""}>
-            </div>
-        '''
-        return url
-    
-    def genTitle(title: str):
-        if not customTitle:
-            return f'''
-                <h2 class="text-center mb-4 fw-bold">{ title }</h2>
-            '''
-        else:
-            return f'''
-                <h2 class="text-center mb-4 fw-bold">{ customTitle }</h2>
-            '''
-    
-    def genTabs(tabs: list[dict]):
-        tabsHtml = ''
-        for tab in tabs:
-            tabsHtml += f'''
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link {'active' if tab['active'] else ''}" 
-                            onclick="openTab(event, '{tab['name']}')">
-                        {tab['name']}
-                    </button>
-                </li>
-            '''
-        return f'''
-            <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
-                {tabsHtml}
-            </ul>
-        '''
-    
-    def genForm(post: str, form):
-        if post.startswith('url_for('):
-            post = eval(post)
-            
-        header = f'''
-            <form id="form" action="{post}" method="POST" enctype={"application/x-www-form-urlencoded" if not hasImg else "multipart/form-data"} autocomplete="off">
-        '''
-        footer = f'''
-                <div class="d-flex flex-wrap gap-2 mt-4 form-btns">
-                    <button type="submit" class="btn btn-primary">{'Adicionar' if not account else 'Salvar'} {itemType.title()}</button>
-                    <a href="{url_for('home')}" class="btn btn-secondary">Cancelar</a>
-                    {f'<a href="{url_for("resetPassword", user_id=user['user_id'])}" class="btn btn-danger">Resetar Senha</a>' if ( user and user.get('userType') in ['User', 'Store']) and (current_user.role in ['sysAdmin', 'super']) and account else ''}
-                </div>
-            </form>
-        '''
-        
-        form = f"""
-            <div class="form-grid">
-                {form}
-            </div>
-        
-        """
-        
-        return str(header+form+footer)
-    
-    def genImageInput(field: Field, account: bool = False, user: User | None = None):
-        fieldValue = getUserValue(field.name, account, user)
-        
-        imageInput = render_template('components/_imageInput.html', 
-                                    field=field, 
-                                    value=fieldValue)
-        return imageInput
-    
-    def genNumberInput(field: Field, account: bool = False, user: User | None = None):
-        fieldValue = getUserValue(field.name, account, user)
-        
-        if field.regex:
-            numberInput = render_template('components/_regexText.html', 
-                                        field=field, 
-                                        value=fieldValue)
-        else:
-            numberInput = f'''
-                <div class="form-group my-3">
-                    <label for="{field.name}">{field.label} {"*" if field.required else ""}</label>
-                    <input type="number" class="form-control" id="{field.name}" name="{field.name}" 
-                           placeholder="{field.placeholder}" step="{field.step if field.step else ''}" value="{fieldValue}" required>
-                </div>
-            '''
-        return numberInput
-    
-    def genHidden(name: str, value: str):
-        return f"""
-                <div class="form-group my-3">
-                    <input type="hidden" name="{name}" value="{value}">
-                </div>
-                """
-    
-    def genResponsiveForm(field: Field, account: bool = False, user: User | None = None):
-        fieldValue = getUserValue(field.name, account, user)
-        resp = render_template('components/_responsiveForm.html',
-                             field=field,
-                             value=fieldValue,
-                             account=account,
-                             user=user)
-        return resp
-       
-    if hasTitle:
-        title = genTitle(config['title'])
-        final += title
-    
-    if config['tabs']:
-        tabs = genTabs(config['tabs'])
-        final += tabs
-    
-    form = ''
-    for field in config['fields']:
-        field = Field.from_dict(field)
-        match field.type:
-            case 'checkbox':
-                if field.responsiveForm:
-                    ret = genResponsiveForm(field, account, user)
-                else:
-                    ret = genCheckbox(field, account, user)
-                form += ret
-            case 'password':
-                ret = genPassword(field, account, user)
-                form += ret
-            case 'select':
-                if field.responsiveForm:
-                    ret = genResponsiveForm(field, account, user)
-                else:
-                    ret = genSelect(field, account, user)
-                form += ret
-            case 'text':
-                ret = genText(field, account, user)
-                form += ret
-            case 'url':
-                ret = genUrl(field, account, user)
-                form += ret
-            case 'number':
-                ret = genNumberInput(field, account, user)
-                form += ret
-            case 'image':
-                hasImg = True
-                ret = genImageInput(field, account, user)
-                form += ret
-            case _:
-                raise ValueError(f'Tipo de campo desconhecido: {field.type}')
-    
-    if hidden:
-        form += genHidden(hiddenId, hiddenValue)
-            
-    final += genForm(post=config['postUrl'], form=form)
-    
-    return final
 
 
 if __name__ == '__main__':
