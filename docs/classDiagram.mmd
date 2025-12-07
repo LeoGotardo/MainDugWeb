@@ -2,6 +2,7 @@
 title: Diagrama de classes
 ---
 classDiagram
+    direction LR
     class User{
         +string id 
         +string login
@@ -16,7 +17,6 @@ classDiagram
         -is_anonumous()
         -get_id()
     }
-
     class Passwords{
         +sting id
         +string user_id
@@ -64,7 +64,6 @@ classDiagram
         -is_active()
         -is_authenticated()
         -safe_dict()
-        )
     }
 
     class Database{
@@ -190,3 +189,7 @@ classDiagram
     genForm "1" -- "0..*" Field : contains
     Passwords "" -- "1" Filter: has
     Passwords "1" -- "0.." Logs : owns
+    Filter -- genForm
+    Logs -- NotificationManager 
+
+    

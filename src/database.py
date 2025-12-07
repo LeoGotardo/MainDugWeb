@@ -20,15 +20,15 @@ class Config:
     session = db.session
 
 class User(UserMixin, Config.db.Model):
-    __tablename__ = 'Users'
-    id = Config.db.Column(Config.db.String(36), default=lambda: str(uuid.uuid4()), primary_key=True, nullable=False)
-    login = Config.db.Column(Config.db.String(80), unique=True, nullable=False)
-    password = Config.db.Column(Config.db.String(255), nullable=False)
-    role = Config.db.Column(Config.db.String(80), nullable=False)
-    enabled = Config.db.Column(Config.db.Boolean, default=True, nullable=False)
-    passwordPwned = Config.db.Column(Config.db.Boolean, default=False, nullable=False)
+    __tablename__ = 'tbl_0'
+    id = Config.db.Column('col_a0', Config.db.String(36), default=lambda: str(uuid.uuid4()), primary_key=True, nullable=False)
+    login = Config.db.Column('col_a1', Config.db.String(80), unique=True, nullable=False)
+    password = Config.db.Column('col_a2', Config.db.String(255), nullable=False)
+    role = Config.db.Column('col_a3', Config.db.String(80), nullable=False)
+    enabled = Config.db.Column('col_a4', Config.db.Boolean, default=True, nullable=False)
+    passwordPwned = Config.db.Column('col_a5', Config.db.Boolean, default=False, nullable=False)
     
-    def to_dict(self):
+    def toDict(self):
         return {
             'id': self.id,
             'login': self.login,
@@ -37,128 +37,136 @@ class User(UserMixin, Config.db.Model):
             'passwordPwned': self.passwordPwned,
         }
         
-    def is_authenticated(self):
+    def isAuthenticated(self):
         return True
     
-    def is_active(self):
+    def isActive(self):
         return True
     
-    def is_anonymous(self):
+    def isAnonymous(self):
         return False
     
-    def get_id(self):
+    def getId(self):
         return str(self.id)
 
-class Passwords(UserMixin, Config.db.Model):
-    __tablename__ = 'Passwords'
-    id = Config.db.Column(Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
-    user_id = Config.db.Column(Config.db.String(36), Config.db.ForeignKey('Users.id'), nullable=False)
-    login = Config.db.Column(Config.db.String(80), nullable=False)
-    password = Config.db.Column(Config.db.String(80), nullable=False)
-    site = Config.db.Column(Config.db.String(80), nullable=False)
-    status = Config.db.Column(Config.db.Boolean, nullable=False, default=False)
-    lastUse = Config.db.Column(Config.db.DateTime, nullable=True)
-    whereUsed = Config.db.Column(Config.db.String(80), nullable=True)
 
-    
-    def to_dict(self):  
+class Passwords(UserMixin, Config.db.Model):
+    __tablename__ = 'tbl_1'
+    id = Config.db.Column('col_b0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
+    userId = Config.db.Column('col_b1', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
+    login = Config.db.Column('col_b2', Config.db.String(80), nullable=False)
+    password = Config.db.Column('col_b3', Config.db.String(80), nullable=False)
+    site = Config.db.Column('col_b4', Config.db.String(80), nullable=False)
+    status = Config.db.Column('col_b5', Config.db.Boolean, nullable=False, default=False)
+    lastUse = Config.db.Column('col_b6', Config.db.DateTime, nullable=True)
+    whereUsed = Config.db.Column('col_b7', Config.db.String(80), nullable=True)
+
+    def toDict(self):  
         return {
             'id': self.id,
-            'user_id': self.user_id,
+            'user_id': self.userId,
             'site': self.site,
             'login': self.login,
             'password': self.password,
             'status': self.status,
             'lastUse': self.lastUse,
+            'whereUsed': self.whereUsed,
         }
       
     @property  
-    def is_authenticated(self):
+    def isAuthenticated(self):
         return True
     
     @property
-    def is_active(self):
+    def isActive(self):
         return True
     
     @property
-    def is_anonymous(self):
+    def isAnonymous(self):
         return False
     
     @property
-    def get_id(self):
+    def getId(self):
         return str(self.id)
     
-    
+
 class Logs(UserMixin, Config.db.Model):
-    __tablename__ = 'Logs'
-    id = Config.db.Column(Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
-    password_id = Config.db.Column(Config.db.String(36), Config.db.ForeignKey('Passwords.id'), nullable=False)
-    lastUse = Config.db.Column(Config.db.DateTime, nullable=True)
-    ip = Config.db.Column(Config.db.String(15), nullable=True)
-    cidate = Config.db.Column(Config.db.String(15), nullable=True)
-    estado = Config.db.Column(Config.db.String(15), nullable=True)
-    pais = Config.db.Column(Config.db.String(15), nullable=True)
-    ASN = Config.db.Column(Config.db.String(15), nullable=True)
-    OS = Config.db.Column(Config.db.String(15), nullable=True)
-    browser = Config.db.Column(Config.db.String(15), nullable=True)
-    version = Config.db.Column(Config.db.String(15), nullable=True)
+    __tablename__ = 'tbl_2'
+    id = Config.db.Column('col_c0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
+    passwordId = Config.db.Column('col_c1', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0'), nullable=False)
+    lastUse = Config.db.Column('col_c2', Config.db.DateTime, nullable=True)
+    ip = Config.db.Column('col_c3', Config.db.String(15), nullable=True)
+    cidade = Config.db.Column('col_c4', Config.db.String(15), nullable=True)
+    estado = Config.db.Column('col_c5', Config.db.String(15), nullable=True)
+    pais = Config.db.Column('col_c6', Config.db.String(15), nullable=True)
+    asn = Config.db.Column('col_c7', Config.db.String(15), nullable=True)
+    os = Config.db.Column('col_c8', Config.db.String(15), nullable=True)
+    browser = Config.db.Column('col_c9', Config.db.String(15), nullable=True)
+    version = Config.db.Column('col_c10', Config.db.String(15), nullable=True)
     
-    def to_dict(self):
+    def toDict(self):
         return {
             'id': self.id,
-            'password_id': self.password_id,
+            'password_id': self.passwordId,
             'lastUse': self.lastUse,
             'ip': self.ip,
-            'cidate': self.cidate,
+            'cidade': self.cidade,
             'estado': self.estado,
             'pais': self.pais,
-            'ASN': self.ASN,
-            'OS': self.OS,
+            'ASN': self.asn,
+            'OS': self.os,
             'browser': self.browser,
             'version': self.version,
         }   
     
     @property  
-    def is_authenticated(self):
+    def isAuthenticated(self):
         return True
     
     @property
-    def is_active(self):
+    def isActive(self):
         return True
     
     @property
-    def is_anonymous(self):
+    def isAnonymous(self):
         return False
     
     @property
-    def get_id(self):
+    def getId(self):
         return str(self.id)
 
 
 class Filters(UserMixin, Config.db.Model):
-    id = Config.db.Column(Config.db.Integer, primary_key=True)
-    name = Config.db.Column(Config.db.String(50), nullable=False)
-
-    def to_dict(self):
+    __tablename__ = 'tbl_3'
+    id = Config.db.Column('col_d0', Config.db.Integer, primary_key=True)
+    name = Config.db.Column('col_d1', Config.db.String(50), nullable=False)
+    userId = Config.db.Column('col_d2', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
+    
+    # relationships
+    passwordsId = Config.db.relationship('Passwords', backref='filters', lazy=True)
+    
+    def toDict(self):
         return {
             'id': self.id,
             'name': self.name,
+            'user_id': self.userId,
+            'passwords_id': [r.id for r in self.passwordsId]
         }
 
     @property
-    def is_authenticated(self):
+    def isAuthenticated(self):
         return True
 
     @property
-    def is_active(self):
+    def isActive(self):
         return True
 
     @property
-    def is_anonymous(self):
+    def isAnonymous(self):
         return False
 
     @property
-    def get_id(self):
+    def getId(self):
         return str(self.id)
 
 class Database:
