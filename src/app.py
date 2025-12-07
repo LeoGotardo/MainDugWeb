@@ -3,7 +3,6 @@ from flask import redirect, url_for, render_template, request, flash, jsonify
 from database import Database, Config, User, Passwords
 from typing import Dict, Any, List, Optional
 from cryptograph import Cryptograph
-from ntfy import notifications_bp
 from dataclasses import dataclass
 from functools import wraps
 
@@ -24,65 +23,6 @@ current_user : User | None
 ITEM_CONFIGS = json.load(open('./src/config.json', 'r'))
 
 
-app.register_blueprint(notifications_bp)
-
-@dataclass
-class Field:
-    name: str
-    label: str
-    type: str
-    required: bool = False
-    placeholder: str = ''
-    options: Optional[List[Dict]] = None
-    checked: bool = False
-    dataSource: str = ''
-    searchable: bool = False
-    tab: str = ''
-    regex: Optional[str] = None
-    maxLength: Optional[int] = None
-    regexCondition: Optional[str] = None
-    responsiveForm: bool = False
-    step: str = None
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Field':
-        """Cria uma instância Field a partir de um dicionário, preenchendo campos faltantes com valores padrão"""
-        # Filtra apenas os campos que existem na dataclass
-        field_names = {f.name for f in cls.__dataclass_fields__.values()}
-        filtered_data = {k: v for k, v in data.items() if k in field_names}
-        
-        return cls(**filtered_data)
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Converte a instância para dicionário"""
-        return {
-            'name': self.name,
-            'label': self.label,
-            'type': self.type,
-            'required': self.required,
-            'placeholder': self.placeholder,
-            'options': self.options,
-            'checked': self.checked,
-            'dataSource': self.dataSource,
-            'searchable': self.searchable,
-            'tab': self.tab,
-            'regex': self.regex,
-            'maxLength': self.maxLength,
-            'regexCondition': self.regexCondition,
-            'responsiveForm': self.responsiveForm,
-        }
-
-# Função para processar JSON e padronizar
-def padronizar_json_para_field(json_data: str) -> Field:
-    """Converte JSON string para objeto Field padronizado"""
-    data = json.loads(json_data) if isinstance(json_data, str) else json_data
-    return Field.from_dict(data)
-
-
-def padronizar_lista_fields(json_list: List[Dict]) -> List[Field]:
-    """Converte lista de dicts para lista de Fields padronizados"""
-    return [Field.from_dict(item) for item in json_list]
-
 def onlySys(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
@@ -100,7 +40,6 @@ def load_user(user_id):
     if success == False:
         return None
     return user
-
 
 def setup_error_handlers(app):
     """Configura todos os error handlers da aplicação"""
@@ -171,44 +110,79 @@ def setup_error_handlers(app):
 def index():
         if current_user.is_authenticated:
             match request.method:
-                case 'GET':
-                    next_page = request.args.get('next')
-                    if not next_page or url_parse(next_page).netloc != '':
-                        success, statistcs = database.getDashboardInfo(userId=current_user.id)
-                        match success:
-                            case False:
-                                flash(statistcs, 'danger')
-                                return render_template('index.html', deashboardInfo={})
-                            case -1:
-                                raise Exception(statistcs)
-                            case True:
-                                if current_user.role == 'sysadmin':
-                                    users = database.getUsers(userId=current_user.id, method='get', itemType='user')
-                                    if users == False:
-                                        flash(users, 'danger')
-                                        return render_template('index.html', deashboardInfo=statistcs, users={})
-                                    elif users == True:
-                                        return render_template('index.html', deashboardInfo=statistcs, users=users)
-                                    elif users == -1:
-                                        raise Exception(users)
+                case 'GET':      
+                    success, statistcs = database.getDashboardInfo(userId=current_user.id)
+                    match success:
+                        case False:
+                            flash(statistcs, 'danger')
+                            return render_template('index.html', deashboardInfo={})
+                        case -1:
+                            raise Exception(statistcs)
+                        case True:
+                            if current_user.role == 'sysadmin':
+                                users = database.getUsers(userId=current_user.id, method='get', itemType='user')
+                                if users == False:
+                                    flash(users, 'danger')
+                                    return render_template('index.html', deashboardInfo=statistcs, users={})
+                                elif users == True:
+                                    return render_template('index.html', deashboardInfo=statistcs, users=users)
                                 else:
-                                    passwords = database.getPasswords(userId=current_user.id)
-                                    match passwords:
-                                        case False:
-                                            flash(passwords, 'danger')
-                                            return render_template('index.html', deashboardInfo=statistcs, passwords={})
-                                        case True:
-                                            return render_template('index.html', deashboardInfo=statistcs, passwords=passwords)
-                                        case -1:
-                                            raise Exception(passwords)
-                    else:
-                        return redirect(next_page)
+                                    raise Exception(users)
+                            else:
+                                passwords = database.getPasswords(userId=current_user.id)
+                                match passwords:
+                                    case False:
+                                        flash(passwords, 'danger')
+                                        return render_template('index.html', deashboardInfo=statistcs, passwords={})
+                                    case True:
+                                        return render_template('index.html', deashboardInfo=statistcs, passwords=passwords)
+                                    case -1:
+                                        raise Exception(passwords)
+                                    case _:
+                                        return redirect(url_for('notFound'))
+                        case _:
+                            return redirect(url_for('notFound'))
                 case 'POST':
-                    ... #TODO: POST logic
+                    query = request.form.get('query')
+                    sort = request.form.get('sort')
+                    sortOrder = request.form.get('sortOrder')
+                    page = request.form.get('page')
+                    perPage = request.form.get('perPage')
+                    
+                    success, statistcs = database.getDashboardInfo(userId=current_user.id)
+                    match success:
+                        case False:
+                            flash(statistcs, 'danger')
+                            return render_template('index.html', deashboardInfo={})
+                        case -1:
+                            raise Exception(statistcs)
+                        case True:
+                            if current_user.role == 'sysadmin':
+                                users = database.getUsers(userId=current_user.id, method='get', itemType='user')
+                                if users == False:
+                                    flash(users, 'danger')
+                                    return render_template('index.html', deashboardInfo=statistcs, users={})
+                                elif users == True:
+                                    return render_template('index.html', deashboardInfo=statistcs, users=users)
+                                elif users == -1:
+                                    raise Exception(users)
+                            else:
+                                passwords = database.getPasswords(userId=current_user.id)
+                                match passwords:
+                                    case False:
+                                        flash(passwords, 'danger')
+                                        return render_template('index.html', deashboardInfo=statistcs, passwords={})
+                                    case True:
+                                        return render_template('index.html', deashboardInfo=statistcs, passwords=passwords)
+                                    case -1:
+                                        raise Exception(passwords)
+                        case _:
+                            return redirect(url_for('notFound'))
+                    return render_template('index.html', deashboardInfo=statistcs, passwords=passwords, users=users, query=query, sort=sort, sortOrder=sortOrder, page=page, perPage=perPage)
                 case _:
                     return redirect(url_for('notFound'))
         else:
-            redirect(url_for('login'))
+            return redirect(url_for('login'))
 
 
 @app.route('/login/', methods=['GET', 'POST'])

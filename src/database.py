@@ -1,12 +1,13 @@
 import locale, sys, os, uuid, hashlib, requests, datetime
 
+from sqlalchemy.ext.hybrid import hybrid_property
 from flask_sqlalchemy import SQLAlchemy
 from cryptograph import Cryptograph
 from flask_login import UserMixin
+from collections import Counter
 from dotenv import load_dotenv
 from functools import wraps
 from flask import Flask
-from collections import Counter
 
 class Config:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
@@ -19,20 +20,48 @@ class Config:
     db = SQLAlchemy(app)
     session = db.session
 
+
 class User(UserMixin, Config.db.Model):
     __tablename__ = 'tbl_0'
+    
     id = Config.db.Column('col_a0', Config.db.String(36), default=lambda: str(uuid.uuid4()), primary_key=True, nullable=False)
-    login = Config.db.Column('col_a1', Config.db.String(80), unique=True, nullable=False)
+    _login_encrypted = Config.db.Column('col_a1', Config.db.LargeBinary, unique=True, nullable=False)  # ← Mudou aqui
     password = Config.db.Column('col_a2', Config.db.String(255), nullable=False)
-    role = Config.db.Column('col_a3', Config.db.String(80), nullable=False)
+    _role_encrypted = Config.db.Column('col_a3', Config.db.LargeBinary, nullable=False)  # ← Mudou aqui
     enabled = Config.db.Column('col_a4', Config.db.Boolean, default=True, nullable=False)
     passwordPwned = Config.db.Column('col_a5', Config.db.Boolean, default=False, nullable=False)
+    
+    @hybrid_property
+    def login(self):
+        if self._login_encrypted:
+            return Cryptograph.decryptSentence(self._login_encrypted).decode('utf-8')
+        return None
+    
+    @login.setter
+    def login(self, value):
+        if value:
+            self._login_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._login_encrypted = None
+            
+    @hybrid_property
+    def role(self):
+        if self._role_encrypted:
+            return Cryptograph.decryptSentence(self._role_encrypted).decode('utf-8')
+        return None
+    
+    @role.setter
+    def role(self, value):
+        if value:
+            self._role_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._role_encrypted = None
     
     def toDict(self):
         return {
             'id': self.id,
-            'login': self.login,
-            'role': self.role,
+            'login': self.login,  
+            'role': self.role,    
             'enabled': self.enabled,
             'passwordPwned': self.passwordPwned,
         }
@@ -48,18 +77,85 @@ class User(UserMixin, Config.db.Model):
     
     def getId(self):
         return str(self.id)
+            
 
 
 class Passwords(UserMixin, Config.db.Model):
     __tablename__ = 'tbl_1'
     id = Config.db.Column('col_b0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
     userId = Config.db.Column('col_b1', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
-    login = Config.db.Column('col_b2', Config.db.String(80), nullable=False)
-    password = Config.db.Column('col_b3', Config.db.String(80), nullable=False)
-    site = Config.db.Column('col_b4', Config.db.String(80), nullable=False)
+    _login_encrypted = Config.db.Column('col_b2', Config.db.String(80), nullable=False)
+    _password_encrypted = Config.db.Column('col_b3', Config.db.String(80), nullable=False)
+    _site_encrypted = Config.db.Column('col_b4', Config.db.String(80), nullable=False)
     status = Config.db.Column('col_b5', Config.db.Boolean, nullable=False, default=False)
-    lastUse = Config.db.Column('col_b6', Config.db.DateTime, nullable=True)
-    whereUsed = Config.db.Column('col_b7', Config.db.String(80), nullable=True)
+    _lastUse_encrypted = Config.db.Column('col_b6', Config.db.DateTime, nullable=True)
+    _whereUsed_encrypted = Config.db.Column('col_b7', Config.db.String(80), nullable=True)
+    
+    
+    @hybrid_property
+    def login(self):
+        if self._login_encrypted:
+            return Cryptograph.decryptSentence(self._login_encrypted).decode('utf-8')
+        return None
+    
+    @login.setter
+    def login(self, value):
+        if value:
+            self._login_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._login_encrypted = None
+            
+    @hybrid_property
+    def password(self):
+        if self._password_encrypted:
+            return Cryptograph.decryptSentence(self._password_encrypted).decode('utf-8')
+        return None
+    
+    @password.setter
+    def password(self, value):
+        if value:
+            self._password_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._password_encrypted = None
+            
+    @hybrid_property
+    def site(self):
+        if self._site_encrypted:
+            return Cryptograph.decryptSentence(self._site_encrypted).decode('utf-8')
+        return None
+    
+    @site.setter
+    def site(self, value):
+        if value:
+            self._site_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._site_encrypted = None
+            
+    @hybrid_property
+    def lastUse(self):
+        if self._lastUse_encrypted:
+            return Cryptograph.decryptSentence(self._lastUse_encrypted)
+        return None
+    
+    @lastUse.setter
+    def lastUse(self, value):
+        if value:
+            self._lastUse_encrypted = Cryptograph.encryptSentence(value)
+        else:
+            self._lastUse_encrypted = None
+            
+    @hybrid_property
+    def whereUsed(self):
+        if self._whereUsed_encrypted:
+            return Cryptograph.decryptSentence(self._whereUsed_encrypted).decode('utf-8')
+        return None
+    
+    @whereUsed.setter
+    def whereUsed(self, value):
+        if value:
+            self._whereUsed_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._whereUsed_encrypted = None
 
     def toDict(self):  
         return {
@@ -95,14 +191,118 @@ class Logs(UserMixin, Config.db.Model):
     id = Config.db.Column('col_c0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
     passwordId = Config.db.Column('col_c1', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0'), nullable=False)
     lastUse = Config.db.Column('col_c2', Config.db.DateTime, nullable=True)
-    ip = Config.db.Column('col_c3', Config.db.String(15), nullable=True)
-    cidade = Config.db.Column('col_c4', Config.db.String(15), nullable=True)
-    estado = Config.db.Column('col_c5', Config.db.String(15), nullable=True)
-    pais = Config.db.Column('col_c6', Config.db.String(15), nullable=True)
-    asn = Config.db.Column('col_c7', Config.db.String(15), nullable=True)
-    os = Config.db.Column('col_c8', Config.db.String(15), nullable=True)
-    browser = Config.db.Column('col_c9', Config.db.String(15), nullable=True)
-    version = Config.db.Column('col_c10', Config.db.String(15), nullable=True)
+    _ip_encrypted = Config.db.Column('col_c3', Config.db.String(15), nullable=True)
+    _cidade_encrypted = Config.db.Column('col_c4', Config.db.String(15), nullable=True)
+    _estado_encrypted = Config.db.Column('col_c5', Config.db.String(15), nullable=True)
+    _pais_encrypted = Config.db.Column('col_c6', Config.db.String(15), nullable=True)
+    _asn_encrypted = Config.db.Column('col_c7', Config.db.String(15), nullable=True)
+    _os_encrypted = Config.db.Column('col_c8', Config.db.String(15), nullable=True)
+    _browser_encrypted = Config.db.Column('col_c9', Config.db.String(15), nullable=True)
+    _version_encrypted = Config.db.Column('col_c10', Config.db.String(15), nullable=True)
+    
+    @hybrid_property
+    def ip(self):
+        if self._ip_encrypted:
+            return Cryptograph.decryptSentence(self._ip_encrypted).decode('utf-8')
+        return None
+    
+    @ip.setter
+    def ip(self, value):
+        if value:
+            self._ip_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._ip_encrypted = None
+            
+    @hybrid_property
+    def cidade(self):
+        if self._cidade_encrypted:
+            return Cryptograph.decryptSentence(self._cidade_encrypted).decode('utf-8')
+        return None
+    
+    @cidade.setter
+    def cidade(self, value):
+        if value:
+            self._cidade_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._cidade_encrypted = None
+            
+    @hybrid_property
+    def estado(self):
+        if self._estado_encrypted:
+            return Cryptograph.decryptSentence(self._estado_encrypted).decode('utf-8')
+        return None
+    
+    @estado.setter
+    def estado(self, value):
+        if value:
+            self._estado_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._estado_encrypted = None
+            
+    @hybrid_property
+    def pais(self):
+        if self._pais_encrypted:
+            return Cryptograph.decryptSentence(self._pais_encrypted).decode('utf-8')
+        return None
+    
+    @pais.setter
+    def pais(self, value):
+        if value:
+            self._pais_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._pais_encrypted = None
+            
+    @hybrid_property
+    def asn(self):
+        if self._asn_encrypted:
+            return Cryptograph.decryptSentence(self._asn_encrypted).decode('utf-8')
+        return None
+    
+    @asn.setter
+    def asn(self, value):
+        if value:
+            self._asn_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._asn_encrypted = None
+            
+    @hybrid_property
+    def os(self):
+        if self._os_encrypted:
+            return Cryptograph.decryptSentence(self._os_encrypted).decode('utf-8')
+        return None
+    
+    @os.setter
+    def os(self, value):
+        if value:
+            self._os_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._os_encrypted = None
+            
+    @hybrid_property
+    def browser(self):
+        if self._browser_encrypted:
+            return Cryptograph.decryptSentence(self._browser_encrypted).decode('utf-8')
+        return None
+    
+    @browser.setter
+    def browser(self, value):
+        if value:
+            self._browser_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._browser_encrypted = None
+            
+    @hybrid_property
+    def version(self):
+        if self._version_encrypted:
+            return Cryptograph.decryptSentence(self._version_encrypted).decode('utf-8')
+        return None
+    
+    @version.setter
+    def version(self, value):
+        if value:
+            self._version_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+        else:
+            self._version_encrypted = None
     
     def toDict(self):
         return {
@@ -143,7 +343,7 @@ class Filters(UserMixin, Config.db.Model):
     userId = Config.db.Column('col_d2', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
     
     # relationships
-    passwordsId = Config.db.relationship('Passwords', backref='filters', lazy=True)
+    passwordsId = Config.db.relationship('tbl_1', backref='filters', lazy=True)
     
     def toDict(self):
         return {
