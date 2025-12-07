@@ -179,7 +179,7 @@ def index():
                             case False:
                                 flash(statistcs, 'danger')
                                 return render_template('index.html', deashboardInfo={})
-                            case 2:
+                            case -1:
                                 raise Exception(statistcs)
                             case True:
                                 if current_user.role == 'sysadmin':
@@ -189,7 +189,7 @@ def index():
                                         return render_template('index.html', deashboardInfo=statistcs, users={})
                                     elif users == True:
                                         return render_template('index.html', deashboardInfo=statistcs, users=users)
-                                    elif users == 2:
+                                    elif users == -1:
                                         raise Exception(users)
                                 else:
                                     passwords = database.getPasswords(userId=current_user.id)
@@ -199,7 +199,7 @@ def index():
                                             return render_template('index.html', deashboardInfo=statistcs, passwords={})
                                         case True:
                                             return render_template('index.html', deashboardInfo=statistcs, passwords=passwords)
-                                        case 2:
+                                        case -1:
                                             raise Exception(passwords)
                     else:
                         return redirect(next_page)
@@ -256,7 +256,7 @@ def forgotPassword():
                 if success == False:
                     flash(user, 'danger')
                     return redirect(url_for('forgotPassword'))
-                elif success == 2:
+                elif success == -1:
                     raise Exception(user)
                 else:
                     return redirect(url_for('forgotPassword'))
@@ -282,7 +282,7 @@ def signup():
                     if success == False:
                         flash(user, 'danger')
                         return redirect(url_for('signup'))
-                    elif success == 2:
+                    elif success == -1:
                         raise Exception(user)
                     else:
                         login_user(user, remember=True)
@@ -339,7 +339,7 @@ def home():
                 if success == False:
                     flash(passwords, 'danger')
                     return redirect(render_template('index.html'))
-                elif success == 2:
+                elif success == -1:
                     return redirect(url_for('internalError', error=passwords))
                 return render_template('index.html', passwords=passwords)
         case _:
@@ -355,7 +355,7 @@ def stats():
             if success == False:
                 flash(stats, 'danger')
                 return redirect(render_template('stats.html'))
-            elif success == 2:
+            elif success == -1:
                 return redirect(url_for('internalError', error=stats))
             return render_template('stats.html', stats=stats)
         case 'POST':

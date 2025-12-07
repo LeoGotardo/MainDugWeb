@@ -245,7 +245,7 @@ class Database:
                 self.session.commit()
             except Exception as e:
                 self.session.rollback()
-                return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+                return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
     
     
     def getDashboardInfo(self, userId: str, initDt: datetime = None, endDt: datetime = None, page: int =1, perPage: int = 10, sort: str = 'date', sortOrder: str = 'asc', query: str = '') -> tuple[bool, dict]:
@@ -283,7 +283,7 @@ class Database:
 
                         }
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
             
     
     def getUser(self, id: str) -> tuple[bool, User | str]:
@@ -295,7 +295,7 @@ class Database:
             else:
                 return False, 'Invalid user'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
     @canHandle
@@ -404,7 +404,7 @@ class Database:
                         return True, []
         except Exception as e:
             self.session.rollback()  # Garante que a transação não fique quebrada
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 
 
     def validUser(self, login: str, password: str) -> tuple[bool, User | str]:
@@ -421,7 +421,7 @@ class Database:
             else:
                 return False, 'Invalid credentials'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 
 
     def createUser(self, login: str, password: str) -> tuple[bool, User | str]:
@@ -435,7 +435,7 @@ class Database:
             else:
                 return False, 'User already exists'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
     def deleteUser(self, id: str) -> tuple[bool, str]:
@@ -450,7 +450,7 @@ class Database:
             else:
                 return False, 'User not found'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
     def updateUser(self, id: str, login: str = None, password: str = None, role: str = None) -> tuple[bool, str]:
@@ -477,7 +477,7 @@ class Database:
             else:
                 return False, 'Invalid id'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def addPassword(self, gerentId, id: str, site: str, login: str, password: str ) -> tuple[bool, str]:
@@ -499,7 +499,7 @@ class Database:
             
             return True, 'Password added'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 
 
     @canHandle
@@ -611,7 +611,7 @@ class Database:
                         return True, []
         except Exception as e:
             self.session.rollback()  # Garante que a transação não fique quebrada
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def deletePassword(self, passwordID: str, userID: str) -> tuple[bool, str]:
@@ -629,7 +629,7 @@ class Database:
             else:
                 return False, 'Password not found'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def checkPasswordPwned(self, password: str) -> tuple[bool, str]:
@@ -663,7 +663,7 @@ class Database:
             else:
                 return False, 'Invalid user'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
     def updatePasswordStatus(self, id: str) -> tuple[bool, str]:
@@ -691,7 +691,7 @@ class Database:
             else:
                 return True, 'Passwords updated'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
     def getPassword(self, credId: str) -> tuple[bool, Passwords] | tuple[bool, str]:
@@ -703,7 +703,7 @@ class Database:
             else:
                 return False, 'Invalid password'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def pwned(self, id: str) -> tuple[bool, str]:
@@ -718,7 +718,7 @@ class Database:
             else:
                 return False, 'Invalid user'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
     def getLeakedPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
@@ -730,7 +730,7 @@ class Database:
             else:
                 return False, 'Cant find any passwords'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
     def getMostUsedPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
@@ -748,7 +748,7 @@ class Database:
             else:
                 return False, 'Cant find any passwords'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def getGoodPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
@@ -760,7 +760,7 @@ class Database:
             else:
                 return False, 'Cant find any passwords'
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
     def getInfoByIP(self, passwordID: str, ip: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
@@ -793,4 +793,4 @@ class Database:
                 return False, 'Invalid password'
             
         except Exception as e:
-            return 2, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
