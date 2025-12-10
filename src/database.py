@@ -25,22 +25,30 @@ class User(UserMixin, Config.db.Model):
     __tablename__ = 'tbl_0'
     
     id = Config.db.Column('col_a0', Config.db.String(36), default=lambda: str(uuid.uuid4()), primary_key=True, nullable=False)
-    _login_encrypted = Config.db.Column('col_a1', Config.db.LargeBinary, unique=True, nullable=False)  # ← Mudou aqui
+    _login_encrypted = Config.db.Column('col_a1', Config.db.LargeBinary, unique=True, nullable=False)
     password = Config.db.Column('col_a2', Config.db.String(255), nullable=False)
-    _role_encrypted = Config.db.Column('col_a3', Config.db.LargeBinary, nullable=False)  # ← Mudou aqui
+    _role_encrypted = Config.db.Column('col_a3', Config.db.LargeBinary, nullable=False)
     enabled = Config.db.Column('col_a4', Config.db.Boolean, default=True, nullable=False)
     passwordPwned = Config.db.Column('col_a5', Config.db.Boolean, default=False, nullable=False)
     
     @hybrid_property
     def login(self):
         if self._login_encrypted:
-            return Cryptograph.decryptSentence(self._login_encrypted).decode('utf-8')
+            response, key = Cryptograph.keyGenerator(self.id)
+            if response == True:
+                return Cryptograph.decryptSentence(self._login_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError('Error generating decryption key')
         return None
     
     @login.setter
     def login(self, value):
         if value:
-            self._login_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(self.id)
+            if response == True:    
+                self._login_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'), key)
+            else:
+                raise ValueError('Error generating encryption key')
         else:
             self._login_encrypted = None
             
@@ -341,9 +349,6 @@ class Filters(UserMixin, Config.db.Model):
     id = Config.db.Column('col_d0', Config.db.Integer, primary_key=True)
     name = Config.db.Column('col_d1', Config.db.String(50), nullable=False)
     userId = Config.db.Column('col_d2', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
-    
-    # relationships
-    passwordsId = Config.db.relationship('tbl_1', backref='filters', lazy=True)
     
     def toDict(self):
         return {
