@@ -79,7 +79,7 @@ def setup_error_handlers(app):
         errorDetails = None
         debugInfo = None
         
-        if app.config.get('DEBUG') or current_user.role in ['sysadmin', 'super']:
+        if app.config.get('DEBUG') or (current_user.is_authenticated and current_user.role in ['sysadmin', 'super']):
             errorDetails = str(e)
             debugInfo = {
                 'file': errorFile.split('/')[-1] if errorFile else 'N/A',  # Apenas nome do arquivo
@@ -101,7 +101,7 @@ def setup_error_handlers(app):
         # Para exceções não-HTTP, retorna erro 500
         return render_template('error/generic.html',
                             errorCode=500,
-                            erroMessage="Ocorreu um erro inesperado. Nossa equipe foi notificada.",
+                            errorMessage="Ocorreu um erro inesperado. Nossa equipe foi notificada.",
                             errorDetails=errorDetails,
                             debugInfo=debugInfo), 500
 
@@ -198,12 +198,13 @@ def login():
                 
                 if success:
                     login_user(user)
-                    flash('Sussesful login', 'success')
+                    flash('Login realizado com sucesso', 'success')
                     return redirect(url_for('index'))
                 else:
-                    raise Exception(user)
+                    flash('Login ou senha incorretos', 'danger')
+                    return redirect(url_for('login'))
             else:
-                flash('Login failed', 'danger')
+                flash('Preencha todos os campos', 'danger')
                 return redirect(url_for('login'))
         case _:
             return redirect(url_for('notFound'))
@@ -233,9 +234,10 @@ def forgotPassword():
                 elif success == -1:
                     raise Exception(user)
                 else:
+                    flash('Instruções enviadas para o email cadastrado', 'success')
                     return redirect(url_for('forgotPassword'))
             else:
-                flash('Login is required.', 'danger')
+                flash('Digite seu login ou email', 'danger')
                 return redirect(url_for('forgotPassword'))
 
 
@@ -251,22 +253,24 @@ def signup():
             
             if None not in [login, password, passwordConfirm]:
                 if password == passwordConfirm:
-                    success, user = database.createUser(login=login, password=password)
+                    success, result = database.createUser(login=login, password=password)
                     
                     if success == False:
-                        flash(user, 'danger')
+                        flash(result, 'danger')
                         return redirect(url_for('signup'))
                     elif success == -1:
-                        raise Exception(user)
+                        raise Exception(result)
                     else:
-                        login_user(user, remember=True)
-                        flash(user, 'success')
+                        # CORREÇÃO: Não passa o objeto User diretamente
+                        # Em vez disso, faz login e deixa o Flask-Login gerenciar
+                        login_user(result, remember=True)
+                        flash('Conta criada com sucesso!', 'success')
                         return redirect(url_for('index'))
                 else:
-                    flash('Passwords are not the same.', 'danger')
+                    flash('As senhas não coincidem', 'danger')
                     return redirect(url_for('signup'))
             else:
-                flash('Login is required.', 'danger')
+                flash('Preencha todos os campos', 'danger')
                 return redirect(url_for('signup'))
                 
 
@@ -275,9 +279,10 @@ def signup():
 def account():
     match request.method:
         case 'GET':
-            user, success = database.getUserById(current_user.id)
+            success, user = database.getUser(current_user.id)
             if not success:
-                return redirect(url_for('internalError'))
+                flash('Erro ao carregar dados da conta', 'danger')
+                return redirect(url_for('index'))
             
             return render_template('account.html', user=user)
         case 'POST':
@@ -286,18 +291,23 @@ def account():
             passwordConfirm = request.form.get('passwordConfirm')
             profilePic = request.form.get('profilePic')
             
-            if password == passwordConfirm:
-                success, user = database.updateUser(current_user.id, login=login, password=password, profilePic=profilePic)
-                
-                if success == False:
-                    flash(user, 'danger')
-                    return redirect(url_for('account'))
-                else:
-                    flash(user, 'success')
-                    return redirect(url_for('index'))
-            else:
-                flash('Passwords are not the same.', 'danger')
+            if password and password != passwordConfirm:
+                flash('As senhas não coincidem', 'danger')
                 return redirect(url_for('account'))
+            
+            success, result = database.updateUser(
+                current_user.id, 
+                login=login, 
+                password=password if password else None, 
+                profilePic=profilePic
+            )
+            
+            if success == False:
+                flash(result, 'danger')
+                return redirect(url_for('account'))
+            else:
+                flash('Conta atualizada com sucesso!', 'success')
+                return redirect(url_for('index'))
             
 @app.route('/home/', methods=['GET', 'POST'])
 @login_required
@@ -312,9 +322,9 @@ def home():
                 success, passwords = database.getPasswords(userId=current_user.id)
                 if success == False:
                     flash(passwords, 'danger')
-                    return redirect(render_template('index.html'))
+                    return render_template('index.html')
                 elif success == -1:
-                    return redirect(url_for('internalError', error=passwords))
+                    raise Exception(passwords)
                 return render_template('index.html', passwords=passwords)
         case _:
             return redirect(url_for('notFound'))
@@ -328,9 +338,9 @@ def stats():
             success, stats = database.getStats(userId=current_user.id)
             if success == False:
                 flash(stats, 'danger')
-                return redirect(render_template('stats.html'))
+                return render_template('stats.html')
             elif success == -1:
-                return redirect(url_for('internalError', error=stats))
+                raise Exception(stats)
             return render_template('stats.html', stats=stats)
         case 'POST':
             return render_template('stats.html')
@@ -344,7 +354,8 @@ def moreInfo():
             passwordId = request.args.get('passwordId')
             success, passwordInfo = database.getPasswordLogs(passwordId=passwordId, userId=current_user.id, itemType='password')
             if not success:
-                return redirect(url_for('internalError'))
+                flash('Erro ao carregar informações', 'danger')
+                return redirect(url_for('index'))
             
             return render_template('moreInfo.html', passwordInfo=passwordInfo)
         case 'DELETE':
@@ -352,11 +363,15 @@ def moreInfo():
             
             success, msg = database.deletePasswordLogs(logs=logs, userId=current_user.id, itemType='password')
             if not success:
-                return redirect(url_for('internalError'))
+                return jsonify({'success': False, 'message': msg}), 400
             
-            jsonify({'success': True, 'msg': msg})
+            return jsonify({'success': True, 'message': msg})
         case _:
             return redirect(url_for('notFound'))
+
+
+# Configura os error handlers
+setup_error_handlers(app)
 
 
 if __name__ == '__main__':

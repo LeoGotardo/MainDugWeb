@@ -1,4 +1,4 @@
-import locale, sys, os, uuid, hashlib, requests, datetime, hashlib
+import locale, sys, os, uuid, hashlib, requests, datetime, hashlib, base64
 
 from sqlalchemy.ext.hybrid import hybrid_property, Comparator
 from flask_sqlalchemy import SQLAlchemy
@@ -28,11 +28,14 @@ class User(UserMixin, Config.db.Model):
     __tablename__ = 'tbl_0'
     
     id = Config.db.Column('col_a0', Config.db.String(36), default=lambda: str(uuid.uuid4()), primary_key=True, nullable=False)
-    _login_encrypted = Config.db.Column('col_a1', Config.db.LargeBinary, unique=True, nullable=False)
+    
+    # MUDANÇA: LargeBinary → String (armazena base64)
+    _login_encrypted = Config.db.Column('col_a1', Config.db.String(500), unique=True, nullable=False)
     _login_hash = Config.db.Column('col_a1_hash', Config.db.String(64), unique=True, nullable=False, index=True)
     password = Config.db.Column('col_a2', Config.db.String(255), nullable=False)
     
-    _role_encrypted = Config.db.Column('col_a3', Config.db.LargeBinary, nullable=False, default=lambda: Cryptograph.encryptSentence('user', Config.ENCRYPT_KEY)[1])
+    # MUDANÇA: LargeBinary → String (armazena base64)
+    _role_encrypted = Config.db.Column('col_a3', Config.db.String(500), nullable=False, default=lambda: (Cryptograph.encryptSentence('user', Cryptograph.keyGenerator(Config.ENCRYPT_KEY)[1])[1]).decode('utf-8'))
     enabled = Config.db.Column('col_a4', Config.db.Boolean, default=True, nullable=False)
     passwordPwned = Config.db.Column('col_a5', Config.db.Boolean, default=False, nullable=False)
     
@@ -41,7 +44,13 @@ class User(UserMixin, Config.db.Model):
         if self._login_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._login_encrypted, key).decode('utf-8')
+                # Converte de base64 string para bytes antes de decriptar
+                encrypted_bytes = base64.b64decode(self._login_encrypted) if isinstance(self._login_encrypted, str) else self._login_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting login: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -51,10 +60,13 @@ class User(UserMixin, Config.db.Model):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                test = Cryptograph.encryptSentence(value, key)
-                ic(test)
-                self._login_encrypted = test[1]
-                self._login_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    # Converte bytes para base64 string
+                    self._login_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                    self._login_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
+                else:
+                    raise ValueError(f'Error encrypting login: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -84,7 +96,13 @@ class User(UserMixin, Config.db.Model):
         if self._role_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._role_encrypted, key).decode('utf-8')
+                # Converte de base64 string para bytes antes de decriptar
+                encrypted_bytes = base64.b64decode(self._role_encrypted) if isinstance(self._role_encrypted, str) else self._role_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting role: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         else:
@@ -94,8 +112,13 @@ class User(UserMixin, Config.db.Model):
     def role(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._role_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    # Converte bytes para base64 string
+                    self._role_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                else:
+                    raise ValueError(f'Error encrypting role: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key') 
         else:
@@ -127,21 +150,28 @@ class Passwords(UserMixin, Config.db.Model):
     __tablename__ = 'tbl_1'
     id = Config.db.Column('col_b0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
     userId = Config.db.Column('col_b1', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
-    _login_encrypted = Config.db.Column('col_b2', Config.db.String(80), nullable=False)
+    
+    # MUDANÇA: LargeBinary → String (armazena base64)
+    _login_encrypted = Config.db.Column('col_b2', Config.db.String(500), nullable=False)
     _login_hash = Config.db.Column('col_b2_hash', Config.db.String(64), nullable=False, index=True)
-    _password_encrypted = Config.db.Column('col_b3', Config.db.String(80), nullable=False)
-    _site_encrypted = Config.db.Column('col_b4', Config.db.String(80), nullable=False)
+    _password_encrypted = Config.db.Column('col_b3', Config.db.String(500), nullable=False)
+    _site_encrypted = Config.db.Column('col_b4', Config.db.String(500), nullable=False)
     _site_hash = Config.db.Column('col_b4_hash', Config.db.String(64), nullable=False, index=True)
     status = Config.db.Column('col_b5', Config.db.Boolean, nullable=False, default=False)
-    _lastUse_encrypted = Config.db.Column('col_b6', Config.db.DateTime, nullable=True)
-    _whereUsed_encrypted = Config.db.Column('col_b7', Config.db.String(80), nullable=True)
+    _lastUse_encrypted = Config.db.Column('col_b6', Config.db.String(500), nullable=True)
+    _whereUsed_encrypted = Config.db.Column('col_b7', Config.db.String(500), nullable=True)
     
     @hybrid_property
     def login(self):
         if self._login_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._login_encrypted, key).decode('utf-8')
+                encrypted_bytes = base64.b64decode(self._login_encrypted) if isinstance(self._login_encrypted, str) else self._login_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting login: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -150,9 +180,13 @@ class Passwords(UserMixin, Config.db.Model):
     def login(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._login_encrypted = Cryptograph.encryptSentence(value, key)[1]
-                self._login_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._login_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                    self._login_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
+                else:
+                    raise ValueError(f'Error encrypting login: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -182,7 +216,12 @@ class Passwords(UserMixin, Config.db.Model):
         if self._password_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._password_encrypted, key).decode('utf-8')
+                encrypted_bytes = base64.b64decode(self._password_encrypted) if isinstance(self._password_encrypted, str) else self._password_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting password: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -191,8 +230,12 @@ class Passwords(UserMixin, Config.db.Model):
     def password(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._password_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._password_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                else:
+                    raise ValueError(f'Error encrypting password: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -203,7 +246,12 @@ class Passwords(UserMixin, Config.db.Model):
         if self._site_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._site_encrypted, key).decode('utf-8')
+                encrypted_bytes = base64.b64decode(self._site_encrypted) if isinstance(self._site_encrypted, str) else self._site_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting site: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -212,9 +260,13 @@ class Passwords(UserMixin, Config.db.Model):
     def site(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._site_encrypted = Cryptograph.encryptSentence(value, key)[1]
-                self._site_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._site_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                    self._site_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
+                else:
+                    raise ValueError(f'Error encrypting site: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -244,7 +296,12 @@ class Passwords(UserMixin, Config.db.Model):
         if self._lastUse_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._lastUse_encrypted, key)
+                encrypted_bytes = base64.b64decode(self._lastUse_encrypted) if isinstance(self._lastUse_encrypted, str) else self._lastUse_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting lastUse: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -253,8 +310,12 @@ class Passwords(UserMixin, Config.db.Model):
     def lastUse(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._lastUse_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._lastUse_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                else:
+                    raise ValueError(f'Error encrypting lastUse: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -265,7 +326,12 @@ class Passwords(UserMixin, Config.db.Model):
         if self._whereUsed_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._whereUsed_encrypted, key).decode('utf-8')
+                encrypted_bytes = base64.b64decode(self._whereUsed_encrypted) if isinstance(self._whereUsed_encrypted, str) else self._whereUsed_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting whereUsed: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -274,8 +340,12 @@ class Passwords(UserMixin, Config.db.Model):
     def whereUsed(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._whereUsed_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._whereUsed_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                else:
+                    raise ValueError(f'Error encrypting whereUsed: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -315,21 +385,28 @@ class Logs(UserMixin, Config.db.Model):
     id = Config.db.Column('col_c0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
     passwordId = Config.db.Column('col_c1', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0'), nullable=False)
     lastUse = Config.db.Column('col_c2', Config.db.DateTime, nullable=True)
-    _ip_encrypted = Config.db.Column('col_c3', Config.db.String(15), nullable=True)
-    _cidade_encrypted = Config.db.Column('col_c4', Config.db.String(15), nullable=True)
-    _estado_encrypted = Config.db.Column('col_c5', Config.db.String(15), nullable=True)
-    _pais_encrypted = Config.db.Column('col_c6', Config.db.String(15), nullable=True)
-    _asn_encrypted = Config.db.Column('col_c7', Config.db.String(15), nullable=True)
-    _os_encrypted = Config.db.Column('col_c8', Config.db.String(15), nullable=True)
-    _browser_encrypted = Config.db.Column('col_c9', Config.db.String(15), nullable=True)
-    _version_encrypted = Config.db.Column('col_c10', Config.db.String(15), nullable=True)
+    
+    # MUDANÇA: LargeBinary → String (armazena base64)
+    _ip_encrypted = Config.db.Column('col_c3', Config.db.String(500), nullable=True)
+    _cidade_encrypted = Config.db.Column('col_c4', Config.db.String(500), nullable=True)
+    _estado_encrypted = Config.db.Column('col_c5', Config.db.String(500), nullable=True)
+    _pais_encrypted = Config.db.Column('col_c6', Config.db.String(500), nullable=True)
+    _asn_encrypted = Config.db.Column('col_c7', Config.db.String(500), nullable=True)
+    _os_encrypted = Config.db.Column('col_c8', Config.db.String(500), nullable=True)
+    _browser_encrypted = Config.db.Column('col_c9', Config.db.String(500), nullable=True)
+    _version_encrypted = Config.db.Column('col_c10', Config.db.String(500), nullable=True)
     
     @hybrid_property    
     def ip(self):    
         if self._ip_encrypted:    
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)    
-            if response == True:    
-                return Cryptograph.decryptSentence(self._ip_encrypted, key).decode('utf-8')    
+            if response == True:
+                encrypted_bytes = base64.b64decode(self._ip_encrypted) if isinstance(self._ip_encrypted, str) else self._ip_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting ip: {decrypted}')
             else:    
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -339,7 +416,11 @@ class Logs(UserMixin, Config.db.Model):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                self._ip_encrypted = Cryptograph.encryptSentence(value, key)[1]
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._ip_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                else:
+                    raise ValueError(f'Error encrypting ip: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -350,7 +431,12 @@ class Logs(UserMixin, Config.db.Model):
         if self._cidade_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._cidade_encrypted, key).decode('utf-8')
+                encrypted_bytes = base64.b64decode(self._cidade_encrypted) if isinstance(self._cidade_encrypted, str) else self._cidade_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting cidade: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -359,8 +445,12 @@ class Logs(UserMixin, Config.db.Model):
     def cidade(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._cidade_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._cidade_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                else:
+                    raise ValueError(f'Error encrypting cidade: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -371,7 +461,12 @@ class Logs(UserMixin, Config.db.Model):
         if self._estado_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._estado_encrypted, key).decode('utf-8')
+                encrypted_bytes = base64.b64decode(self._estado_encrypted) if isinstance(self._estado_encrypted, str) else self._estado_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting estado: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -380,8 +475,12 @@ class Logs(UserMixin, Config.db.Model):
     def estado(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._estado_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._estado_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                else:
+                    raise ValueError(f'Error encrypting estado: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -392,7 +491,12 @@ class Logs(UserMixin, Config.db.Model):
         if self._pais_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._pais_encrypted, key).decode('utf-8')
+                encrypted_bytes = base64.b64decode(self._pais_encrypted) if isinstance(self._pais_encrypted, str) else self._pais_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting pais: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -401,8 +505,12 @@ class Logs(UserMixin, Config.db.Model):
     def pais(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._pais_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._pais_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                else:
+                    raise ValueError(f'Error encrypting pais: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -413,7 +521,12 @@ class Logs(UserMixin, Config.db.Model):
         if self._asn_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._asn_encrypted, key).decode('utf-8')
+                encrypted_bytes = base64.b64decode(self._asn_encrypted) if isinstance(self._asn_encrypted, str) else self._asn_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting asn: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -422,8 +535,12 @@ class Logs(UserMixin, Config.db.Model):
     def asn(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._asn_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._asn_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                else:
+                    raise ValueError(f'Error encrypting asn: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -434,7 +551,12 @@ class Logs(UserMixin, Config.db.Model):
         if self._os_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._os_encrypted, key).decode('utf-8')
+                encrypted_bytes = base64.b64decode(self._os_encrypted) if isinstance(self._os_encrypted, str) else self._os_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting os: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -443,8 +565,12 @@ class Logs(UserMixin, Config.db.Model):
     def os(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._os_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._os_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                else:
+                    raise ValueError(f'Error encrypting os: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -455,7 +581,12 @@ class Logs(UserMixin, Config.db.Model):
         if self._browser_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._browser_encrypted, key).decode('utf-8')
+                encrypted_bytes = base64.b64decode(self._browser_encrypted) if isinstance(self._browser_encrypted, str) else self._browser_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting browser: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -464,8 +595,12 @@ class Logs(UserMixin, Config.db.Model):
     def browser(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._browser_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._browser_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                else:
+                    raise ValueError(f'Error encrypting browser: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -476,7 +611,12 @@ class Logs(UserMixin, Config.db.Model):
         if self._version_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                return Cryptograph.decryptSentence(self._version_encrypted, key).decode('utf-8')
+                encrypted_bytes = base64.b64decode(self._version_encrypted) if isinstance(self._version_encrypted, str) else self._version_encrypted
+                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                if success:
+                    return decrypted
+                else:
+                    raise ValueError(f'Error decrypting version: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -485,8 +625,12 @@ class Logs(UserMixin, Config.db.Model):
     def version(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._version_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            if response == True:
+                success, encrypted = Cryptograph.encryptSentence(value, key)
+                if success:
+                    self._version_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
+                else:
+                    raise ValueError(f'Error encrypting version: {encrypted}')
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
         else:
@@ -552,7 +696,7 @@ class Filters(UserMixin, Config.db.Model):
 
     @property
     def getId(self):
-        return str(self.id)
+        return str(self.id) 
 
 class Database:
     def __init__(self) -> None:
@@ -656,7 +800,7 @@ class Database:
             query = str(query)
             
             
-            user: User | None = self.session.query(User).filter_by(userId=userId).first()
+            user: User | None = self.session.query(User).filter_by(id=userId).first()
             if user:
                 if user.role == 'super':
                     with Config.app.app_context():
