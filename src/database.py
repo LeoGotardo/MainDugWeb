@@ -29,13 +29,11 @@ class User(UserMixin, Config.db.Model):
     
     id = Config.db.Column('col_a0', Config.db.String(36), default=lambda: str(uuid.uuid4()), primary_key=True, nullable=False)
     
-    # MUDANÇA: LargeBinary → String (armazena base64)
     _login_encrypted = Config.db.Column('col_a1', Config.db.String(500), unique=True, nullable=False)
     _login_hash = Config.db.Column('col_a1_hash', Config.db.String(64), unique=True, nullable=False, index=True)
     password = Config.db.Column('col_a2', Config.db.String(255), nullable=False)
     
-    # MUDANÇA: LargeBinary → String (armazena base64)
-    _role_encrypted = Config.db.Column('col_a3', Config.db.String(500), nullable=False, default=lambda: (Cryptograph.encryptSentence('user', Cryptograph.keyGenerator(Config.ENCRYPT_KEY)[1])[1]).decode('utf-8'))
+    _role_encrypted = Config.db.Column('col_a3', Config.db.String(500), nullable=False, default=lambda: base64.b64encode(Cryptograph.encryptSentence('user', Cryptograph.keyGenerator(Config.ENCRYPT_KEY)[1])[1]).decode('utf-8'))
     enabled = Config.db.Column('col_a4', Config.db.Boolean, default=True, nullable=False)
     passwordPwned = Config.db.Column('col_a5', Config.db.Boolean, default=False, nullable=False)
     
@@ -44,7 +42,6 @@ class User(UserMixin, Config.db.Model):
         if self._login_encrypted:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
-                # Converte de base64 string para bytes antes de decriptar
                 encrypted_bytes = base64.b64decode(self._login_encrypted) if isinstance(self._login_encrypted, str) else self._login_encrypted
                 success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
                 if success:
@@ -62,7 +59,6 @@ class User(UserMixin, Config.db.Model):
             if response == True:
                 success, encrypted = Cryptograph.encryptSentence(value, key)
                 if success:
-                    # Converte bytes para base64 string
                     self._login_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
                     self._login_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
                 else:
@@ -293,7 +289,12 @@ class Passwords(UserMixin, Config.db.Model):
             
     @hybrid_property
     def lastUse(self):
-        if self._lastUse_encrypted:
+        encrypted_value = self._lastUse_encrypted 
+        
+        if encrypted_value is None or encrypted_value == "":
+            return None
+        
+        try:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
                 encrypted_bytes = base64.b64decode(self._lastUse_encrypted) if isinstance(self._lastUse_encrypted, str) else self._lastUse_encrypted
@@ -304,7 +305,8 @@ class Passwords(UserMixin, Config.db.Model):
                     raise ValueError(f'Error decrypting lastUse: {decrypted}')
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
-        return None
+        except Exception as e:
+           raise(f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}')
     
     @lastUse.setter
     def lastUse(self, value):
@@ -713,14 +715,13 @@ class Database:
         @wraps(f)
         def wrapper(self, userId: str, itemType: str, method: str, item: Passwords | User = None, *args, **kwargs):
             current_user = Config.session.query(User).filter_by(id=userId).first()
-            if not current_user:
-                return False, 'Invalid user'
+            # ...
             match method:
                 case 'get':
                     match itemType:
                         case 'user':
                             success, users = f(self, userId, *args, **kwargs)
-                            if not success:
+                            if success is not True:
                                 return False, users
                             if current_user.role == 'sysadmin':
                                 return True, users
@@ -728,12 +729,12 @@ class Database:
                                 return False, 403
                         case 'password':
                             success, passwords = f(self, userId, *args, **kwargs)
-                            if not success:
+                            if success is not True:
                                 return False, passwords
                             if current_user.role == 'sysadmin':
                                 return True, passwords
                             else:
-                                passwords = [password for password in passwords if password.user_id == current_user.id]
+                                passwords = [password for password in passwords if password['user_id'] == current_user.id]
                                 return True, passwords
                         case _:
                             return False, f'Invalid itemType'
@@ -777,7 +778,7 @@ class Database:
                 return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
     
     
-    def getDashboardInfo(self, userId: str, initDt: datetime = None, endDt: datetime = None, page: int =1, perPage: int = 10, sort: str = 'date', sortOrder: str = 'asc', query: str = '') -> tuple[bool, dict]:
+    def getDashboardInfo(self, userId: str, page: int =1, perPage: int = 10, sort: str = 'date', sortOrder: str = 'asc', query: str = '') -> tuple[bool, dict]:
         """
         Gera estatísticas do dashboard baseadas no perfil do usuário.
         Para super users: estatísticas globais. Para outros: estatísticas da loja.
@@ -811,6 +812,65 @@ class Database:
                         return True, {
 
                         }
+                else:
+                    baseQuery = self.session.query(Passwords).filter(Passwords.userId == userId)
+                    flags = self.session.query(Filters).filter(Filters.userId == userId).all()
+                    
+                    # Executa a query paginada
+                    paginatedPasswords = baseQuery.paginate(
+                        page=page, 
+                        per_page=perPage, 
+                        error_out=False
+                    )
+                    
+                    # 1. Gera a lista de navegação (Ex: [1, 2, None, 4, 5, 6, None, 10])
+                    # O iter_pages já cria a lógica inteligente de "..." (None)
+                    iter_pages_list = list(paginatedPasswords.iter_pages())
+                    
+                    # 2. Cria uma lista apenas com números para fazer as validações de lógica (sem None)
+                    visible_numbers = [x for x in iter_pages_list if x is not None]
+
+                    # Contagens para estatísticas (mantive sua lógica original aqui)
+                    # Nota: Se tiver muitos dados, fazer .all() aqui pode ser pesado. 
+                    # O ideal seria usar count() no banco, mas mantive sua lógica:
+                    all_passwords_for_stats = baseQuery.all() 
+                    passwordCount = len(all_passwords_for_stats)
+                    leakedCount = sum(1 for p in all_passwords_for_stats if p.status)
+                    decrypted_pass_list = [p.password for p in all_passwords_for_stats if p.password is not None]
+                    counts = Counter(decrypted_pass_list)
+                    repeatedCount = sum(1 for count in counts.values() if count > 1)
+
+                    return True, {
+                        'passwordCount': passwordCount,
+                        'leakedCount': leakedCount,
+                        'repeatedCount': repeatedCount,
+                        'flags': flags,
+                        'passwords': paginatedPasswords.items, 
+                        'pagination': {
+                            'currentPage': paginatedPasswords.page,
+                            'totalPages': paginatedPasswords.pages,
+                            'total': paginatedPasswords.total,
+                            'perPage': paginatedPasswords.per_page,
+                            'hasPrev': paginatedPasswords.has_prev,
+                            'hasNext': paginatedPasswords.has_next,
+                            'prevPage': paginatedPasswords.prev_num if paginatedPasswords.has_prev else None,
+                            'nextPage': paginatedPasswords.next_num if paginatedPasswords.has_next else None,
+                            
+                            
+                            'visiblePages': iter_pages_list, 
+                            
+                            'showFirst': 1 not in visible_numbers, 
+                            
+                            'showLast': paginatedPasswords.pages not in visible_numbers,
+                            
+                            'showLeftEllipsis': visible_numbers[0] > 2 if visible_numbers else False,
+                            
+                            'showRightEllipsis': (visible_numbers[-1] < paginatedPasswords.pages - 1) if visible_numbers else False
+                        }
+                    }
+            else:
+                return False, 'Invalid user'
+                
         except Exception as e:
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
             
@@ -1045,7 +1105,7 @@ class Database:
             sortColumn = sortOptions.get(sort, Passwords.name)
             
             with Config.app.app_context():
-                base_query = self.session.query(Passwords).filter(Passwords.user_id == userId)
+                base_query = self.session.query(Passwords).filter(Passwords.userId == userId)
                     
                 if query:
                     base_query = base_query.filter(Passwords.name.ilike(f'%{query}%'))

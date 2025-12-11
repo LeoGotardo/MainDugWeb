@@ -5,6 +5,7 @@ from typing import Dict, Any, List, Optional
 from cryptograph import Cryptograph
 from dataclasses import dataclass
 from functools import wraps
+from icecream import ic
 
 import requests, json, os, traceback, sys
 
@@ -129,17 +130,7 @@ def index():
                                 else:
                                     raise Exception(users)
                             else:
-                                passwords = database.getPasswords(userId=current_user.id)
-                                match passwords:
-                                    case False:
-                                        flash(passwords, 'danger')
-                                        return render_template('index.html', deashboardInfo=statistcs, passwords={})
-                                    case True:
-                                        return render_template('index.html', deashboardInfo=statistcs, passwords=passwords)
-                                    case -1:
-                                        raise Exception(passwords)
-                                    case _:
-                                        return redirect(url_for('notFound'))
+                                return render_template('index.html', deashboardInfo=statistcs, passwords=statistcs['pagination'])
                         case _:
                             return redirect(url_for('notFound'))
                 case 'POST':
@@ -167,7 +158,7 @@ def index():
                                 elif users == -1:
                                     raise Exception(users)
                             else:
-                                passwords = database.getPasswords(userId=current_user.id)
+                                passwords = database.getPasswords(userId=current_user.id, itemType='password', method='get')
                                 match passwords:
                                     case False:
                                         flash(passwords, 'danger')
@@ -178,7 +169,9 @@ def index():
                                         raise Exception(passwords)
                         case _:
                             return redirect(url_for('notFound'))
-                    return render_template('index.html', deashboardInfo=statistcs, passwords=passwords, users=users, query=query, sort=sort, sortOrder=sortOrder, page=page, perPage=perPage)
+                        
+                    ic(passwords)
+                    return render_template('index.html', deashboardInfo=statistcs, passwords=passwords, query=query, sort=sort, sortOrder=sortOrder, page=page, perPage=perPage)
                 case _:
                     return redirect(url_for('notFound'))
         else:

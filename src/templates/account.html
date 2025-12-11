@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Minha Conta - MainDug{% endblock %}
+
+{% block content %}
+<div id="page-account">
+    <h1 class="mb-4">Configurações da Conta</h1>
+    
+    <div class="content-box">
+        <form action="{{ url_for('account') }}" method="POST" autocomplete="off" enctype="multipart/form-data">
+            <h4 class="mb-3">Informações Básicas</h4>
+            
+            <div class="d-flex flex-column align-items-center mb-5 image-input-container">
+                <input type="file" id="profile-pic-input" name="profilePicFile" accept="image/*" class="d-none">
+                <div class="image-input-preview mb-3">
+                    <img id="profile-pic-preview" src="{{ user.profilePic or '' }}" alt="Prévia da imagem de perfil">
+                    <div class="image-input-placeholder">
+                        <i class="bi bi-camera-fill fs-3 mb-1"></i>
+                        <span>Clique para enviar</span>
+                    </div>
+                </div>
+                <input type="hidden" name="profilePic" id="profile-pic-url" value="{{ user.profilePic or '' }}">
+                <p class="text-secondary small">Clique para mudar a imagem</p>
+            </div>
+
+            <div class="mb-3">
+                <label for="acc-login" class="form-label">Login</label>
+                <input type="text" class="form-control" id="acc-login" name="login" placeholder="Seu login" value="{{ user.login }}" required readonly>
+            </div>
+            
+            <div class="mb-4">
+                <label for="acc-email" class="form-label">Email de Recuperação</label>
+                <input type="email" class="form-control" id="acc-email" name="recoveryEmail" placeholder="email@exemplo.com" value="{{ user.recoveryEmail or '' }}"
+                    data-regex="^[^\s@]+@[^\s@]+\.[^\s@]+$" 
+                    data-regex-message="Formato inválido para Email de Recuperação." 
+                    autocomplete="off">
+            </div>
+            
+            <hr class="my-4">
+            <h4 class="mb-3">Alterar Senha Mestra</h4>
+            <div class="mb-3">
+                <label for="acc-password" class="form-label">Nova Senha (deixe em branco para não alterar)</label>
+                <div class="password-wrapper">
+                    <input type="password" class="form-control" id="acc-password" name="password" placeholder="Nova senha mestra" autocomplete="new-password">
+                    <button type="button" class="toggle-password" data-target="acc-password">
+                        <i class="bi bi-eye-fill"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="acc-passwordConfirm" class="form-label">Confirmar Nova Senha</label>
+                <div class="password-wrapper">
+                    <input type="password" class="form-control" id="acc-passwordConfirm" name="passwordConfirm" placeholder="Repita a nova senha" autocomplete="new-password">
+                    <button type="button" class="toggle-password" data-target="acc-passwordConfirm">
+                        <i class="bi bi-eye-fill"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            <h4 class="mb-3">Personalização</h4>
+            <div class="mb-3">
+                <label for="accent-color-picker" class="form-label">Cor de Destaque</label>
+                <input type="color" class="form-control form-control-color" id="accent-color-picker" value="{{ user.accentColor or '#0d6efd' }}" title="Escolha sua cor principal">
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100 mt-4 py-3"> Salvar Alterações </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Lógica para aplicar a cor de destaque em tempo real
+    document.getElementById('accent-color-picker').addEventListener('input', function() {
+        const newColor = this.value;
+        const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+        localStorage.setItem('primaryColor', newColor);
+        window.applyAppTheme(newColor, currentTheme); 
+    });
+</script>
+{% endblock %}

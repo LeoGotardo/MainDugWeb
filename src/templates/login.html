@@ -1,59 +1,39 @@
-{% extends 'base.html' %}
-
-{% block title %}
-<title>Login</title>
-{% endblock %}
+{% extends "base.html" %}
+{% block title %}Login - MainDug{% endblock %}
 
 {% block content %}
-{{ super() }}
-    <main class="container my-5">
-        <div id="page-login" class="page auth-container">
-            <div class="text-center mb-4">
-                <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Logo" style="height: 2.7rem; width: auto;">
+<div id="page-login" class="auth-container">
+    <div class="text-center mb-4">
+        <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Logo" style="height: 2.7rem; width: auto;">
+    </div>
+    <h2 class="text-center mb-4">Login</h2>
+    
+    <form action="{{ url_for('login') }}" method="POST" autocomplete="off">
+        <div class="mb-3">
+            <label for="login" class="form-label">Usuário (Login)</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                <input type="text" class="form-control" id="login" name="login" placeholder="Login" required>
             </div>
-            <h2 class="text-center mb-4">Login</h2>
-            <form onsubmit="{{ url_for('login') }}" method="post">
-                <div class="mb-3">
-                    <label for="login" class="form-label">Usuário (Login)</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
-                        <input type="text" class="form-control" id="login" name="login" placeholder="Login" required>
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <label for="password" class="form-label">Senha</label>
-                    <div class="input-group password-wrapper">
-                        <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
-                        <input type="password" class="form-control" id="password" name="password" placeholder="Sua senha mestra" required autocomplete="current-password">
-                        <button type="button" class="toggle-password" data-target="password">
-                            <i class="bi bi-eye-fill"></i>
-                        </button>
-                    </div>
-                </div>
-                {% with messages = get_flashed_messages() %}
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="text-center mt-4">
-                                <p class="text-muted">{{ message }}</p>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-                <button type="submit" class="btn btn-primary w-100 mt-3 py-3">Entrar</button>
-                <div id="login-feedback" class="text-danger text-center mt-3 fw-medium"></div>
-                <div class="text-center mt-4">
-                    <p class="text-muted">Ainda não tem uma conta? <a href="{{ url_for('signup') }}">Registre-se</a></p>
-                    <p class="text-muted"><a href="{{ url_for('forgotPassword') }}">Esqueceu sua senha?</a></p>
-                </div>
-            </form>
         </div>
-        <script src="{{ url_for('static', filename='scripts/password.js') }}"></script>
-{% endblock %}
-
-{% block styles %}
-{{ super() }}
-{% endblock %}
-
-{% block scripts %}
-{{ super() }}
+        <div class="mb-4">
+            <label for="password" class="form-label">Senha</label>
+            <div class="input-group password-wrapper">
+                <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Sua senha mestra" required autocomplete="current-password">
+                <button type="button" class="toggle-password" data-target="password">
+                    <i class="bi bi-eye-fill"></i>
+                </button>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 mt-3 py-3">Entrar</button>
+        
+        <div class="text-center mt-4">
+            <a href="{{ url_for('forgotPassword') }}" class="btn btn-link px-0">Esqueceu a senha?</a>
+            <p class="text-center mt-3 mb-0 text-secondary">
+                Não tem uma conta? <a href="{{ url_for('signup') }}">Registre-se</a>
+            </p>
+        </div>
+    </form>
+</div>
 {% endblock %}

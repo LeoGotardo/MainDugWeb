@@ -1,0 +1,340 @@
+<div class="modal fade" id="viewPasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewPasswordModalTitle">Visualizar Credencial: <span id="view-site-name"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Site/Serviço</label>
+                    <input type="text" class="form-control" id="view-site" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Usuário</label>
+                    <input type="text" class="form-control" id="view-username" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Senha</label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-control" id="view-password" readonly>
+                        <button type="button" class="toggle-password" data-target="view-password">
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addPasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adicionar Nova Credencial</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="#" method="POST" id="addPasswordForm">
+                    <div class="mb-3">
+                        <label for="add-site" class="form-label">Site/Serviço</label>
+                        <input type="text" class="form-control" id="add-site" name="site" placeholder="Ex: Google, Github" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-username" class="form-label">Usuário/Email</label>
+                        <input type="text" class="form-control" id="add-username" name="username" placeholder="Seu usuário ou email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-password" class="form-label">Senha</label>
+                        <div class="password-wrapper">
+                            <input type="password" class="form-control" id="add-password" name="password" required>
+                            <button type="button" class="toggle-password" data-target="add-password">
+                                <i class="bi bi-eye-fill"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-flags" class="form-label">Flags (Separadas por vírgula)</label>
+                        <input type="text" class="form-control" id="add-flags" name="flags" placeholder="Ex: trabalho, social, jogos">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="addPasswordForm" class="btn btn-primary">Adicionar Credencial</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editPasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Credencial: <span id="edit-site-name"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="#" method="POST" id="editPasswordForm">
+                    <input type="hidden" name="id" id="edit-id">
+                    <div class="mb-3">
+                        <label for="edit-site" class="form-label">Site/Serviço</label>
+                        <input type="text" class="form-control" id="edit-site" name="site" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-username" class="form-label">Usuário/Email</label>
+                        <input type="text" class="form-control" id="edit-username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-password" class="form-label">Nova Senha (deixe em branco para não alterar)</label>
+                        <div class="password-wrapper">
+                            <input type="password" class="form-control" id="edit-password" name="password">
+                            <button type="button" class="toggle-password" data-target="edit-password">
+                                <i class="bi bi-eye-fill"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-flags" class="form-label">Flags (Separadas por vírgula)</label>
+                        <input type="text" class="form-control" id="edit-flags" name="flags" placeholder="Ex: trabalho, social, jogos">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="editPasswordForm" class="btn btn-primary">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deletePasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deletePasswordModalTitle">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir permanentemente a credencial para <strong id="delete-site-name">este site</strong>?</p>
+                <p class="text-danger">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirmar Exclusão</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="manageFlagsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gerenciar Flags</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6 class="mb-3">Flags Ativas</h6>
+                <div id="activeFlagsList" class="d-flex flex-wrap gap-2 mb-4">
+                    </div>
+                
+                <h6 class="mb-3">Adicionar Nova Flag</h6>
+                <form id="addFlagForm">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="newFlagInput" placeholder="Nome da nova flag">
+                        <button type="submit" class="btn btn-primary">Adicionar</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script>
+    // --- Lógica para Simular Ações na Tabela (Ações Reais devem ser HTTP Requests) ---
+    function simulateSort(column, element) {
+        const icon = element.querySelector('i');
+        // Lógica visual para toggle de ordenação
+        if (icon) {
+            document.querySelectorAll('#credentialsTable th a i').forEach(i => {
+                if (i !== icon) {
+                    i.className = 'bi bi-sort-alpha-down'; // Reseta outros
+                }
+            });
+            if (icon.className.includes('bi-sort-alpha-down')) {
+                icon.className = 'bi bi-sort-alpha-up';
+            } else {
+                icon.className = 'bi bi-sort-alpha-down';
+            }
+        }
+        
+        // Simulação de submissão do formulário de busca com os novos parâmetros de ordenação
+        const searchForm = document.getElementById('searchForm');
+        searchForm.querySelector('input[name="sort"]').value = column;
+        searchForm.querySelector('input[name="sortOrder"]').value = icon.className.includes('up') ? 'asc' : 'desc';
+        // searchForm.submit(); // Descomente para enviar a requisição
+        alert(`Simulando ordenação por: ${column} (requer backend)`);
+    }
+    
+    // Simulação de filtro de flag
+    function filterByFlag(buttonElement, flag) {
+        // Estilo do botão
+        document.querySelectorAll('#flagFilterCarousel .btn').forEach(btn => {
+            btn.classList.remove('btn-primary', 'active');
+            btn.classList.add('btn-outline-primary');
+        });
+        buttonElement.classList.add('btn-primary', 'active');
+        buttonElement.classList.remove('btn-outline-primary');
+        
+        // Lógica de filtro (Frontend)
+        const tableRows = document.querySelectorAll("#credentialsTable tbody tr");
+        tableRows.forEach(row => {
+            if (flag === 'all') {
+                row.style.display = ""; // Mostra todas
+            } else {
+                const rowFlags = row.getAttribute('data-flags').split(',');
+                if (rowFlags.includes(flag)) {
+                    row.style.display = ""; // Mostra
+                } else {
+                    row.style.display = "none"; // Esconde
+                }
+            }
+        });
+    }
+
+    // --- Lógica para Lidar com Modals ---
+    
+    // Modal de Visualização
+    const viewPasswordModal = document.getElementById('viewPasswordModal');
+    if (viewPasswordModal) {
+        viewPasswordModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const site = button.getAttribute('data-site');
+            const user = button.getAttribute('data-user');
+            const pass = button.getAttribute('data-pass');
+
+            viewPasswordModal.querySelector('#view-site-name').textContent = site;
+            viewPasswordModal.querySelector('#view-site').value = site;
+            viewPasswordModal.querySelector('#view-username').value = user;
+
+            const passInput = viewPasswordModal.querySelector('#view-password');
+            passInput.value = pass;
+            passInput.type = 'password'; // Garante que a senha inicie oculta
+            viewPasswordModal.querySelector('.toggle-password i').className = 'bi bi-eye-fill';
+        });
+    }
+    
+    // Modal de Edição
+    const editPasswordModal = document.getElementById('editPasswordModal');
+    if (editPasswordModal) {
+        editPasswordModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-id');
+            const site = button.getAttribute('data-site');
+            const user = button.getAttribute('data-user');
+            const flags = button.getAttribute('data-flags');
+            
+            // ATENÇÃO: Para uma edição real, você precisaria buscar a senha
+            // descriptografada do backend via AJAX usando o 'id'
+            
+            editPasswordModal.querySelector('#edit-site-name').textContent = site;
+            editPasswordModal.querySelector('#edit-id').value = id; // Campo hidden para o ID
+            editPasswordModal.querySelector('#edit-site').value = site;
+            editPasswordModal.querySelector('#edit-username').value = user;
+            editPasswordModal.querySelector('#edit-flags').value = flags;
+
+            // Limpa e reseta a senha (melhor prática de UX/Segurança)
+            const passInput = editPasswordModal.querySelector('#edit-password');
+            passInput.value = ''; 
+            passInput.type = 'password'; 
+            editPasswordModal.querySelector('.toggle-password i').className = 'bi bi-eye-fill';
+        });
+    }
+
+    // Simula o salvamento do formulário de Edição
+    const editForm = document.getElementById('editPasswordForm');
+    if(editForm) {
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            // TODO: Adicionar lógica real de submissão via fetch/AJAX
+            alert('Simulando: Credenciais salvas!');
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('editPasswordModal'));
+            modalInstance.hide();
+            // window.location.reload(); // Recarrega após sucesso
+        });
+    }
+    
+    // Modal de Deletar
+    const deletePasswordModal = document.getElementById('deletePasswordModal');
+    if (deletePasswordModal) {
+        deletePasswordModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-id');
+            const site = button.getAttribute('data-site');
+            deletePasswordModal.querySelector('#delete-site-name').textContent = site;
+            deletePasswordModal.querySelector('#confirmDeleteBtn').setAttribute('data-delete-id', id);
+        });
+
+        // Listener para o botão de confirmação
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            const id = this.getAttribute('data-delete-id');
+            // TODO: Implementar requisição real de exclusão (DELETE via fetch/AJAX)
+            
+            alert(`Simulando: Excluindo credencial com ID: ${id}`);
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('deletePasswordModal'));
+            modalInstance.hide();
+            // window.location.reload(); // Recarrega após sucesso
+        });
+    }
+
+    // --- Lógica do Gerenciamento de Flags (JS/Frontend Simulado) ---
+    const manageFlagsModal = document.getElementById('manageFlagsModal');
+    if (manageFlagsModal) {
+        let availableFlags = ["trabalho", "jogos", "social", "financas"]; // Simulação de dados
+        const flagsListContainer = document.getElementById('activeFlagsList');
+        
+        function renderFlags() {
+            flagsListContainer.innerHTML = '';
+            availableFlags.forEach(flag => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-flag d-flex align-items-center me-1 py-2';
+                badge.innerHTML = `
+                    ${flag}
+                    <button type="button" class="btn-close btn-close-sm ms-2" aria-label="Remover" onclick="removeFlag('${flag}')"></button>
+                `;
+                flagsListContainer.appendChild(badge);
+            });
+        }
+        
+        window.removeFlag = function(flagToRemove) {
+            availableFlags = availableFlags.filter(f => f !== flagToRemove);
+            renderFlags();
+        }
+        
+        document.getElementById('addFlagForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = document.getElementById('newFlagInput');
+            const newFlag = input.value.trim().toLowerCase();
+            if (newFlag && !availableFlags.includes(newFlag)) {
+                availableFlags.push(newFlag);
+                renderFlags();
+                input.value = '';
+            }
+        });
+
+        manageFlagsModal.addEventListener('show.bs.modal', function (event) {
+            // Em um ambiente real, você faria um GET para buscar as flags aqui.
+            renderFlags(); 
+        });
+    }
+</script>
+{% endblock %}

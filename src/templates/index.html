@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - MainDug{% endblock %}
+
+{% block content %}
+<div id="page-index">
+    
+    {% if current_user.role != 'sysadmin' %}
+    <div id="dashboard-user">
+        <h1 class="mb-4">Seu Cofre de Senhas</h1>
+        
+        <div class="row g-4 mb-5">
+            <div class="col-md-6 col-lg-4">
+                <div class="stat-card text-center">
+                    <h5>Total de Senhas</h5>
+                    <div class="stat-value">{{ deashboardInfo.passwordCount if deashboardInfo else '0' }}</div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="stat-card text-center">
+                    <h5 class="text-danger">Senhas Repetidas</h5>
+                    <div class="stat-value text-danger">{{ deashboardInfo.repeatedCount if deashboardInfo else '0' }}</div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="stat-card text-center">
+                    <h5 class="text-warning">Senhas Vazadas</h5>
+                    <div class="stat-value text-warning">{{ deashboardInfo.leakedCount if deashboardInfo else '0' }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row g-3 mb-3 justify-content-between align-items-center">
+            <div class="col-md-6">
+                <form action="{{ url_for('index') }}" method="POST" id="searchForm">
+                    <input type="hidden" name="sort" value="{{ sort or '' }}">
+                    <input type="hidden" name="sortOrder" value="{{ sortOrder or '' }}">
+                    <input type="hidden" name="page" value="{{ page or '1' }}">
+                    <input type="hidden" name="perPage" value="{{ perPage or '10' }}">
+                    <div class="input-group">
+                        <input type="search" id="credentialSearchInput" class="form-control" name="query" placeholder="Pesquisar por site ou usuário..." aria-label="Pesquisar" value="{{ query or '' }}" onchange="document.getElementById('searchForm').submit();">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-auto text-end">
+                <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageFlagsModal">
+                    <i class="bi bi-tags-fill"></i> Gerenciar Flags
+                </button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPasswordModal">
+                    <i class="bi bi-plus-circle-fill"></i> Nova Credencial
+                </button>
+            </div>
+        </div>
+        
+        <div id="flagFilterCarousel" class="flag-filter-scroll">
+            <button class="btn btn-xs btn-primary active" onclick="filterByFlag(this, 'all')"> Todas </button>
+            {% for flag in deashboardInfo.flags if deashboardInfo.flags %}
+            <button class="btn btn-xs btn-outline-primary" onclick="filterByFlag(this, '{{ flag.name }}')"> {{ flag.name }} </button>
+            {% endfor %}
+        </div>
+        
+        <div class="content-box p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-borderless mb-0">
+                    <thead>
+                        <tr>
+                            <th>
+                                <a href="javascript:void(0)" onclick="simulateSort('site', this)">
+                                    Site <i class="bi bi-sort-alpha-down"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a href="javascript:void(0)" onclick="simulateSort('user', this)">
+                                    Usuário <i class="bi bi-sort-alpha-down"></i>
+                                </a>
+                            </th>
+                            <th>Flags</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for password in deashboardInfo.passwords %}
+                        <tr data-flags="{{ password.flags | join(',') if password.flags else '' }}">
+                            <td class="text-break">{{ password.site }}</td>
+                            <td class="text-break">{{ password.user }}</td>
+                            <td>
+                                {% if password.status %}
+                                <span class="badge bg-warning me-1">Vazou</span>
+                                {% endif %}
+                                {% for flag in password.flags %}
+                                <span class="badge bg-flag me-1">{{ flag }}</span>
+                                {% endfor %}
+                            </td>
+                            <td class="text-nowrap">
+                                <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#viewPasswordModal" 
+                                    data-site="{{ password.site }}" 
+                                    data-user="{{ password.user }}" 
+                                    data-pass="{{ password.password }}" 
+                                    title="Visualizar">
+                                    <i class="bi bi-eye-fill"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editPasswordModal" 
+                                    data-id="{{ password.id }}"
+                                    data-site="{{ password.site }}" 
+                                    data-user="{{ password.user }}" 
+                                    data-flags="{{ password.flags | join(',') if password.flags else '' }}" 
+                                    title="Editar">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deletePasswordModal" 
+                                    data-id="{{ password.id }}"
+                                    data-site="{{ password.site }}" title="Excluir">
+                                    <i class="bi bi-trash-fill"></i>
+                                </button>
+                                <a href="{{ url_for('moreInfo', passwordId=password.id) }}" class="btn btn-sm btn-outline-secondary" title="Ver Logs">
+                                    <i class="bi bi-info-circle-fill"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-secondary py-4">Nenhuma credencial encontrada.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if passwords.total > 0 %}
+            <nav aria-label="Page navigation" class="p-3">
+                <ul class="pagination justify-content-center mb-0">
+                    
+                    <li class="page-item {{ 'disabled' if not passwords.hasPrev }}">
+                        <a class="page-link" href="{{ url_for('index', page=passwords.prevPage) }}" aria-disabled="{{ not passwords.hasPrev }}">Anterior</a>
+                    </li>
+                    
+                    {% for p in passwords.visiblePages %}
+                        {% if p %}
+                            <li class="page-item {{ 'active' if p == passwords.currentPage }}">
+                                <a class="page-link" href="{{ url_for('index', page=p) }}">{{ p }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <li class="page-item {{ 'disabled' if not passwords.hasNext }}">
+                        <a class="page-link" href="{{ url_for('index', page=passwords.nextPage) }}">Próxima</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if current_user.role == 'sysadmin' %}
+    <div id="dashboard-admin">
+        <h1 class="mb-4">Dashboard do Administrador</h1>
+        <div class="row g-4 mb-5">
+            <div class="col-md-6 col-lg-4">
+                <div class="stat-card text-center">
+                    <h5>Usuários Totais</h5>
+                    <div class="stat-value">{{ deashboardInfo.userCount or '0' }}</div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="stat-card text-center">
+                    <h5>Senhas Gerenciadas</h5>
+                    <div class="stat-value">{{ deashboardInfo.passwordCount or '0' }}</div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="stat-card text-center">
+                    <h5 class="text-danger">Ações Críticas (Logs)</h5>
+                    <div class="stat-value text-danger">{{ deashboardInfo.criticalLogs or '0' }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <h2 class="h4 mb-3">Gerenciamento de Usuários</h2>
+        <div class="content-box p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-borderless mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Login</th>
+                            <th>Email de Rec.</th>
+                            <th>Role</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.login }}</td>
+                            <td>{{ user.recoveryEmail or 'N/A' }}</td>
+                            <td><span class="badge bg-primary">{{ user.role }}</span></td>
+                            <td class="text-nowrap">
+                                <button class="btn btn-sm btn-outline-warning" title="Editar Usuário" data-bs-toggle="modal" data-bs-target="#editUserModal" data-id="{{ user.id }}">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" title="Excluir Usuário" data-bs-toggle="modal" data-bs-target="#deleteUserModal" data-id="{{ user.id }}">
+                                    <i class="bi bi-trash-fill"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        </div>
+    {% endif %}
+    
+    {% include '/components/_modals.html' %}
+</div>
+{% endblock %}
