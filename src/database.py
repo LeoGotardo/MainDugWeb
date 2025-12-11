@@ -8,6 +8,7 @@ from collections import Counter
 from dotenv import load_dotenv
 from functools import wraps
 from flask import Flask
+from icecream import ic
 
 class Config:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
@@ -49,8 +50,10 @@ class User(UserMixin, Config.db.Model):
     def login(self, value):
         if value:
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:    
-                self._login_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            if response == True:
+                test = Cryptograph.encryptSentence(value, key)
+                ic(test)
+                self._login_encrypted = test[1]
                 self._login_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
             else:
                 raise ValueError(f'{response} \nError generating encryption key')
