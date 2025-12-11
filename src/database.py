@@ -1,6 +1,6 @@
-import locale, sys, os, uuid, hashlib, requests, datetime
+import locale, sys, os, uuid, hashlib, requests, datetime, hashlib
 
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_property, Comparator
 from flask_sqlalchemy import SQLAlchemy
 from cryptograph import Cryptograph
 from flask_login import UserMixin
@@ -14,6 +14,7 @@ class Config:
     load_dotenv()
     SECRET_KEY = os.getenv('SecretKey') 
     DEFAULT_PASSWORD = os.getenv('DefaultPassword')
+    ENCRYPT_KEY = os.getenv('SecretKey')
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
     app.config['SECRET_KEY'] = SECRET_KEY
@@ -21,47 +22,79 @@ class Config:
     session = db.session
 
 
+
 class User(UserMixin, Config.db.Model):
     __tablename__ = 'tbl_0'
     
     id = Config.db.Column('col_a0', Config.db.String(36), default=lambda: str(uuid.uuid4()), primary_key=True, nullable=False)
     _login_encrypted = Config.db.Column('col_a1', Config.db.LargeBinary, unique=True, nullable=False)
+    _login_hash = Config.db.Column('col_a1_hash', Config.db.String(64), unique=True, nullable=False, index=True)
     password = Config.db.Column('col_a2', Config.db.String(255), nullable=False)
-    _role_encrypted = Config.db.Column('col_a3', Config.db.LargeBinary, nullable=False)
+    
+    _role_encrypted = Config.db.Column('col_a3', Config.db.LargeBinary, nullable=False, default=lambda: Cryptograph.encryptSentence('user', Config.ENCRYPT_KEY)[1])
     enabled = Config.db.Column('col_a4', Config.db.Boolean, default=True, nullable=False)
     passwordPwned = Config.db.Column('col_a5', Config.db.Boolean, default=False, nullable=False)
     
     @hybrid_property
     def login(self):
         if self._login_encrypted:
-            response, key = Cryptograph.keyGenerator(self.id)
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
                 return Cryptograph.decryptSentence(self._login_encrypted, key).decode('utf-8')
             else:
-                raise ValueError('Error generating decryption key')
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @login.setter
     def login(self, value):
         if value:
-            response, key = Cryptograph.keyGenerator(self.id)
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:    
-                self._login_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'), key)
+                self._login_encrypted = Cryptograph.encryptSentence(value, key)[1]
+                self._login_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
             else:
-                raise ValueError('Error generating encryption key')
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._login_encrypted = None
+            self._login_hash = None
+    
+    @login.expression
+    def login(cls):
+        return cls._login_hash
+    
+    @login.comparator
+    class LoginComparator(Comparator):
+        def __eq__(self, other):
+            if other is None:
+                return self.__clause_element__().is_(None)
+            otherHash = hashlib.sha256(other.encode('utf-8')).hexdigest()
+            return self.__clause_element__() == otherHash
+        
+        def __ne__(self, other):
+            if other is None:
+                return self.__clause_element__().isnot(None)
+            otherHash = hashlib.sha256(other.encode('utf-8')).hexdigest()
+            return self.__clause_element__() != otherHash
             
     @hybrid_property
     def role(self):
         if self._role_encrypted:
-            return Cryptograph.decryptSentence(self._role_encrypted).decode('utf-8')
-        return None
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._role_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
+        else:
+            return None
     
     @role.setter
     def role(self, value):
         if value:
-            self._role_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._role_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            else:
+                raise ValueError(f'{response} \nError generating encryption key') 
         else:
             self._role_encrypted = None
     
@@ -85,7 +118,6 @@ class User(UserMixin, Config.db.Model):
     
     def getId(self):
         return str(self.id)
-            
 
 
 class Passwords(UserMixin, Config.db.Model):
@@ -93,75 +125,156 @@ class Passwords(UserMixin, Config.db.Model):
     id = Config.db.Column('col_b0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
     userId = Config.db.Column('col_b1', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
     _login_encrypted = Config.db.Column('col_b2', Config.db.String(80), nullable=False)
+    _login_hash = Config.db.Column('col_b2_hash', Config.db.String(64), nullable=False, index=True)
     _password_encrypted = Config.db.Column('col_b3', Config.db.String(80), nullable=False)
     _site_encrypted = Config.db.Column('col_b4', Config.db.String(80), nullable=False)
+    _site_hash = Config.db.Column('col_b4_hash', Config.db.String(64), nullable=False, index=True)
     status = Config.db.Column('col_b5', Config.db.Boolean, nullable=False, default=False)
     _lastUse_encrypted = Config.db.Column('col_b6', Config.db.DateTime, nullable=True)
     _whereUsed_encrypted = Config.db.Column('col_b7', Config.db.String(80), nullable=True)
     
-    
     @hybrid_property
     def login(self):
         if self._login_encrypted:
-            return Cryptograph.decryptSentence(self._login_encrypted).decode('utf-8')
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._login_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @login.setter
     def login(self, value):
         if value:
-            self._login_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._login_encrypted = Cryptograph.encryptSentence(value, key)[1]
+                self._login_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._login_encrypted = None
+            self._login_hash = None
+    
+    @login.expression
+    def login(cls):
+        return cls._login_hash
+    
+    @login.comparator
+    class LoginComparator(Comparator):
+        def __eq__(self, other):
+            if other is None:
+                return self.__clause_element__().is_(None)
+            otherHash = hashlib.sha256(other.encode('utf-8')).hexdigest()
+            return self.__clause_element__() == otherHash
+        
+        def __ne__(self, other):
+            if other is None:
+                return self.__clause_element__().isnot(None)
+            otherHash = hashlib.sha256(other.encode('utf-8')).hexdigest()
+            return self.__clause_element__() != otherHash
             
     @hybrid_property
     def password(self):
         if self._password_encrypted:
-            return Cryptograph.decryptSentence(self._password_encrypted).decode('utf-8')
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._password_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @password.setter
     def password(self, value):
         if value:
-            self._password_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._password_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._password_encrypted = None
             
     @hybrid_property
     def site(self):
         if self._site_encrypted:
-            return Cryptograph.decryptSentence(self._site_encrypted).decode('utf-8')
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._site_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @site.setter
     def site(self, value):
         if value:
-            self._site_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._site_encrypted = Cryptograph.encryptSentence(value, key)[1]
+                self._site_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._site_encrypted = None
+            self._site_hash = None
+    
+    @site.expression
+    def site(cls):
+        return cls._site_hash
+    
+    @site.comparator
+    class SiteComparator(Comparator):
+        def __eq__(self, other):
+            if other is None:
+                return self.__clause_element__().is_(None)
+            otherHash = hashlib.sha256(other.encode('utf-8')).hexdigest()
+            return self.__clause_element__() == otherHash
+        
+        def __ne__(self, other):
+            if other is None:
+                return self.__clause_element__().isnot(None)
+            otherHash = hashlib.sha256(other.encode('utf-8')).hexdigest()
+            return self.__clause_element__() != otherHash
             
     @hybrid_property
     def lastUse(self):
         if self._lastUse_encrypted:
-            return Cryptograph.decryptSentence(self._lastUse_encrypted)
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._lastUse_encrypted, key)
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @lastUse.setter
     def lastUse(self, value):
         if value:
-            self._lastUse_encrypted = Cryptograph.encryptSentence(value)
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._lastUse_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._lastUse_encrypted = None
             
     @hybrid_property
     def whereUsed(self):
         if self._whereUsed_encrypted:
-            return Cryptograph.decryptSentence(self._whereUsed_encrypted).decode('utf-8')
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._whereUsed_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @whereUsed.setter
     def whereUsed(self, value):
         if value:
-            self._whereUsed_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._whereUsed_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._whereUsed_encrypted = None
 
@@ -192,7 +305,7 @@ class Passwords(UserMixin, Config.db.Model):
     @property
     def getId(self):
         return str(self.id)
-    
+
 
 class Logs(UserMixin, Config.db.Model):
     __tablename__ = 'tbl_2'
@@ -208,110 +321,174 @@ class Logs(UserMixin, Config.db.Model):
     _browser_encrypted = Config.db.Column('col_c9', Config.db.String(15), nullable=True)
     _version_encrypted = Config.db.Column('col_c10', Config.db.String(15), nullable=True)
     
-    @hybrid_property
-    def ip(self):
-        if self._ip_encrypted:
-            return Cryptograph.decryptSentence(self._ip_encrypted).decode('utf-8')
+    @hybrid_property    
+    def ip(self):    
+        if self._ip_encrypted:    
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)    
+            if response == True:    
+                return Cryptograph.decryptSentence(self._ip_encrypted, key).decode('utf-8')    
+            else:    
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @ip.setter
     def ip(self, value):
         if value:
-            self._ip_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                self._ip_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._ip_encrypted = None
             
     @hybrid_property
     def cidade(self):
         if self._cidade_encrypted:
-            return Cryptograph.decryptSentence(self._cidade_encrypted).decode('utf-8')
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._cidade_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @cidade.setter
     def cidade(self, value):
         if value:
-            self._cidade_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._cidade_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._cidade_encrypted = None
             
     @hybrid_property
     def estado(self):
         if self._estado_encrypted:
-            return Cryptograph.decryptSentence(self._estado_encrypted).decode('utf-8')
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._estado_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @estado.setter
     def estado(self, value):
         if value:
-            self._estado_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._estado_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._estado_encrypted = None
             
     @hybrid_property
     def pais(self):
         if self._pais_encrypted:
-            return Cryptograph.decryptSentence(self._pais_encrypted).decode('utf-8')
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._pais_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @pais.setter
     def pais(self, value):
         if value:
-            self._pais_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._pais_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._pais_encrypted = None
             
     @hybrid_property
     def asn(self):
         if self._asn_encrypted:
-            return Cryptograph.decryptSentence(self._asn_encrypted).decode('utf-8')
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._asn_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @asn.setter
     def asn(self, value):
         if value:
-            self._asn_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._asn_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._asn_encrypted = None
             
     @hybrid_property
     def os(self):
         if self._os_encrypted:
-            return Cryptograph.decryptSentence(self._os_encrypted).decode('utf-8')
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._os_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @os.setter
     def os(self, value):
         if value:
-            self._os_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._os_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._os_encrypted = None
             
     @hybrid_property
     def browser(self):
         if self._browser_encrypted:
-            return Cryptograph.decryptSentence(self._browser_encrypted).decode('utf-8')
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._browser_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @browser.setter
     def browser(self, value):
         if value:
-            self._browser_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._browser_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._browser_encrypted = None
             
     @hybrid_property
     def version(self):
         if self._version_encrypted:
-            return Cryptograph.decryptSentence(self._version_encrypted).decode('utf-8')
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:
+                return Cryptograph.decryptSentence(self._version_encrypted, key).decode('utf-8')
+            else:
+                raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @version.setter
     def version(self, value):
         if value:
-            self._version_encrypted = Cryptograph.encryptSentence(value.encode('utf-8'))
+            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+            if response == True:    
+                self._version_encrypted = Cryptograph.encryptSentence(value, key)[1]
+            else:
+                raise ValueError(f'{response} \nError generating encryption key')
         else:
             self._version_encrypted = None
-    
+                   
     def toDict(self):
         return {
             'id': self.id,
