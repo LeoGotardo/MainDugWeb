@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex 2025.11.10)  10 NOV 2025 22:18
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex 2025.12.17)  17 DEC 2025 18:04
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -6,7 +6,7 @@ entering extended mode
 **c:/Users/Leo/Desktop/Projects/MainDugWeb/docs/tex/main.tex
 (c:/Users/Leo/Desktop/Projects/MainDugWeb/docs/tex/main.tex
 LaTeX2e <2025-11-01>
-L3 programming layer <2025-10-24>
+L3 programming layer <2025-11-06>
 (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/latex/base\article.cls
 Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
 (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/latex/base\size12.clo
@@ -28,7 +28,7 @@ Package: inputenc 2024/02/08 v1.3d Input encoding file
 \inpenc@prehook=\toks17
 \inpenc@posthook=\toks18
 ) (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/generic/babel\babel.sty
-Package: babel 2025/10/22 v25.14 The multilingual framework for LuaLaTeX, pdfLaTeX and XeLaTeX
+Package: babel 2025/11/09 v25.15 The multilingual framework for LuaLaTeX, pdfLaTeX and XeLaTeX
 \babel@savecnt=\count283
 LaTeX Encoding Info:    Redeclaring text command \ij (encoding OT1) on input line 2050.
 LaTeX Encoding Info:    Redeclaring text command \IJ (encoding OT1) on input line 2052.
@@ -42,11 +42,9 @@ LaTeX Encoding Info:    Ignoring declaration for text command \SS (encoding ?) o
  (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/generic/babel\txtbabel.def)
 \bbl@readstream=\read2
 \bbl@dirlevel=\count284
-
-
-Package babel Warning: Configuration files are deprecated, as
-(babel)                they can break document portability.
-(babel)                Reported on input line 4172.
+Package babel Info: Configuration files are deprecated, as
+(babel)             they can break document portability.
+(babel)             Reported on input line 4175.
 
 *************************************
 * Local config file bblopts.cfg used
@@ -55,7 +53,7 @@ Package babel Warning: Configuration files are deprecated, as
 File: bblopts.cfg 2005/09/08 v0.1 add Arabic and Farsi to "declared" options of babel
 ) (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/generic/babel/locale/pt\babel-portuguese.tex)
 Package babel Info: Importing font and identification data for portuguese
-(babel)             from babel-pt.ini. Reported on input line 4295.
+(babel)             from babel-pt.ini. Reported on input line 4298.
  (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/latex/babel-portuges\portuguese.ldf
 Language: portuges 2021/07/09 v1.2t Portuguese support from the babel system
 Package babel Info: Making " an active character on input line 143.
@@ -685,7 +683,7 @@ Package biblatex Info: ... file 'abnt.bbx' found.
  (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/latex/biblatex-abnt/bbx\abnt.bbx
 File: abnt.bbx 2018-11-17 v3.4 ABNT BibLaTeX citation style
  (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/latex/l3packages/xparse\xparse.sty (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/latex/l3kernel\expl3.sty
-Package: expl3 2025-10-24 L3 programming layer (loader) 
+Package: expl3 2025-11-06 L3 programming layer (loader) 
  (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3backend-pdftex.def
 File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count452
@@ -739,7 +737,7 @@ File: biblatex.cfg
 Package biblatex Info: Input encoding 'utf8' detected.
 Package biblatex Info: Document encoding is UTF8 ....
 Package biblatex Info: ... and expl3
-(biblatex)             2025-10-24 L3 programming layer (loader) 
+(biblatex)             2025-11-06 L3 programming layer (loader) 
 (biblatex)             is new enough (at least 2020/04/06),
 (biblatex)             setting 'casechanger=expl3'.
  (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/latex/biblatex\blx-case-expl3.sty
@@ -950,6 +948,11 @@ Package biblatex Info: Reference segment=0 on input line 32.
  [1
 
 {C:/Users/Leo/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}{C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-rm.enc}]
+pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
+<to be read again> 
+                   \relax 
+l.58 \newpage
+              [1]
 LaTeX Font Info:    Trying to load font information for OML+lmm on input line 86.
  (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/latex/lm\omllmm.fd
 File: omllmm.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
@@ -977,326 +980,337 @@ l.92 \end{titlepage}
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.105 \newpage
-               [1] (main.toc [2])
+l.104 \newpage
+               [1] [2] (main.toc [3])
 \tf@toc=\write6
 \openout6 = `main.toc'.
 
- [3]
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 123.
+ [4] (main.lof)
+\tf@lof=\write7
+\openout7 = `main.lof'.
+
+ [5] (main.lot)
+\tf@lot=\write8
+\openout8 = `main.lot'.
+
+ [6]
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 138.
  (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/latex/lm\ts1lmr.fd
 File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) [4] [5{C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-ts1.enc}] [6]
-<Captura de tela de 2025-09-30 10-32-04.png, id=315, 1880.02374pt x 963.6pt>
+) [7] [8{C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-ts1.enc}] [9]
+<Captura de tela de 2025-09-30 10-32-04.png, id=400, 1880.02374pt x 963.6pt>
 File: Captura de tela de 2025-09-30 10-32-04.png Graphic file (type png)
 <use Captura de tela de 2025-09-30 10-32-04.png>
-Package pdftex.def Info: Captura de tela de 2025-09-30 10-32-04.png  used on input line 161.
+Package pdftex.def Info: Captura de tela de 2025-09-30 10-32-04.png  used on input line 177.
 (pdftex.def)             Requested size: 455.24411pt x 233.3272pt.
-<Captura de tela de 2025-09-30 11-01-57.png, id=317, 1880.02374pt x 963.6pt>
+<Captura de tela de 2025-09-30 11-01-57.png, id=402, 1880.02374pt x 963.6pt>
 File: Captura de tela de 2025-09-30 11-01-57.png Graphic file (type png)
 <use Captura de tela de 2025-09-30 11-01-57.png>
-Package pdftex.def Info: Captura de tela de 2025-09-30 11-01-57.png  used on input line 168.
+Package pdftex.def Info: Captura de tela de 2025-09-30 11-01-57.png  used on input line 185.
 (pdftex.def)             Requested size: 455.24411pt x 233.3272pt.
- [7
+ [10
 pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.171 
-       <./Captura de tela de 2025-09-30 10-32-04.png>] [8
+l.189 
+       <./Captura de tela de 2025-09-30 10-32-04.png>] [11
 pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.172 \newpage
-               <./Captura de tela de 2025-09-30 11-01-57.png>] [9]
-<image.png, id=337, 365.11406pt x 261.22594pt>
+l.190 \newpage
+               <./Captura de tela de 2025-09-30 11-01-57.png>] [12]
+<image.png, id=422, 365.11406pt x 261.22594pt>
 File: image.png Graphic file (type png)
 <use image.png>
-Package pdftex.def Info: image.png  used on input line 199.
+Package pdftex.def Info: image.png  used on input line 217.
 (pdftex.def)             Requested size: 455.24411pt x 325.72643pt.
-<imagem_2025-10-05_150904297.png, id=338, 499.8675pt x 338.26375pt>
+<imagem_2025-10-05_150904297.png, id=423, 499.8675pt x 338.26375pt>
 File: imagem_2025-10-05_150904297.png Graphic file (type png)
 <use imagem_2025-10-05_150904297.png>
-Package pdftex.def Info: imagem_2025-10-05_150904297.png  used on input line 206.
+Package pdftex.def Info: imagem_2025-10-05_150904297.png  used on input line 225.
 (pdftex.def)             Requested size: 455.24411pt x 308.07855pt.
- [10
+ [13
 pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.209 
+l.229 
        <./image.png>]
-<image2.png, id=345, 380.17032pt x 271.76532pt>
+<image2.png, id=430, 380.17032pt x 271.76532pt>
 File: image2.png Graphic file (type png)
 <use image2.png>
-Package pdftex.def Info: image2.png  used on input line 213.
+Package pdftex.def Info: image2.png  used on input line 233.
 (pdftex.def)             Requested size: 455.24411pt x 325.44081pt.
- [11
+ [14
 pdfTeX warning (ext4): destination with the same identifier (name{figure.4}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.216 
-       <./imagem_2025-10-05_150904297.png>] [12
+l.237 
+       <./imagem_2025-10-05_150904297.png>] [15
 pdfTeX warning (ext4): destination with the same identifier (name{figure.5}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.217 \newpage
-               <./image2.png>] [13]
-<imagem_2025-10-05_153847021.png, id=365, 1300.86pt x 661.47125pt>
+l.238 \newpage
+               <./image2.png>] [16]
+<imagem_2025-10-05_153847021.png, id=448, 1300.86pt x 661.47125pt>
 File: imagem_2025-10-05_153847021.png Graphic file (type png)
 <use imagem_2025-10-05_153847021.png>
-Package pdftex.def Info: imagem_2025-10-05_153847021.png  used on input line 243.
+Package pdftex.def Info: imagem_2025-10-05_153847021.png  used on input line 264.
 (pdftex.def)             Requested size: 455.24411pt x 231.48813pt.
-<imagem_2025-10-05_155325647.png, id=366, 1321.93875pt x 660.4675pt>
+<imagem_2025-10-05_155325647.png, id=449, 1321.93875pt x 660.4675pt>
 File: imagem_2025-10-05_155325647.png Graphic file (type png)
 <use imagem_2025-10-05_155325647.png>
-Package pdftex.def Info: imagem_2025-10-05_155325647.png  used on input line 250.
+Package pdftex.def Info: imagem_2025-10-05_155325647.png  used on input line 272.
 (pdftex.def)             Requested size: 455.24411pt x 227.44833pt.
- [14
+ [17
 pdfTeX warning (ext4): destination with the same identifier (name{figure.6}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.254  \newpage
+l.277  \newpage
                
 pdfTeX warning (ext4): destination with the same identifier (name{figure.7}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.254  \newpage
-                <./imagem_2025-10-05_153847021.png> <./imagem_2025-10-05_155325647.png>] [15]
-<useCaseUser.png, id=377, 1493.58pt x 1487.5575pt>
+l.277  \newpage
+                <./imagem_2025-10-05_153847021.png> <./imagem_2025-10-05_155325647.png>] [18]
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+<useCaseUser.png, id=458, 1493.58pt x 1487.5575pt>
 File: useCaseUser.png Graphic file (type png)
 <use useCaseUser.png>
-Package pdftex.def Info: useCaseUser.png  used on input line 332.
+Package pdftex.def Info: useCaseUser.png  used on input line 355.
 (pdftex.def)             Requested size: 455.24411pt x 453.39795pt.
- [16
+[19
 pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.335 
-      
+l.358 
+      ] [20
 pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.335 
+l.358 
       ]
-<useCaseAdmin.png, id=384, 675.52374pt x 411.5375pt>
+<useCaseAdmin.png, id=467, 675.52374pt x 411.5375pt>
 File: useCaseAdmin.png Graphic file (type png)
 <use useCaseAdmin.png>
-Package pdftex.def Info: useCaseAdmin.png  used on input line 342.
+Package pdftex.def Info: useCaseAdmin.png  used on input line 365.
 (pdftex.def)             Requested size: 455.24411pt x 277.34882pt.
- [17
+ [21
 pdfTeX warning (ext4): destination with the same identifier (name{figure.8}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.345 
+l.368 
        <./useCaseUser.png>]
-Overfull \hbox (2.83115pt too wide) in paragraph at lines 346--347
+Overfull \hbox (2.83115pt too wide) in paragraph at lines 369--370
 []\OT1/lmr/m/n/12 O ad-mi-nis-tra-dor pos-sui acesso ape-nas ao \OT1/lmr/m/it/12 Web-ser-vice\OT1/lmr/m/n/12 ; l^^Sa, ele pode ge-ren-ciar usu^^Sarios,
  []
 
-[18
+[22
 pdfTeX warning (ext4): destination with the same identifier (name{figure.9}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.354 \end{itemize}
-                    <./useCaseAdmin.png>] [19] [20]
-<classDiagram.png, id=425, 716.6775pt x 2324.685pt>
+l.377 
+       <./useCaseAdmin.png>] [23] [24]
+<classDiagram.png, id=505, 716.6775pt x 2324.685pt>
 File: classDiagram.png Graphic file (type png)
 <use classDiagram.png>
-Package pdftex.def Info: classDiagram.png  used on input line 387.
+Package pdftex.def Info: classDiagram.png  used on input line 411.
 (pdftex.def)             Requested size: 182.09486pt x 590.6408pt.
- [21
+ [25
 pdfTeX warning (ext4): destination with the same identifier (name{figure.10}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.393 
-       <./classDiagram.png>] [22]
-<derDiagram.png, id=436, 900.36375pt x 2324.685pt>
+l.417 
+       <./classDiagram.png>] [26]
+<derDiagram.png, id=515, 900.36375pt x 2324.685pt>
 File: derDiagram.png Graphic file (type png)
 <use derDiagram.png>
-Package pdftex.def Info: derDiagram.png  used on input line 423.
+Package pdftex.def Info: derDiagram.png  used on input line 447.
 (pdftex.def)             Requested size: 227.62206pt x 587.69664pt.
- [23] [24
+ [27] [28
 pdfTeX warning (ext4): destination with the same identifier (name{figure.11}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.429 
+l.453 
        <./derDiagram.png>]
-<telaLogn.png, id=448, 978.65625pt x 496.10344pt>
+<telaLogn.png, id=526, 978.65625pt x 496.10344pt>
 File: telaLogn.png Graphic file (type png)
 <use telaLogn.png>
-Package pdftex.def Info: telaLogn.png  used on input line 447.
+Package pdftex.def Info: telaLogn.png  used on input line 475.
 (pdftex.def)             Requested size: 455.24411pt x 230.77655pt.
- [25]
-<telaCadastro.png, id=453, 1318.9275pt x 660.4675pt>
+ [29]
+<telaCadastro.png, id=531, 1318.9275pt x 660.4675pt>
 File: telaCadastro.png Graphic file (type png)
 <use telaCadastro.png>
-Package pdftex.def Info: telaCadastro.png  used on input line 457.
+Package pdftex.def Info: telaCadastro.png  used on input line 485.
 (pdftex.def)             Requested size: 455.24411pt x 227.96231pt.
- [26
+ [30
 pdfTeX warning (ext4): destination with the same identifier (name{figure.12}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.460 
+l.488 
        <./telaLogn.png>]
-<telaRecuperar.png, id=460, 992.20688pt x 494.59781pt>
+<telaRecuperar.png, id=537, 992.20688pt x 494.59781pt>
 File: telaRecuperar.png Graphic file (type png)
 <use telaRecuperar.png>
-Package pdftex.def Info: telaRecuperar.png  used on input line 467.
+Package pdftex.def Info: telaRecuperar.png  used on input line 495.
 (pdftex.def)             Requested size: 455.24411pt x 226.92908pt.
- [27
+ [31
 pdfTeX warning (ext4): destination with the same identifier (name{figure.13}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.470 
+l.498 
        <./telaCadastro.png>]
-<telaDashboard.png, id=466, 989.19562pt x 499.11469pt>
+<telaDashboard.png, id=542, 989.19562pt x 499.11469pt>
 File: telaDashboard.png Graphic file (type png)
 <use telaDashboard.png>
-Package pdftex.def Info: telaDashboard.png  used on input line 477.
+Package pdftex.def Info: telaDashboard.png  used on input line 505.
 (pdftex.def)             Requested size: 455.24411pt x 229.69453pt.
- [28
+ [32
 pdfTeX warning (ext4): destination with the same identifier (name{figure.14}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.482 
+l.510 
       
 pdfTeX warning (ext4): destination with the same identifier (name{figure.15}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.482 
+l.510 
        <./telaRecuperar.png> <./telaDashboard.png>]
-<telaAddCred.png, id=475, 989.19562pt x 492.33937pt>
+<telaAddCred.png, id=549, 989.19562pt x 492.33937pt>
 File: telaAddCred.png Graphic file (type png)
 <use telaAddCred.png>
-Package pdftex.def Info: telaAddCred.png  used on input line 487.
+Package pdftex.def Info: telaAddCred.png  used on input line 515.
 (pdftex.def)             Requested size: 455.24411pt x 226.5765pt.
-<telaEstatisticas.png, id=476, 989.19562pt x 499.11469pt>
+<telaEstatisticas.png, id=550, 989.19562pt x 499.11469pt>
 File: telaEstatisticas.png Graphic file (type png)
 <use telaEstatisticas.png>
-Package pdftex.def Info: telaEstatisticas.png  used on input line 497.
+Package pdftex.def Info: telaEstatisticas.png  used on input line 525.
 (pdftex.def)             Requested size: 455.24411pt x 229.69453pt.
- [29
+ [33
 pdfTeX warning (ext4): destination with the same identifier (name{figure.16}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.500 
+l.528 
        <./telaAddCred.png>]
-<telaLogs.png, id=484, 989.19562pt x 502.12593pt>
+<telaLogs.png, id=556, 989.19562pt x 502.12593pt>
 File: telaLogs.png Graphic file (type png)
 <use telaLogs.png>
-Package pdftex.def Info: telaLogs.png  used on input line 507.
+Package pdftex.def Info: telaLogs.png  used on input line 535.
 (pdftex.def)             Requested size: 455.24411pt x 231.08034pt.
- [30
+ [34
 pdfTeX warning (ext4): destination with the same identifier (name{figure.17}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.513 \subsubsection{Tela de perfil.}
+l.541 \subsubsection{Tela de perfil.}
                                      
 pdfTeX warning (ext4): destination with the same identifier (name{figure.18}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.513 \subsubsection{Tela de perfil.}
+l.541 \subsubsection{Tela de perfil.}
                                       <./telaEstatisticas.png> <./telaLogs.png>]
-<telaPerfil.png, id=493, 1323.94624pt x 658.46pt>
+<telaPerfil.png, id=564, 1323.94624pt x 658.46pt>
 File: telaPerfil.png Graphic file (type png)
 <use telaPerfil.png>
-Package pdftex.def Info: telaPerfil.png  used on input line 517.
+Package pdftex.def Info: telaPerfil.png  used on input line 545.
 (pdftex.def)             Requested size: 455.24411pt x 226.40535pt.
-<telaDelete.png, id=494, 1315.91624pt x 661.47125pt>
+<telaDelete.png, id=565, 1315.91624pt x 661.47125pt>
 File: telaDelete.png Graphic file (type png)
 <use telaDelete.png>
-Package pdftex.def Info: telaDelete.png  used on input line 528.
+Package pdftex.def Info: telaDelete.png  used on input line 556.
 (pdftex.def)             Requested size: 455.24411pt x 228.8336pt.
- [31
+ [35
 pdfTeX warning (ext4): destination with the same identifier (name{figure.19}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.531 
+l.559 
        <./telaPerfil.png>]
-<telaView.png, id=500, 1321.93875pt x 663.47874pt>
+<telaView.png, id=570, 1321.93875pt x 663.47874pt>
 File: telaView.png Graphic file (type png)
 <use telaView.png>
-Package pdftex.def Info: telaView.png  used on input line 539.
+Package pdftex.def Info: telaView.png  used on input line 567.
 (pdftex.def)             Requested size: 455.24411pt x 228.48532pt.
- [32
+ [36
 pdfTeX warning (ext4): destination with the same identifier (name{figure.20}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.544 
+l.572 
       
 pdfTeX warning (ext4): destination with the same identifier (name{figure.21}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.544 
+l.572 
        <./telaDelete.png> <./telaView.png>]
-<loginExPage.png, id=509, 312.16624pt x 443.6575pt>
+<loginExPage.png, id=577, 312.16624pt x 443.6575pt>
 File: loginExPage.png Graphic file (type png)
 <use loginExPage.png>
-Package pdftex.def Info: loginExPage.png  used on input line 553.
+Package pdftex.def Info: loginExPage.png  used on input line 581.
 (pdftex.def)             Requested size: 227.62206pt x 323.50848pt.
-<homeExPage.png, id=510, 310.15875pt x 469.755pt>
+<homeExPage.png, id=578, 310.15875pt x 469.755pt>
 File: homeExPage.png Graphic file (type png)
 <use homeExPage.png>
-Package pdftex.def Info: homeExPage.png  used on input line 563.
+Package pdftex.def Info: homeExPage.png  used on input line 591.
 (pdftex.def)             Requested size: 227.62206pt x 344.74611pt.
- [33
+ [37
 pdfTeX warning (ext4): destination with the same identifier (name{figure.22}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.566 
+l.594 
        <./loginExPage.png>]
-<configExPage.png, id=518, 342.27875pt x 388.45125pt>
+<configExPage.png, id=585, 342.27875pt x 388.45125pt>
 File: configExPage.png Graphic file (type png)
 <use configExPage.png>
-Package pdftex.def Info: configExPage.png  used on input line 574.
+Package pdftex.def Info: configExPage.png  used on input line 602.
 (pdftex.def)             Requested size: 227.62206pt x 258.33461pt.
- [34
+ [38
 pdfTeX warning (ext4): destination with the same identifier (name{figure.23}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.577 
+l.605 
        <./homeExPage.png>]
-<accountExPage.png, id=525, 342.27875pt x 388.45125pt>
+<accountExPage.png, id=591, 342.27875pt x 388.45125pt>
 File: accountExPage.png Graphic file (type png)
 <use accountExPage.png>
-Package pdftex.def Info: accountExPage.png  used on input line 584.
+Package pdftex.def Info: accountExPage.png  used on input line 612.
 (pdftex.def)             Requested size: 227.62206pt x 258.33461pt.
- [35
+ [39
 pdfTeX warning (ext4): destination with the same identifier (name{figure.24}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.587 
-       <./configExPage.png>] [36
+l.615 
+       <./configExPage.png>] [40
 pdfTeX warning (ext4): destination with the same identifier (name{figure.25}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.590 \newpage
-               <./accountExPage.png>] [37]
-LaTeX Font Info:    Trying to load font information for OT1+lmtt on input line 597.
+l.618 \newpage
+               <./accountExPage.png>] [41]
+LaTeX Font Info:    Trying to load font information for OT1+lmtt on input line 625.
  (C:\Users\Leo\AppData\Local\Programs\MiKTeX\tex/latex/lm\ot1lmtt.fd
 File: ot1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) [38{C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-rmtt.enc}] (main.aux)
+) [42{C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-rmtt.enc}] (main.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2020/03/25>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: DEF5B7CE0654DCF8D9E2658DD3BF0D53;8162.
+(rerunfilecheck)             Checksum: 95C494A82D5FF711A55091782DE70BE5;8944.
 Package logreq Info: Writing requests to 'main.run.xml'.
 \openout1 = `main.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 29754 strings out of 467871
- 576718 string characters out of 5419343
- 1455881 words of memory out of 5000000
- 58026 multiletter control sequences out of 15000+600000
- 668831 words of font info for 62 fonts, out of 8000000 for 9000
+ 29780 strings out of 467870
+ 577111 string characters out of 5419322
+ 1454743 words of memory out of 5000000
+ 58038 multiletter control sequences out of 15000+600000
+ 680218 words of font info for 65 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 84i,11n,104p,1541b,6025s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbx12.pfb><C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbxi10.pfb><C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmr12.pfb><C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmri12.pfb><C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtt12.pfb>
-Output written on main.pdf (40 pages, 1538768 bytes).
+ 84i,11n,104p,1596b,6025s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbx12.pfb><C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbxi10.pfb><C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmr10.pfb><C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmr12.pfb><C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmri10.pfb><C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmri12.pfb><C:/Users/Leo/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtt12.pfb>
+Output written on main.pdf (45 pages, 1604945 bytes).
 PDF statistics:
- 618 PDF objects out of 1000 (max. 8388607)
- 130 named destinations out of 1000 (max. 500000)
- 570 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 691 PDF objects out of 1000 (max. 8388607)
+ 137 named destinations out of 1000 (max. 500000)
+ 594 words of extra memory for PDF output out of 10000 (max. 10000000)
 
