@@ -45,12 +45,11 @@
       \list{organization}{1}{%
         {Google}%
       }
-      \field{sortinit}{G}
-      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
       \field{extradatescope}{labelyear}
       \field{labeldatesource}{}
       \field{labeltitlesource}{title}
-      \field{note}{URL original, não utilizar links do Google Translate.}
       \field{title}{Chrome Extensions: Develop - Overview}
       \field{urlday}{8}
       \field{urlmonth}{11}
@@ -62,6 +61,50 @@
       \endverb
       \verb{url}
       \verb https://developer.chrome.com/docs/extensions/develop
+      \endverb
+    \endentry
+    \entry{owasp_crypto_storage}{online}{}{}
+      \list{organization}{1}{%
+        {Open Web Application Security Project (OWASP)}%
+      }
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labeltitlesource}{title}
+      \field{title}{Cryptographic Storage Cheat Sheet}
+      \field{urlday}{8}
+      \field{urlmonth}{11}
+      \field{urlyear}{2025}
+      \field{year}{2023}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+      \endverb
+      \verb{url}
+      \verb https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+      \endverb
+    \endentry
+    \entry{flask_docs}{online}{}{}
+      \list{organization}{1}{%
+        {The Pallets Projects}%
+      }
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labeltitlesource}{title}
+      \field{title}{Flask Documentation}
+      \field{urlday}{8}
+      \field{urlmonth}{11}
+      \field{urlyear}{2025}
+      \field{year}{2025}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://flask.palletsprojects.com/en/stable
+      \endverb
+      \verb{url}
+      \verb https://flask.palletsprojects.com/en/stable
       \endverb
     \endentry
     \entry{google_passwords}{online}{}{}
@@ -108,26 +151,30 @@
       \verb https://www.lastpass.com/pt
       \endverb
     \endentry
-    \entry{owasp_crypto_storage}{online}{}{}
-      \list{organization}{1}{%
-        {Open Web Application Security Project (OWASP)}%
+    \entry{maindugweb}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=e4da3b7fbbce2345d7772b0674a318d5}{%
+           family={Gotardo},
+           familyi={G\bibinitperiod},
+           given={Leo},
+           giveni={L\bibinitperiod}}}%
       }
-      \field{sortinit}{O}
-      \field{sortinithash}{2cd7140a07aea5341f9e2771efe90aae}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
       \field{extradatescope}{labelyear}
       \field{labeldatesource}{}
       \field{labeltitlesource}{title}
-      \field{title}{Cryptographic Storage Cheat Sheet}
-      \field{urlday}{8}
-      \field{urlmonth}{11}
+      \field{title}{MainDugWeb - Repositório do Projeto}
+      \field{urlday}{17}
+      \field{urlmonth}{12}
       \field{urlyear}{2025}
-      \field{year}{2023}
+      \field{year}{2025}
       \field{urldateera}{ce}
       \verb{urlraw}
-      \verb https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+      \verb https://github.com/LeoGotardo/MainDugWeb
       \endverb
       \verb{url}
-      \verb https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+      \verb https://github.com/LeoGotardo/MainDugWeb
       \endverb
     \endentry
     \entry{owasp_top10}{online}{}{}
@@ -156,8 +203,8 @@
       \list{organization}{1}{%
         {Open Web Application Security Project (OWASP)}%
       }
-      \field{sortinit}{O}
-      \field{sortinithash}{2cd7140a07aea5341f9e2771efe90aae}
+      \field{sortinit}{P}
+      \field{sortinithash}{ff3bcf24f47321b42cb156c2cc8a8422}
       \field{extradatescope}{labelyear}
       \field{labeldatesource}{}
       \field{labeltitlesource}{title}
@@ -172,6 +219,28 @@
       \endverb
       \verb{url}
       \verb https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+      \endverb
+    \endentry
+    \entry{postgresql}{online}{}{}
+      \list{organization}{1}{%
+        {The PostgreSQL Global Development Group}%
+      }
+      \field{sortinit}{P}
+      \field{sortinithash}{ff3bcf24f47321b42cb156c2cc8a8422}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labeltitlesource}{title}
+      \field{title}{PostgreSQL: The World's Most Advanced Open Source Relational Database}
+      \field{urlday}{8}
+      \field{urlmonth}{11}
+      \field{urlyear}{2025}
+      \field{year}{2025}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://www.postgresql.org
+      \endverb
+      \verb{url}
+      \verb https://www.postgresql.org
       \endverb
     \endentry
     \entry{sqlalchemy}{online}{}{}
@@ -196,51 +265,6 @@
       \verb https://www.sqlalchemy.org
       \endverb
     \endentry
-    \entry{flask_docs}{online}{}{}
-      \list{organization}{1}{%
-        {The Pallets Projects}%
-      }
-      \field{sortinit}{T}
-      \field{sortinithash}{9af77f0292593c26bde9a56e688eaee9}
-      \field{extradatescope}{labelyear}
-      \field{labeldatesource}{}
-      \field{labeltitlesource}{title}
-      \field{title}{Flask Documentation}
-      \field{urlday}{8}
-      \field{urlmonth}{11}
-      \field{urlyear}{2025}
-      \field{year}{2025}
-      \field{urldateera}{ce}
-      \verb{urlraw}
-      \verb https://flask.palletsprojects.com/en/stable
-      \endverb
-      \verb{url}
-      \verb https://flask.palletsprojects.com/en/stable
-      \endverb
-    \endentry
-    \entry{postgresql}{online}{}{}
-      \list{organization}{1}{%
-        {The PostgreSQL Global Development Group}%
-      }
-      \field{sortinit}{T}
-      \field{sortinithash}{9af77f0292593c26bde9a56e688eaee9}
-      \field{extradatescope}{labelyear}
-      \field{labeldatesource}{}
-      \field{labeltitlesource}{title}
-      \field{title}{PostgreSQL: The World's Most Advanced Open Source Relational Database}
-      \field{urlday}{8}
-      \field{urlmonth}{11}
-      \field{urlyear}{2025}
-      \field{year}{2025}
-      \field{urldateera}{ce}
-      \verb{urlraw}
-      \verb https://www.postgresql.org
-      \endverb
-      \verb{url}
-      \verb https://www.postgresql.org
-      \endverb
-    \endentry
   \enddatalist
 \endrefsection
 \endinput
-
