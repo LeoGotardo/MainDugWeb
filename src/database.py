@@ -142,7 +142,6 @@ class User(UserMixin, Config.db.Model):
     def is_anonymous(self):
         return False
     
-    @property
     def get_id(self):
         return str(self.id)
 
@@ -382,7 +381,6 @@ class Passwords(UserMixin, Config.db.Model):
     def is_anonymous(self):
         return False
     
-    @property
     def get_id(self):
         return str(self.id)
 
@@ -669,13 +667,12 @@ class Logs(UserMixin, Config.db.Model):
     def is_anonymous(self):
         return False
     
-    @property
     def get_id(self):
         return str(self.id)
 
-password_flags = Config.db.Table('password_flags',
-    Config.db.Column('password_id', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0')),
-    Config.db.Column('flag_id', Config.db.Integer, Config.db.ForeignKey('tbl_3.col_d0'))
+password_flags = Config.db.Table('tbl_4',
+    Config.db.Column('col_e0', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0')),
+    Config.db.Column('col_e1', Config.db.Integer, Config.db.ForeignKey('tbl_3.col_d0'))
 )
 
 class Filters(UserMixin, Config.db.Model):
@@ -708,7 +705,6 @@ class Filters(UserMixin, Config.db.Model):
     def is_anonymous(self):
         return False
     
-    @property
     def get_id(self):
         return str(self.id)
 
@@ -1009,34 +1005,109 @@ class Database:
 
 
     def validUser(self, login: str, password: str) -> tuple[bool, User | str]:
+        """
+        Valida as credenciais de um usuário.
+        Tenta múltiplas formas de busca para garantir compatibilidade.
+        
+        Args:
+            login (str): Nome de usuário
+            password (str): Senha em texto plano
+        
+        Returns:
+            tuple[bool, User | str]:
+                - (True, User): Credenciais válidas
+                - (False, str): Credenciais inválidas ou erro
+        """
         try:
-            user = self.session.query(User).filter_by(login=login).first()
+            user = None
             
-            if user is not None:
+            # Método 1: Buscar pelo hash do login (mais rápido/indexado)
+            loginHash = hashlib.sha256(login.encode('utf-8')).hexdigest()
+            user = self.session.query(User).filter(
+                User._login_hash == loginHash
+            ).first()
+            
+            # Método 2: Se não encontrou, tentar pelo comparator do hybrid_property
+            if user is None:
+                user = self.session.query(User).filter(
+                    User.login == login
+                ).first()
+            
+            # Método 3: Se ainda não encontrou, buscar todos e comparar manualmente
+            if user is None:
+                allUsers = self.session.query(User).all()
+                for u in allUsers:
+                    try:
+                        if u.login == login:  # Usa o getter do property
+                            user = u
+                            break
+                    except Exception:
+                        continue
+            
+            # Se não encontrou de jeito nenhum
+            if user is None:
+                return False, 'Credenciais inválidas'
+            
+            # Verificar a senha usando Argon2
+            try:
                 success, msg = self.iscryptograph.isValidPass(user.password, password)
-                print(success)
+                
                 if success:
                     return True, user
                 else:
-                    return False, 'Invalid credentials'
-            else:
-                return False, 'Invalid credentials'
+                    return False, 'Credenciais inválidas'
+                    
+            except Exception as passErr:
+                # Erro na verificação da senha
+                print(f"ERRO ao verificar senha: {passErr}")
+                return False, 'Credenciais inválidas'
+                
         except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            errorMsg = f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            print(f"ERRO em validUser: {errorMsg}")
+            return False, 'Erro ao validar credenciais'
 
 
     def createUser(self, login: str, password: str) -> tuple[bool, User | str]:
+        """
+        Cria um novo usuário no sistema.
+        
+        Args:
+            login (str): Nome de usuário único
+            password (str): Senha em texto plano (será criptografada)
+        
+        Returns:
+            tuple[bool, User | str]: 
+                - (True, User): Usuário criado com sucesso
+                - (False, str): Usuário já existe
+                - (-1, str): Erro durante criação
+        """
         try:
-            if User.query.filter_by(login=login).first() is None:
-                user = User(login=login, password=self.iscryptograph.encryptPass(password))
-                self.session.add(user)
-                self.session.commit()
-                
-                return True, user
-            else:
-                return False, 'User already exists'
+            loginHash = hashlib.sha256(login.encode('utf-8')).hexdigest()
+            
+            existingUser = self.session.query(User).filter(
+                User._login_hash == loginHash
+            ).first()
+            
+            if existingUser is not None:
+                return False, 'Usuário já existe. Escolha outro nome de usuário.'
+            
+            newUser = User(
+                login=login,
+                password=self.iscryptograph.encryptPass(password)
+            )
+            
+            self.session.add(newUser)
+            self.session.commit()
+            
+            return True, newUser
+            
         except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            self.session.rollback()
+            
+            errorMsg = f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            
+            return -1, errorMsg
       
         
     def addFlag(self, id: str, name: str) -> tuple[bool, str]:
