@@ -18,6 +18,7 @@ class Config:
     ENCRYPT_KEY = os.getenv('SecretKey')
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+    ic(SECRET_KEY)
     app.config['SECRET_KEY'] = SECRET_KEY
     db = SQLAlchemy(app)
     session = db.session
@@ -129,16 +130,20 @@ class User(UserMixin, Config.db.Model):
             'passwordPwned': self.passwordPwned,
         }
         
-    def isAuthenticated(self):
+    @property
+    def is_authenticated(self):
         return True
     
-    def isActive(self):
+    @property
+    def is_active(self):
         return True
     
-    def isAnonymous(self):
+    @property
+    def is_anonymous(self):
         return False
     
-    def getId(self):
+    @property
+    def get_id(self):
         return str(self.id)
 
 
@@ -365,20 +370,20 @@ class Passwords(UserMixin, Config.db.Model):
             'whereUsed': self.whereUsed,
         }
       
-    @property  
-    def isAuthenticated(self):
+    @property
+    def is_authenticated(self):
         return True
     
     @property
-    def isActive(self):
+    def is_active(self):
         return True
     
     @property
-    def isAnonymous(self):
+    def is_anonymous(self):
         return False
     
     @property
-    def getId(self):
+    def get_id(self):
         return str(self.id)
 
 
@@ -388,7 +393,6 @@ class Logs(UserMixin, Config.db.Model):
     passwordId = Config.db.Column('col_c1', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0'), nullable=False)
     lastUse = Config.db.Column('col_c2', Config.db.DateTime, nullable=True)
     
-    # MUDANÇA: LargeBinary → String (armazena base64)
     _ip_encrypted = Config.db.Column('col_c3', Config.db.String(500), nullable=True)
     _cidade_encrypted = Config.db.Column('col_c4', Config.db.String(500), nullable=True)
     _estado_encrypted = Config.db.Column('col_c5', Config.db.String(500), nullable=True)
@@ -653,28 +657,36 @@ class Logs(UserMixin, Config.db.Model):
             'version': self.version,
         }   
     
-    @property  
-    def isAuthenticated(self):
+    @property
+    def is_authenticated(self):
         return True
     
     @property
-    def isActive(self):
+    def is_active(self):
         return True
     
     @property
-    def isAnonymous(self):
+    def is_anonymous(self):
         return False
     
     @property
-    def getId(self):
+    def get_id(self):
         return str(self.id)
 
+password_flags = Config.db.Table('password_flags',
+    Config.db.Column('password_id', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0')),
+    Config.db.Column('flag_id', Config.db.Integer, Config.db.ForeignKey('tbl_3.col_d0'))
+)
 
 class Filters(UserMixin, Config.db.Model):
     __tablename__ = 'tbl_3'
     id = Config.db.Column('col_d0', Config.db.Integer, primary_key=True)
     name = Config.db.Column('col_d1', Config.db.String(50), nullable=False)
     userId = Config.db.Column('col_d2', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
+    
+    flags = Config.db.relationship('Filters', 
+                                   secondary=password_flags,
+                                   backref=Config.db.backref('passwords', lazy='dynamic'))
     
     def toDict(self):
         return {
@@ -685,20 +697,20 @@ class Filters(UserMixin, Config.db.Model):
         }
 
     @property
-    def isAuthenticated(self):
+    def is_authenticated(self):
         return True
-
+    
     @property
-    def isActive(self):
+    def is_active(self):
         return True
-
+    
     @property
-    def isAnonymous(self):
+    def is_anonymous(self):
         return False
-
+    
     @property
-    def getId(self):
-        return str(self.id) 
+    def get_id(self):
+        return str(self.id)
 
 class Database:
     def __init__(self) -> None:

@@ -2,7 +2,7 @@
 {% block title %}Login - MainDug{% endblock %}
 
 {% block content %}
-<div id="page-login" class="auth-container">
+<div class="auth-container">
     <div class="text-center mb-4">
         <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Logo" style="height: 2.7rem; width: auto;">
     </div>
@@ -16,16 +16,19 @@
                 <input type="text" class="form-control" id="login" name="login" placeholder="Login" required>
             </div>
         </div>
+        
         <div class="mb-4">
             <label for="password" class="form-label">Senha</label>
             <div class="input-group password-wrapper">
                 <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
-                <input type="password" class="form-control" id="password" name="password" placeholder="Sua senha mestra" required autocomplete="current-password">
+                <input type="password" class="form-control" id="password" name="password" 
+                       placeholder="Sua senha mestra" required autocomplete="current-password">
                 <button type="button" class="toggle-password" data-target="password">
                     <i class="bi bi-eye-fill"></i>
                 </button>
             </div>
         </div>
+        
         <button type="submit" class="btn btn-primary w-100 mt-3 py-3">Entrar</button>
         
         <div class="text-center mt-4">

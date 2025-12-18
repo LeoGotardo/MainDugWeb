@@ -1,8 +1,9 @@
+<!-- Modal: Visualizar Senha -->
 <div class="modal fade" id="viewPasswordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="viewPasswordModalTitle">Visualizar Credencial: <span id="view-site-name"></span></h5>
+                <h5 class="modal-title">Visualizar Credencial: <span id="view-site-name"></span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -23,6 +24,10 @@
                         </button>
                     </div>
                 </div>
+                <div class="mb-3">
+                    <label class="form-label">Flags</label>
+                    <div id="view-flags-container"></div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
@@ -31,6 +36,7 @@
     </div>
 </div>
 
+<!-- Modal: Adicionar Senha -->
 <div class="modal fade" id="addPasswordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -38,39 +44,57 @@
                 <h5 class="modal-title">Adicionar Nova Credencial</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <form action="#" method="POST" id="addPasswordForm">
+            <form action="{{ url_for('index') }}" method="POST" id="addPasswordForm">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add">
+                    
                     <div class="mb-3">
-                        <label for="add-site" class="form-label">Site/Serviço</label>
-                        <input type="text" class="form-control" id="add-site" name="site" placeholder="Ex: Google, Github" required>
+                        <label for="add-site" class="form-label">Site/Serviço *</label>
+                        <input type="text" class="form-control" id="add-site" name="site" 
+                               placeholder="Ex: Google, Github" required>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="add-username" class="form-label">Usuário/Email</label>
-                        <input type="text" class="form-control" id="add-username" name="username" placeholder="Seu usuário ou email" required>
+                        <label for="add-username" class="form-label">Usuário/Email *</label>
+                        <input type="text" class="form-control" id="add-username" name="login" 
+                               placeholder="Seu usuário ou email" required>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="add-password" class="form-label">Senha</label>
+                        <label for="add-password" class="form-label">Senha *</label>
                         <div class="password-wrapper">
-                            <input type="password" class="form-control" id="add-password" name="password" required>
+                            <input type="password" class="form-control" id="add-password" name="password" 
+                                   placeholder="Senha segura" required>
                             <button type="button" class="toggle-password" data-target="add-password">
                                 <i class="bi bi-eye-fill"></i>
                             </button>
                         </div>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="add-flags" class="form-label">Flags (Separadas por vírgula)</label>
-                        <input type="text" class="form-control" id="add-flags" name="flags" placeholder="Ex: trabalho, social, jogos">
+                        <label for="add-flags" class="form-label">Flags</label>
+                        <select class="form-select" id="add-flags" name="flags" multiple>
+                            {% if deashboardInfo and deashboardInfo.flags %}
+                                {% for flag in deashboardInfo.flags %}
+                                <option value="{{ flag.name }}">{{ flag.name }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                        <div class="form-text">Segure Ctrl (ou Cmd) para selecionar múltiplas flags</div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" form="addPasswordForm" class="btn btn-primary">Adicionar Credencial</button>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Adicionar Credencial
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
+<!-- Modal: Editar Senha -->
 <div class="modal fade" id="editPasswordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -78,76 +102,144 @@
                 <h5 class="modal-title">Editar Credencial: <span id="edit-site-name"></span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <form action="#" method="POST" id="editPasswordForm">
-                    <input type="hidden" name="id" id="edit-id">
+            <form action="{{ url_for('index') }}" method="POST" id="editPasswordForm">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="password_id" id="edit-password-id">
+                    
                     <div class="mb-3">
-                        <label for="edit-site" class="form-label">Site/Serviço</label>
+                        <label for="edit-site" class="form-label">Site/Serviço *</label>
                         <input type="text" class="form-control" id="edit-site" name="site" required>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="edit-username" class="form-label">Usuário/Email</label>
-                        <input type="text" class="form-control" id="edit-username" name="username" required>
+                        <label for="edit-username" class="form-label">Usuário/Email *</label>
+                        <input type="text" class="form-control" id="edit-username" name="login" required>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="edit-password" class="form-label">Nova Senha (deixe em branco para não alterar)</label>
+                        <label for="edit-password" class="form-label">Nova Senha</label>
                         <div class="password-wrapper">
-                            <input type="password" class="form-control" id="edit-password" name="password">
+                            <input type="password" class="form-control" id="edit-password" name="password" 
+                                   placeholder="Deixe em branco para não alterar">
                             <button type="button" class="toggle-password" data-target="edit-password">
                                 <i class="bi bi-eye-fill"></i>
                             </button>
                         </div>
+                        <div class="form-text">Deixe em branco se não quiser alterar a senha</div>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="edit-flags" class="form-label">Flags (Separadas por vírgula)</label>
-                        <input type="text" class="form-control" id="edit-flags" name="flags" placeholder="Ex: trabalho, social, jogos">
+                        <label for="edit-flags" class="form-label">Flags</label>
+                        <select class="form-select" id="edit-flags" name="flags" multiple>
+                            {% if deashboardInfo and deashboardInfo.flags %}
+                                {% for flag in deashboardInfo.flags %}
+                                <option value="{{ flag.name }}">{{ flag.name }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                        <div class="form-text">Segure Ctrl (ou Cmd) para selecionar múltiplas flags</div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" form="editPasswordForm" class="btn btn-primary">Salvar Alterações</button>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
+<!-- Modal: Excluir Senha -->
 <div class="modal fade" id="deletePasswordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deletePasswordModalTitle">Confirmar Exclusão</h5>
+                <h5 class="modal-title">Confirmar Exclusão</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <p>Tem certeza que deseja excluir permanentemente a credencial para <strong id="delete-site-name">este site</strong>?</p>
-                <p class="text-danger">Esta ação não pode ser desfeita.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirmar Exclusão</button>
-            </div>
+            <form action="{{ url_for('index') }}" method="POST" id="deletePasswordForm">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="password_id" id="delete-password-id">
+                    
+                    <div class="text-center mb-3">
+                        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    
+                    <p class="text-center">
+                        Tem certeza que deseja excluir permanentemente a credencial para 
+                        <strong id="delete-site-name">este site</strong>?
+                    </p>
+                    <p class="text-danger fw-bold text-center mb-0">
+                        <i class="bi bi-info-circle"></i> Esta ação não pode ser desfeita.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash-fill"></i> Confirmar Exclusão
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
+<!-- Modal: Gerenciar Flags -->
 <div class="modal fade" id="manageFlagsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Gerenciar Flags</h5>
+                <h5 class="modal-title">
+                    <i class="bi bi-tags-fill"></i> Gerenciar Flags
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <!-- Flags Ativas -->
                 <h6 class="mb-3">Flags Ativas</h6>
                 <div id="activeFlagsList" class="d-flex flex-wrap gap-2 mb-4">
-                    </div>
+                    {% if deashboardInfo and deashboardInfo.flags %}
+                        {% for flag in deashboardInfo.flags %}
+                        <span class="badge bg-flag d-flex align-items-center py-2 px-3" style="font-size: 0.9rem;">
+                            <i class="bi bi-tag-fill me-2"></i>
+                            {{ flag.name }}
+                            <button type="button" class="btn-close btn-close-sm ms-2" 
+                                    style="font-size: 0.7rem;"
+                                    aria-label="Remover" 
+                                    onclick="removeFlag('{{ flag.id }}', '{{ flag.name }}')">
+                            </button>
+                        </span>
+                        {% endfor %}
+                    {% else %}
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-info-circle"></i> Nenhuma flag criada ainda.
+                    </p>
+                    {% endif %}
+                </div>
                 
+                <!-- Formulário de Adicionar Flag -->
                 <h6 class="mb-3">Adicionar Nova Flag</h6>
-                <form id="addFlagForm">
+                <form action="{{ url_for('addFlag') }}" method="POST" id="addFlagForm">
                     <div class="input-group">
-                        <input type="text" class="form-control" id="newFlagInput" placeholder="Nome da nova flag">
-                        <button type="submit" class="btn btn-primary">Adicionar</button>
+                        <span class="input-group-text">
+                            <i class="bi bi-tag"></i>
+                        </span>
+                        <input type="text" class="form-control" id="newFlagInput" name="flagName" 
+                               placeholder="Nome da nova flag" required
+                               pattern="[a-zA-Z0-9áéíóúàâêôãõçÁÉÍÓÚÀÂÊÔÃÕÇ\s-]+"
+                               title="Apenas letras, números, espaços e hífens">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Adicionar
+                        </button>
+                    </div>
+                    <div class="form-text">
+                        <i class="bi bi-lightbulb"></i> Dica: Use flags para organizar suas credenciais (ex: trabalho, pessoal, jogos)
                     </div>
                 </form>
             </div>
@@ -158,62 +250,13 @@
     </div>
 </div>
 
-{% block extra_scripts %}
+<!-- Scripts dos Modais -->
 <script>
-    // --- Lógica para Simular Ações na Tabela (Ações Reais devem ser HTTP Requests) ---
-    function simulateSort(column, element) {
-        const icon = element.querySelector('i');
-        // Lógica visual para toggle de ordenação
-        if (icon) {
-            document.querySelectorAll('#credentialsTable th a i').forEach(i => {
-                if (i !== icon) {
-                    i.className = 'bi bi-sort-alpha-down'; // Reseta outros
-                }
-            });
-            if (icon.className.includes('bi-sort-alpha-down')) {
-                icon.className = 'bi bi-sort-alpha-up';
-            } else {
-                icon.className = 'bi bi-sort-alpha-down';
-            }
-        }
-        
-        // Simulação de submissão do formulário de busca com os novos parâmetros de ordenação
-        const searchForm = document.getElementById('searchForm');
-        searchForm.querySelector('input[name="sort"]').value = column;
-        searchForm.querySelector('input[name="sortOrder"]').value = icon.className.includes('up') ? 'asc' : 'desc';
-        // searchForm.submit(); // Descomente para enviar a requisição
-        alert(`Simulando ordenação por: ${column} (requer backend)`);
-    }
+document.addEventListener('DOMContentLoaded', function() {
     
-    // Simulação de filtro de flag
-    function filterByFlag(buttonElement, flag) {
-        // Estilo do botão
-        document.querySelectorAll('#flagFilterCarousel .btn').forEach(btn => {
-            btn.classList.remove('btn-primary', 'active');
-            btn.classList.add('btn-outline-primary');
-        });
-        buttonElement.classList.add('btn-primary', 'active');
-        buttonElement.classList.remove('btn-outline-primary');
-        
-        // Lógica de filtro (Frontend)
-        const tableRows = document.querySelectorAll("#credentialsTable tbody tr");
-        tableRows.forEach(row => {
-            if (flag === 'all') {
-                row.style.display = ""; // Mostra todas
-            } else {
-                const rowFlags = row.getAttribute('data-flags').split(',');
-                if (rowFlags.includes(flag)) {
-                    row.style.display = ""; // Mostra
-                } else {
-                    row.style.display = "none"; // Esconde
-                }
-            }
-        });
-    }
-
-    // --- Lógica para Lidar com Modals ---
-    
-    // Modal de Visualização
+    // ========================================
+    // MODAL DE VISUALIZAÇÃO
+    // ========================================
     const viewPasswordModal = document.getElementById('viewPasswordModal');
     if (viewPasswordModal) {
         viewPasswordModal.addEventListener('show.bs.modal', function (event) {
@@ -221,19 +264,35 @@
             const site = button.getAttribute('data-site');
             const user = button.getAttribute('data-user');
             const pass = button.getAttribute('data-pass');
+            const flagsStr = button.getAttribute('data-flags') || '';
 
+            // Atualizar título e campos
             viewPasswordModal.querySelector('#view-site-name').textContent = site;
             viewPasswordModal.querySelector('#view-site').value = site;
             viewPasswordModal.querySelector('#view-username').value = user;
 
+            // Resetar senha para modo oculto
             const passInput = viewPasswordModal.querySelector('#view-password');
             passInput.value = pass;
-            passInput.type = 'password'; // Garante que a senha inicie oculta
+            passInput.type = 'password';
             viewPasswordModal.querySelector('.toggle-password i').className = 'bi bi-eye-fill';
+            
+            // Exibir flags
+            const flagsContainer = viewPasswordModal.querySelector('#view-flags-container');
+            if (flagsStr.trim()) {
+                const flags = flagsStr.split(',').filter(f => f.trim());
+                flagsContainer.innerHTML = flags.map(flag => 
+                    `<span class="badge bg-flag me-1">${flag.trim()}</span>`
+                ).join('');
+            } else {
+                flagsContainer.innerHTML = '<span class="text-muted">Nenhuma flag</span>';
+            }
         });
     }
     
-    // Modal de Edição
+    // ========================================
+    // MODAL DE EDIÇÃO
+    // ========================================
     const editPasswordModal = document.getElementById('editPasswordModal');
     if (editPasswordModal) {
         editPasswordModal.addEventListener('show.bs.modal', function (event) {
@@ -241,100 +300,156 @@
             const id = button.getAttribute('data-id');
             const site = button.getAttribute('data-site');
             const user = button.getAttribute('data-user');
-            const flags = button.getAttribute('data-flags');
+            const flagsStr = button.getAttribute('data-flags') || '';
             
-            // ATENÇÃO: Para uma edição real, você precisaria buscar a senha
-            // descriptografada do backend via AJAX usando o 'id'
-            
+            // Atualizar título e campos
             editPasswordModal.querySelector('#edit-site-name').textContent = site;
-            editPasswordModal.querySelector('#edit-id').value = id; // Campo hidden para o ID
+            editPasswordModal.querySelector('#edit-password-id').value = id;
             editPasswordModal.querySelector('#edit-site').value = site;
             editPasswordModal.querySelector('#edit-username').value = user;
-            editPasswordModal.querySelector('#edit-flags').value = flags;
 
-            // Limpa e reseta a senha (melhor prática de UX/Segurança)
+            // Limpar senha (opcional na edição)
             const passInput = editPasswordModal.querySelector('#edit-password');
-            passInput.value = ''; 
-            passInput.type = 'password'; 
+            passInput.value = '';
+            passInput.type = 'password';
             editPasswordModal.querySelector('.toggle-password i').className = 'bi bi-eye-fill';
-        });
-    }
-
-    // Simula o salvamento do formulário de Edição
-    const editForm = document.getElementById('editPasswordForm');
-    if(editForm) {
-        editForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            // TODO: Adicionar lógica real de submissão via fetch/AJAX
-            alert('Simulando: Credenciais salvas!');
-            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('editPasswordModal'));
-            modalInstance.hide();
-            // window.location.reload(); // Recarrega após sucesso
+            
+            // Selecionar flags no select múltiplo
+            const flagsSelect = editPasswordModal.querySelector('#edit-flags');
+            if (flagsSelect) {
+                // Desmarcar todas as opções primeiro
+                Array.from(flagsSelect.options).forEach(option => {
+                    option.selected = false;
+                });
+                
+                // Marcar as flags existentes
+                if (flagsStr.trim()) {
+                    const flags = flagsStr.split(',').map(f => f.trim()).filter(f => f);
+                    Array.from(flagsSelect.options).forEach(option => {
+                        if (flags.includes(option.value)) {
+                            option.selected = true;
+                        }
+                    });
+                }
+            }
         });
     }
     
-    // Modal de Deletar
+    // ========================================
+    // MODAL DE EXCLUSÃO
+    // ========================================
     const deletePasswordModal = document.getElementById('deletePasswordModal');
     if (deletePasswordModal) {
         deletePasswordModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const id = button.getAttribute('data-id');
             const site = button.getAttribute('data-site');
-            deletePasswordModal.querySelector('#delete-site-name').textContent = site;
-            deletePasswordModal.querySelector('#confirmDeleteBtn').setAttribute('data-delete-id', id);
-        });
-
-        // Listener para o botão de confirmação
-        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-            const id = this.getAttribute('data-delete-id');
-            // TODO: Implementar requisição real de exclusão (DELETE via fetch/AJAX)
             
-            alert(`Simulando: Excluindo credencial com ID: ${id}`);
-            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('deletePasswordModal'));
-            modalInstance.hide();
-            // window.location.reload(); // Recarrega após sucesso
+            deletePasswordModal.querySelector('#delete-site-name').textContent = site;
+            deletePasswordModal.querySelector('#delete-password-id').value = id;
         });
     }
-
-    // --- Lógica do Gerenciamento de Flags (JS/Frontend Simulado) ---
+    
+    // ========================================
+    // MODAL DE GERENCIAR FLAGS
+    // ========================================
     const manageFlagsModal = document.getElementById('manageFlagsModal');
-    if (manageFlagsModal) {
-        let availableFlags = ["trabalho", "jogos", "social", "financas"]; // Simulação de dados
-        const flagsListContainer = document.getElementById('activeFlagsList');
-        
-        function renderFlags() {
-            flagsListContainer.innerHTML = '';
-            availableFlags.forEach(flag => {
-                const badge = document.createElement('span');
-                badge.className = 'badge bg-flag d-flex align-items-center me-1 py-2';
-                badge.innerHTML = `
-                    ${flag}
-                    <button type="button" class="btn-close btn-close-sm ms-2" aria-label="Remover" onclick="removeFlag('${flag}')"></button>
-                `;
-                flagsListContainer.appendChild(badge);
-            });
-        }
-        
-        window.removeFlag = function(flagToRemove) {
-            availableFlags = availableFlags.filter(f => f !== flagToRemove);
-            renderFlags();
-        }
-        
-        document.getElementById('addFlagForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+    const addFlagForm = document.getElementById('addFlagForm');
+    
+    if (addFlagForm) {
+        addFlagForm.addEventListener('submit', function(e) {
             const input = document.getElementById('newFlagInput');
-            const newFlag = input.value.trim().toLowerCase();
-            if (newFlag && !availableFlags.includes(newFlag)) {
-                availableFlags.push(newFlag);
-                renderFlags();
-                input.value = '';
+            const value = input.value.trim();
+            
+            // Validação adicional
+            if (value.length < 2) {
+                e.preventDefault();
+                if (window.customAlert) {
+                    window.customAlert.warning('O nome da flag deve ter pelo menos 2 caracteres');
+                } else {
+                    alert('O nome da flag deve ter pelo menos 2 caracteres');
+                }
+                return false;
+            }
+            
+            // Validação de caracteres especiais
+            if (!/^[a-zA-Z0-9áéíóúàâêôãõçÁÉÍÓÚÀÂÊÔÃÕÇ\s-]+$/.test(value)) {
+                e.preventDefault();
+                if (window.customAlert) {
+                    window.customAlert.warning('Use apenas letras, números, espaços e hífens');
+                } else {
+                    alert('Use apenas letras, números, espaços e hífens');
+                }
+                return false;
             }
         });
-
-        manageFlagsModal.addEventListener('show.bs.modal', function (event) {
-            // Em um ambiente real, você faria um GET para buscar as flags aqui.
-            renderFlags(); 
-        });
     }
+});
+
+// ========================================
+// FUNÇÃO GLOBAL: REMOVER FLAG
+// ========================================
+function removeFlag(flagId, flagName) {
+    // Confirmação com sistema de alertas customizado ou nativo
+    const confirmAction = () => {
+        const loading = window.showLoading ? window.showLoading(`Removendo flag "${flagName}"...`) : null;
+        
+        fetch('{{ url_for("deleteFlag") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `flag_id=${encodeURIComponent(flagId)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (loading && loading.close) loading.close();
+            
+            if (data.success) {
+                if (window.customAlert) {
+                    window.customAlert.success(data.message || 'Flag removida com sucesso').then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    alert(data.message || 'Flag removida com sucesso');
+                    window.location.reload();
+                }
+            } else {
+                if (window.customAlert) {
+                    window.customAlert.error(data.message || 'Erro ao remover flag');
+                } else {
+                    alert(data.message || 'Erro ao remover flag');
+                }
+            }
+        })
+        .catch(error => {
+            if (loading && loading.close) loading.close();
+            console.error('Erro:', error);
+            
+            if (window.customAlert) {
+                window.customAlert.error('Erro ao comunicar com o servidor');
+            } else {
+                alert('Erro ao comunicar com o servidor');
+            }
+        });
+    };
+    
+    // Usar sistema de alertas customizado se disponível
+    if (window.customAlert) {
+        window.customAlert.confirm(
+            `Tem certeza que deseja remover a flag "${flagName}"?`,
+            'Confirmar Remoção',
+            {
+                confirmText: 'Remover',
+                cancelText: 'Cancelar'
+            }
+        ).then(confirmed => {
+            if (confirmed) confirmAction();
+        });
+    } else {
+        if (confirm(`Tem certeza que deseja remover a flag "${flagName}"?`)) {
+            confirmAction();
+        }
+    }
+}
 </script>
-{% endblock %}

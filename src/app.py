@@ -1,12 +1,11 @@
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask import redirect, url_for, render_template, request, flash, jsonify
-from database import Database, Config, User, Passwords
-from typing import Dict, Any, List, Optional
+from api.index import blueprint as apiBlueprint
+from database import Database, Config, User
 from cryptograph import Cryptograph
 from dataclasses import dataclass
 from functools import wraps
 from icecream import ic
-from src.api.index import blueprint as apiBlueprint
 
 import requests, json, os, traceback, sys
 
@@ -107,73 +106,73 @@ def setup_error_handlers(app):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-        if current_user.is_authenticated:
-            match request.method:
-                case 'GET':      
-                    success, statistcs = database.getDashboardInfo(userId=current_user.id)
-                    match success:
-                        case False:
-                            flash(statistcs, 'danger')
-                            return render_template('index.html', deashboardInfo={})
-                        case -1:
-                            raise Exception(statistcs)
-                        case True:
-                            if current_user.role == 'sysadmin':
-                                users = database.getUsers(userId=current_user.id, method='get', itemType='user')
-                                if users == False:
-                                    flash(users, 'danger')
-                                    return render_template('index.html', deashboardInfo=statistcs, users={})
-                                elif users == True:
-                                    return render_template('index.html', deashboardInfo=statistcs, users=users)
-                                else:
-                                    raise Exception(users)
+    if current_user.is_authenticated:
+        match request.method:
+            case 'GET':      
+                success, statistcs = database.getDashboardInfo(userId=current_user.id)
+                match success:
+                    case False:
+                        flash(statistcs, 'danger')
+                        return render_template('index.html', deashboardInfo={})
+                    case -1:
+                        raise Exception(statistcs)
+                    case True:
+                        if current_user.role == 'sysadmin':
+                            users = database.getUsers(userId=current_user.id, method='get', itemType='user')
+                            if users == False:
+                                flash(users, 'danger')
+                                return render_template('index.html', deashboardInfo=statistcs, users={})
+                            elif users == True:
+                                return render_template('index.html', deashboardInfo=statistcs, users=users)
                             else:
-                                return render_template('index.html', deashboardInfo=statistcs, passwords=statistcs['pagination'])
-                        case _:
-                            return redirect(url_for('notFound'))
-                case 'POST':
-                    query = request.form.get('query')
-                    sort = request.form.get('sort')
-                    sortOrder = request.form.get('sortOrder')
-                    page = request.form.get('page')
-                    perPage = request.form.get('perPage')
+                                raise Exception(users)
+                        else:
+                            return render_template('index.html', deashboardInfo=statistcs, passwords=statistcs['pagination'])
+                    case _:
+                        return redirect(url_for('notFound'))
+            case 'POST':
+                query = request.form.get('query')
+                sort = request.form.get('sort')
+                sortOrder = request.form.get('sortOrder')
+                page = request.form.get('page')
+                perPage = request.form.get('perPage')
+                
+                success, statistcs = database.getDashboardInfo(userId=current_user.id)
+                match success:
+                    case False:
+                        flash(statistcs, 'danger')
+                        return render_template('index.html', deashboardInfo={})
+                    case -1:
+                        raise Exception(statistcs)
+                    case True:
+                        if current_user.role == 'sysadmin':
+                            users = database.getUsers(userId=current_user.id, method='get', itemType='user')
+                            if users == False:
+                                flash(users, 'danger')
+                                return render_template('index.html', deashboardInfo=statistcs, users={})
+                            elif users == True:
+                                return render_template('index.html', deashboardInfo=statistcs, users=users)
+                            elif users == -1:
+                                raise Exception(users)
+                        else:
+                            passwords = database.getPasswords(userId=current_user.id, itemType='password', method='get')
+                            match passwords:
+                                case False:
+                                    flash(passwords, 'danger')
+                                    return render_template('index.html', deashboardInfo=statistcs, passwords={})
+                                case True:
+                                    return render_template('index.html', deashboardInfo=statistcs, passwords=passwords)
+                                case -1:
+                                    raise Exception(passwords)
+                    case _:
+                        return redirect(url_for('notFound'))
                     
-                    success, statistcs = database.getDashboardInfo(userId=current_user.id)
-                    match success:
-                        case False:
-                            flash(statistcs, 'danger')
-                            return render_template('index.html', deashboardInfo={})
-                        case -1:
-                            raise Exception(statistcs)
-                        case True:
-                            if current_user.role == 'sysadmin':
-                                users = database.getUsers(userId=current_user.id, method='get', itemType='user')
-                                if users == False:
-                                    flash(users, 'danger')
-                                    return render_template('index.html', deashboardInfo=statistcs, users={})
-                                elif users == True:
-                                    return render_template('index.html', deashboardInfo=statistcs, users=users)
-                                elif users == -1:
-                                    raise Exception(users)
-                            else:
-                                passwords = database.getPasswords(userId=current_user.id, itemType='password', method='get')
-                                match passwords:
-                                    case False:
-                                        flash(passwords, 'danger')
-                                        return render_template('index.html', deashboardInfo=statistcs, passwords={})
-                                    case True:
-                                        return render_template('index.html', deashboardInfo=statistcs, passwords=passwords)
-                                    case -1:
-                                        raise Exception(passwords)
-                        case _:
-                            return redirect(url_for('notFound'))
-                        
-                    ic(passwords)
-                    return render_template('index.html', deashboardInfo=statistcs, passwords=passwords, query=query, sort=sort, sortOrder=sortOrder, page=page, perPage=perPage)
-                case _:
-                    return redirect(url_for('notFound'))
-        else:
-            return redirect(url_for('login'))
+                ic(passwords)
+                return render_template('index.html', deashboardInfo=statistcs, passwords=passwords, query=query, sort=sort, sortOrder=sortOrder, page=page, perPage=perPage)
+            case _:
+                return redirect(url_for('notFound'))
+    else:
+        return redirect(url_for('login'))
 
 
 @app.route('/login/', methods=['GET', 'POST'])

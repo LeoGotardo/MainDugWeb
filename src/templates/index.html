@@ -5,9 +5,11 @@
 <div id="page-index">
     
     {% if current_user.role != 'sysadmin' %}
+    <!-- Dashboard de Usuário -->
     <div id="dashboard-user">
         <h1 class="mb-4">Seu Cofre de Senhas</h1>
         
+        <!-- Cards de Estatísticas -->
         <div class="row g-4 mb-5">
             <div class="col-md-6 col-lg-4">
                 <div class="stat-card text-center">
@@ -29,15 +31,21 @@
             </div>
         </div>
         
+        <!-- Barra de Pesquisa e Ações -->
         <div class="row g-3 mb-3 justify-content-between align-items-center">
             <div class="col-md-6">
                 <form action="{{ url_for('index') }}" method="POST" id="searchForm">
-                    <input type="hidden" name="sort" value="{{ sort or '' }}">
-                    <input type="hidden" name="sortOrder" value="{{ sortOrder or '' }}">
-                    <input type="hidden" name="page" value="{{ page or '1' }}">
-                    <input type="hidden" name="perPage" value="{{ perPage or '10' }}">
+                    <input type="hidden" name="action" value="search">
+                    <input type="hidden" name="sort" value="{{ filters.sort if filters else '' }}">
+                    <input type="hidden" name="sortOrder" value="{{ filters.sortOrder if filters else '' }}">
+                    <input type="hidden" name="page" value="{{ pagination.currentPage if pagination else '1' }}">
+                    <input type="hidden" name="perPage" value="{{ pagination.perPage if pagination else '10' }}">
+                    
                     <div class="input-group">
-                        <input type="search" id="credentialSearchInput" class="form-control" name="query" placeholder="Pesquisar por site ou usuário..." aria-label="Pesquisar" value="{{ query or '' }}" onchange="document.getElementById('searchForm').submit();">
+                        <input type="search" class="form-control" name="query" 
+                               placeholder="Pesquisar por site ou usuário..." 
+                               value="{{ filters.query if filters else '' }}"
+                               onchange="document.getElementById('searchForm').submit();">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                     </div>
                 </form>
@@ -52,102 +60,163 @@
             </div>
         </div>
         
+        <!-- Filtro de Flags -->
         <div id="flagFilterCarousel" class="flag-filter-scroll">
-            <button class="btn btn-xs btn-primary active" onclick="filterByFlag(this, 'all')"> Todas </button>
-            {% for flag in deashboardInfo.flags if deashboardInfo.flags %}
-            <button class="btn btn-xs btn-outline-primary" onclick="filterByFlag(this, '{{ flag.name }}')"> {{ flag.name }} </button>
+            <button class="btn btn-xs btn-primary active" onclick="filterByFlag(this, 'all')">Todas</button>
+            {% for flag in deashboardInfo.flags if deashboardInfo and deashboardInfo.flags %}
+            <button class="btn btn-xs btn-outline-primary" onclick="filterByFlag(this, '{{ flag.name }}')">
+                {{ flag.name }}
+            </button>
             {% endfor %}
         </div>
         
-        <div class="content-box p-0">
+        <!-- Tabela de Credenciais -->
+        <div class="stat-card p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-borderless mb-0">
+                <table class="table table-hover mb-0" id="credentialsTable">
                     <thead>
                         <tr>
                             <th>
-                                <a href="javascript:void(0)" onclick="simulateSort('site', this)">
+                                <a href="javascript:void(0)" onclick="sortTable('site', this)">
                                     Site <i class="bi bi-sort-alpha-down"></i>
                                 </a>
                             </th>
                             <th>
-                                <a href="javascript:void(0)" onclick="simulateSort('user', this)">
+                                <a href="javascript:void(0)" onclick="sortTable('login', this)">
                                     Usuário <i class="bi bi-sort-alpha-down"></i>
                                 </a>
                             </th>
                             <th>Flags</th>
+                            <th>Último Uso</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for password in deashboardInfo.passwords %}
-                        <tr data-flags="{{ password.flags | join(',') if password.flags else '' }}">
-                            <td class="text-break">{{ password.site }}</td>
-                            <td class="text-break">{{ password.user }}</td>
-                            <td>
-                                {% if password.status %}
-                                <span class="badge bg-warning me-1">Vazou</span>
-                                {% endif %}
-                                {% for flag in password.flags %}
-                                <span class="badge bg-flag me-1">{{ flag }}</span>
-                                {% endfor %}
-                            </td>
-                            <td class="text-nowrap">
-                                <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#viewPasswordModal" 
-                                    data-site="{{ password.site }}" 
-                                    data-user="{{ password.user }}" 
-                                    data-pass="{{ password.password }}" 
-                                    title="Visualizar">
-                                    <i class="bi bi-eye-fill"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editPasswordModal" 
-                                    data-id="{{ password.id }}"
-                                    data-site="{{ password.site }}" 
-                                    data-user="{{ password.user }}" 
-                                    data-flags="{{ password.flags | join(',') if password.flags else '' }}" 
-                                    title="Editar">
-                                    <i class="bi bi-pencil-fill"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deletePasswordModal" 
-                                    data-id="{{ password.id }}"
-                                    data-site="{{ password.site }}" title="Excluir">
-                                    <i class="bi bi-trash-fill"></i>
-                                </button>
-                                <a href="{{ url_for('moreInfo', passwordId=password.id) }}" class="btn btn-sm btn-outline-secondary" title="Ver Logs">
-                                    <i class="bi bi-info-circle-fill"></i>
-                                </a>
-                            </td>
-                        </tr>
+                        {% if deashboardInfo and deashboardInfo.passwords %}
+                            {% for password in deashboardInfo.passwords %}
+                            <tr data-flags="{{ ','.join(password.flags) if password.flags else '' }}">
+                                <td class="text-break">{{ password.site }}</td>
+                                <td class="text-break">{{ password.login }}</td>
+                                <td>
+                                    {% if password.status %}
+                                    <span class="badge bg-warning me-1">Vazou</span>
+                                    {% endif %}
+                                    {% for flag in password.flags if password.flags %}
+                                    <span class="badge bg-flag me-1">{{ flag }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td class="text-nowrap">{{ password.lastUse or 'Nunca' }}</td>
+                                <td class="text-nowrap">
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#viewPasswordModal" 
+                                        data-site="{{ password.site }}" 
+                                        data-user="{{ password.login }}" 
+                                        data-pass="{{ password.password }}" 
+                                        title="Visualizar">
+                                        <i class="bi bi-eye-fill"></i>
+                                    </button>
+                                    
+                                    <button class="btn btn-sm btn-outline-warning" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editPasswordModal" 
+                                        data-id="{{ password.id }}"
+                                        data-site="{{ password.site }}" 
+                                        data-user="{{ password.login }}" 
+                                        data-flags="{{ ','.join(password.flags) if password.flags else '' }}" 
+                                        title="Editar">
+                                        <i class="bi bi-pencil-fill"></i>
+                                    </button>
+                                    
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deletePasswordModal" 
+                                        data-id="{{ password.id }}"
+                                        data-site="{{ password.site }}" 
+                                        title="Excluir">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                    
+                                    <a href="{{ url_for('moreInfo', passwordId=password.id) }}" 
+                                       class="btn btn-sm btn-outline-info" 
+                                       title="Ver Logs">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
                         {% else %}
                         <tr>
-                            <td colspan="4" class="text-center text-secondary py-4">Nenhuma credencial encontrada.</td>
+                            <td colspan="5" class="text-center text-secondary py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                <p class="mb-0">Nenhuma credencial encontrada.</p>
+                                <p class="small text-muted">Clique em "Nova Credencial" para adicionar.</p>
+                            </td>
                         </tr>
-                        {% endfor %}
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
             
-            {% if passwords.total > 0 %}
-            <nav aria-label="Page navigation" class="p-3">
+            <!-- Paginação -->
+            {% if deashboardInfo and deashboardInfo.pagination and deashboardInfo.pagination.totalPages > 1 %}
+            <nav aria-label="Navegação de páginas" class="p-3">
                 <ul class="pagination justify-content-center mb-0">
-                    
-                    <li class="page-item {{ 'disabled' if not passwords.hasPrev }}">
-                        <a class="page-link" href="{{ url_for('index', page=passwords.prevPage) }}" aria-disabled="{{ not passwords.hasPrev }}">Anterior</a>
+                    <!-- Botão Anterior -->
+                    <li class="page-item {% if not deashboardInfo.pagination.hasPrev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('index', page=deashboardInfo.pagination.prevPage) if deashboardInfo.pagination.hasPrev else '#' }}">
+                            Anterior
+                        </a>
                     </li>
                     
-                    {% for p in passwords.visiblePages %}
+                    <!-- Primeira página -->
+                    {% if deashboardInfo.pagination.showFirst %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('index', page=1) }}">1</a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Ellipsis esquerdo -->
+                    {% if deashboardInfo.pagination.showLeftEllipsis %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Páginas visíveis -->
+                    {% for p in deashboardInfo.pagination.visiblePages %}
                         {% if p %}
-                            <li class="page-item {{ 'active' if p == passwords.currentPage }}">
-                                <a class="page-link" href="{{ url_for('index', page=p) }}">{{ p }}</a>
-                            </li>
+                        <li class="page-item {% if p == deashboardInfo.pagination.currentPage %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('index', page=p) }}">{{ p }}</a>
+                        </li>
                         {% else %}
-                            <li class="page-item disabled">
-                                <span class="page-link">...</span>
-                            </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
                         {% endif %}
                     {% endfor %}
                     
-                    <li class="page-item {{ 'disabled' if not passwords.hasNext }}">
-                        <a class="page-link" href="{{ url_for('index', page=passwords.nextPage) }}">Próxima</a>
+                    <!-- Ellipsis direito -->
+                    {% if deashboardInfo.pagination.showRightEllipsis %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Última página -->
+                    {% if deashboardInfo.pagination.showLast %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('index', page=deashboardInfo.pagination.totalPages) }}">
+                            {{ deashboardInfo.pagination.totalPages }}
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Botão Próxima -->
+                    <li class="page-item {% if not deashboardInfo.pagination.hasNext %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('index', page=deashboardInfo.pagination.nextPage) if deashboardInfo.pagination.hasNext else '#' }}">
+                            Próxima
+                        </a>
                     </li>
                 </ul>
             </nav>
@@ -157,8 +226,11 @@
     {% endif %}
 
     {% if current_user.role == 'sysadmin' %}
+    <!-- Dashboard de Administrador -->
     <div id="dashboard-admin">
         <h1 class="mb-4">Dashboard do Administrador</h1>
+        
+        <!-- Cards de Estatísticas Admin -->
         <div class="row g-4 mb-5">
             <div class="col-md-6 col-lg-4">
                 <div class="stat-card text-center">
@@ -174,50 +246,122 @@
             </div>
             <div class="col-md-6 col-lg-4">
                 <div class="stat-card text-center">
-                    <h5 class="text-danger">Ações Críticas (Logs)</h5>
+                    <h5 class="text-danger">Ações Críticas</h5>
                     <div class="stat-value text-danger">{{ deashboardInfo.criticalLogs or '0' }}</div>
                 </div>
             </div>
         </div>
         
         <h2 class="h4 mb-3">Gerenciamento de Usuários</h2>
-        <div class="content-box p-0">
+        <div class="stat-card p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-borderless mb-0">
+                <table class="table table-hover mb-0">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Login</th>
-                            <th>Email de Rec.</th>
                             <th>Role</th>
+                            <th>Status</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for user in users %}
+                        {% if users %}
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.id[:8] }}...</td>
+                                <td>{{ user.login }}</td>
+                                <td>
+                                    <span class="badge {% if user.role == 'sysadmin' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                        {{ user.role }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge {% if user.enabled %}bg-success{% else %}bg-danger{% endif %}">
+                                        {% if user.enabled %}Ativo{% else %}Inativo{% endif %}
+                                    </span>
+                                </td>
+                                <td class="text-nowrap">
+                                    <button class="btn btn-sm btn-outline-warning" title="Editar">
+                                        <i class="bi bi-pencil-fill"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Excluir">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
                         <tr>
-                            <td>{{ user.id }}</td>
-                            <td>{{ user.login }}</td>
-                            <td>{{ user.recoveryEmail or 'N/A' }}</td>
-                            <td><span class="badge bg-primary">{{ user.role }}</span></td>
-                            <td class="text-nowrap">
-                                <button class="btn btn-sm btn-outline-warning" title="Editar Usuário" data-bs-toggle="modal" data-bs-target="#editUserModal" data-id="{{ user.id }}">
-                                    <i class="bi bi-pencil-fill"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" title="Excluir Usuário" data-bs-toggle="modal" data-bs-target="#deleteUserModal" data-id="{{ user.id }}">
-                                    <i class="bi bi-trash-fill"></i>
-                                </button>
+                            <td colspan="5" class="text-center text-secondary py-4">
+                                Nenhum usuário encontrado.
                             </td>
                         </tr>
-                        {% endfor %}
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
         </div>
-        
-        </div>
+    </div>
     {% endif %}
     
-    {% include '/components/_modals.html' %}
+    <!-- Incluir modais -->
+    {% include 'components/_modals.html' %}
 </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Função para ordenar tabela
+function sortTable(column, element) {
+    const icon = element.querySelector('i');
+    const form = document.getElementById('searchForm');
+    
+    // Atualiza todos os ícones
+    document.querySelectorAll('#credentialsTable th a i').forEach(i => {
+        if (i !== icon) {
+            i.className = 'bi bi-sort-alpha-down';
+        }
+    });
+    
+    // Toggle do ícone clicado
+    if (icon.className.includes('bi-sort-alpha-down')) {
+        icon.className = 'bi bi-sort-alpha-up';
+        form.querySelector('input[name="sortOrder"]').value = 'desc';
+    } else {
+        icon.className = 'bi bi-sort-alpha-down';
+        form.querySelector('input[name="sortOrder"]').value = 'asc';
+    }
+    
+    form.querySelector('input[name="sort"]').value = column;
+    form.submit();
+}
+
+// Função para filtrar por flag
+function filterByFlag(buttonElement, flag) {
+    // Atualiza estilos dos botões
+    document.querySelectorAll('#flagFilterCarousel .btn').forEach(btn => {
+        btn.classList.remove('btn-primary', 'active');
+        btn.classList.add('btn-outline-primary');
+    });
+    buttonElement.classList.add('btn-primary', 'active');
+    buttonElement.classList.remove('btn-outline-primary');
+    
+    // Filtra linhas da tabela
+    const tableRows = document.querySelectorAll("#credentialsTable tbody tr");
+    tableRows.forEach(row => {
+        if (flag === 'all') {
+            row.style.display = "";
+        } else {
+            const rowFlags = (row.getAttribute('data-flags') || '').split(',');
+            if (rowFlags.includes(flag)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        }
+    });
+}
+</script>
 {% endblock %}
