@@ -12,7 +12,11 @@
 \usepackage{float}
 \usepackage{booktabs}
 \usepackage{tikz}
-\usepackage[backend=biber, style=abnt]{biblatex}
+\usepackage[
+    backend=biber,
+    style=abnt,  % ou outro estilo que você estiver usando
+    sorting=nty   % IMPORTANTE: esta linha garante ordem alfabética
+]{biblatex}
 \addbibresource{referencias.bib}
 
 
@@ -52,7 +56,7 @@
     \vfill
     
     {\fontsize{14}{16}\selectfont\bfseries LONDRINA\\2025}
-\end{titlepage}0
+\end{titlepage}
 
 % Segunda página de título
 \newpage
@@ -125,9 +129,14 @@ The growing volume of credentials required by digital platforms and online servi
 
 \section{Introdução}
 
-Desde o surgimento da Internet, na segunda metade do século XX, o mundo passou por uma importante e inesquecível transformação. Inicialmente criada para ser uma rede que interligava computadores em ambientes militares e acadêmicos, a Internet evoluiu rapidamente para se tornar um dos principais pilares da sociedade moderna. Com a criação do \textit{World Wide Web} (W3C) na década de 1990, as possibilidades de uso se expandiram exponencialmente, permitindo a criação de plataformas e serviços que impactaram profundamente tanto a vida pessoal quanto ambientes corporativos dentro de empresas. Entre os avanços mais significativos, destaca-se o desenvolvimento de sistemas que exigem credenciais de acesso, tais como \textit{e-mails}, redes sociais, serviços financeiros e aplicações empresariais. Essas plataformas, ao longo do tempo, não apenas se popularizaram, mas também se tornaram indispensáveis para as operações cotidianas de indivíduos e organizações.
+Desde o surgimento da Internet, na segunda metade do século XX, o mundo passou por uma importante e inesquecível transformação. Inicialmente criada para ser uma rede que interligava computadores em ambientes militares e acadêmicos \cite{abbate1999}, a Internet evoluiu rapidamente para se tornar um dos principais pilares da sociedade moderna \cite{castells1996}. Com a criação do \textit{World Wide Web} (W3C) na década de 1990 por Tim Berners-Lee \cite{berners1999}, as possibilidades de uso se expandiram exponencialmente, permitindo a criação de plataformas e serviços que impactaram profundamente tanto a vida pessoal quanto ambientes corporativos dentro de empresas. Entre os avanços mais significativos, destaca-se o desenvolvimento de sistemas que exigem credenciais de acesso, tais como \textit{e-mails}, redes sociais, serviços financeiros e aplicações empresariais. Essas plataformas, ao longo do tempo, não apenas se popularizaram, mas também se tornaram indispensáveis para as operações cotidianas de indivíduos e organizações.
 
-Com o crescimento acelerado de tais ferramentas digitais, o número de senhas que um usuário é obrigado a manter consigo também aumentou drasticamente. Essa realidade, embora reflita o avanço tecnológico, trouxe consigo desafios críticos relacionados à segurança da informação e à usabilidade. Em contextos empresariais, a situação se torna ainda mais sensível, dado o esquecimento ou a perda de senhas por parte dos funcionários, que pode resultar em consequências graves, como a interrupção e perdas de processos e documentos internos importantes, comprometimento de dados sigilosos ou até mesmo a violação de sistemas essenciais para o negócio. Casos de grandes empresas que sofreram prejuízos expressivos devido a credenciais comprometidas ilustram a relevância deste problema, destacando a necessidade de soluções mais eficazes para a gestão de senhas.
+Com o crescimento acelerado de tais ferramentas digitais, o número de senhas que um usuário é obrigado a manter consigo também aumentou drasticamente \cite{florencio2007}. Essa realidade, embora reflita o avanço tecnológico, trouxe consigo desafios críticos relacionados à segurança da informação e à usabilidade \cite{sasse2001}. Estudos demonstram que a sobrecarga cognitiva imposta pela necessidade de gerenciar múltiplas credenciais leva usuários a adotarem práticas inseguras, como a reutilização de senhas e a escolha de combinações fracas \cite{bonneau2012}. Em contextos empresariais, a situação se torna ainda mais sensível, dado que o esquecimento ou a perda de senhas por parte dos funcionários pode resultar em consequências graves, como a interrupção e perdas de processos e documentos internos importantes, comprometimento de dados sigilosos ou até mesmo a violação de sistemas essenciais para o negócio \cite{schneier2015}. Casos de grandes empresas que sofreram prejuízos expressivos devido a credenciais comprometidas ilustram a relevância deste problema \cite{verizon2023}, destacando a necessidade de soluções mais eficazes para a gestão de senhas.
+
+\subsection{Objetivo}
+Nesse contexto, o presente trabalho propõe o desenvolvimento do \textit{MainDug}, uma aplicação de código aberto voltada para o gerenciamento seguro de credenciais, com ênfase na privacidade e na autonomia do usuário \cite{anderson2020}. Diferentemente de abordagens tradicionais, o projeto oferece maior liberdade de configuração, permitindo que cada indivíduo defina a forma de utilização de acordo com suas vontades e necessidades específicas. Entre as possibilidades, destacam-se a hospedagem em servidores particulares, a configuração de \textit{Proxies} de segurança, a alteração dos mecanismos de criptografia \cite{schneier1996} e a integração com serviços complementares.
+
+A proposta visa, portanto, disponibilizar uma alternativa transparente, segura e personalizável, que contribua para a redução da dependência de soluções centralizadas e para o fortalecimento do direito à privacidade digital \cite{nissenbaum2009}. Para a efetivação do produto, serão consideradas as seguintes etapas:
 
 \subsection{Objetivo}
 Nesse contexto, o presente trabalho propõe o desenvolvimento do \textit{MainDug}, uma aplicação de código aberto voltada para o gerenciamento seguro de credenciais, com ênfase na privacidade e na autonomia do usuário. Diferentemente de abordagens tradicionais, o projeto oferece maior liberdade de configuração, permitindo que cada indivíduo defina a forma de utilização de acordo com suas vontades e necessidades específicas. Entre as possibilidades, destacam-se a hospedagem em servidores particulares, a configuração de \textit{Proxies} de segurança, a alteração dos mecanismos de criptografia e a integração com serviços complementares.
@@ -144,8 +153,7 @@ A proposta visa, portanto, disponibilizar uma alternativa transparente, segura e
 
 \section{Soluções Correlatas}
 
-Com o objetivo de compreender melhor o cenário atual e identificar soluções já consolidadas no mercado, foi realizada uma pesquisa exploratória sobre os \textit{sites} e sistemas especializados em gerenciamento de senhas ativos atualmente. Para isso, utilizou-se a ferramenta de busca \textit{Google}, com as seguintes palavras-chave: ``
-gerenciador de senhas", \textit{password} manager, aplicativos de segurança de credenciais e armazenamento seguro de senhas.
+Com o objetivo de compreender melhor o cenário atual e identificar soluções já consolidadas no mercado, foi realizada uma pesquisa exploratória sobre os \textit{sites} e sistemas especializados em gerenciamento de senhas ativos atualmente. Para isso, utilizou-se a ferramenta de busca \textit{Google}, com as seguintes palavras-chave: `gerenciador de senhas', \textit{password} manager, aplicativos de segurança de credenciais e armazenamento seguro de senhas.
 
 Os principais resultados retornados pela ferramenta foram analisados segundo critérios de proximidade com o tema deste trabalho, funcionalidades disponibilizadas, nível de segurança, modelo de distribuição gratuito (proprietário ou código aberto), experiência do usuário e relevância no mercado. A partir dessa análise, destacaram-se como soluções representativas: \textit{LastPass}, \textit{\textit{1Password}} e \textit{Bitwarden}.
 
@@ -176,7 +184,7 @@ O \textit{LastPass} \cite{lastpass} é um gerenciadore de senhas de modelo freem
     \caption{Interface principal (site)} 
     \includegraphics[width=1\linewidth]{Captura de tela de 2025-09-30 10-32-04.png}
     \\ \small Fonte: lastpass.com, 2025.
-    \label{fig:placeholder}
+    \label{fig:figura_}
 \end{figure}
 
 \begin{figure}[H]
@@ -184,7 +192,7 @@ O \textit{LastPass} \cite{lastpass} é um gerenciadore de senhas de modelo freem
     \caption{Importação de senhas via outros serviços}
     \includegraphics[width=1\linewidth]{Captura de tela de 2025-09-30 11-01-57.png}
     \\ \small Fonte: lastpass.com, 2025.
-    \label{fig:placeholder2}
+    \label{fig:figura_2}
 \end{figure}
 
 \newpage
@@ -216,7 +224,7 @@ Pontos negativos:
     \caption{Interface principal (aplicativo)}
     \includegraphics[width=1\linewidth]{image.png}
     \\ \small Fonte: \textit{1password}.com, 2025
-    \label{fig:placeholder3}
+    \label{fig:figura_3}
 \end{figure}
 
 \begin{figure}[H]
@@ -224,7 +232,7 @@ Pontos negativos:
     \caption{Interface empresarial (aplicativo)}
     \includegraphics[width=1\linewidth]{imagem_2025-10-05_150904297.png}
     \\ \small Fonte: \textit{1password}.com, 2025
-    \label{fig:placeholder4}
+    \label{fig:figura_4}
 \end{figure}
 
 \begin{figure}[H]
@@ -232,7 +240,7 @@ Pontos negativos:
     \caption{\textit{Whatchtower} (aplicativo)}
     \includegraphics[width=1\linewidth]{image2.png}
     \\ \small Fonte: \textit{1password}.com, 2025
-    \label{fig:placeholder5}
+    \label{fig:figura_5}
 \end{figure}
 
 \newpage
@@ -263,7 +271,7 @@ Pontos negativos:
     \caption{Menu principal}
     \includegraphics[width=1\linewidth]{imagem_2025-10-05_153847021.png}
     \\ \small Fonte: \textit{password}s.\textit{google}.com, 2025
-    \label{fig:placeholder6}
+    \label{fig:figura_6}
 \end{figure}
 
 \begin{figure}[H]
@@ -271,7 +279,7 @@ Pontos negativos:
     \caption{Página de senhas comprometidas}
     \includegraphics[width=1\linewidth]{imagem_2025-10-05_155325647.png}
     \\ \small Fonte: \textit{password}s.\textit{google}.com, 2025
-    \label{fig:placeholder7}
+    \label{fig:figura_7}
 \end{figure}
 
  \newpage
@@ -325,6 +333,7 @@ Paralelamente, foi realizado o design da interface do usuário (UI) e da experi�
     \end{tabular}
 \end{table}
 
+\newpage
 \subsection{Requisitos não Funcionais (RNF)}
 \begin{table}[h!]
     \centering
@@ -346,14 +355,28 @@ Paralelamente, foi realizado o design da interface do usuário (UI) e da experi�
     \end{tabular}
 \end{table}
 
+\newpage
+
 \subsection{Diagrama de casos de uso}
+
+\begin{figure}[H]
+    \centering
+    \caption{Diagrama de casos de uso.}
+    \includegraphics[width=1\linewidth]{caseUse.png}
+    \label{fig:figura_8}
+\end{figure}
+
+
+Para melhor visualização, o diagrama foi dividido em dois: um para o usuário e outro para o administrador. A figura Figura: \ref{fig:figura_8} apresenta o caso de uso do usuário, enquanto a figura Figura: \ref{fig:figura_9} apresenta o caso de uso do administrador.
+
+
 
 \subsubsection{Usuário}
 \begin{figure}[H]
     \centering
     \caption{Diagrama de casos de uso do usuário.}
     \includegraphics[width=1\linewidth]{useCaseUser.png}
-    \label{fig:placeholder8}
+    \label{fig:figura_8}
 \end{figure}
 
 O usuário tem acesso ao \textit{Webservice} e à extensão do navegador. Na extensão, o usuário pode usar o \textit{autocomplete}, cadastrar uma nova credencial e, independentemente do usuário, a ação de \textit{login} é salva e enviada ao \textit{Webservice}. Já no \textit{Webservice}, o usuário pode consultar quais senhas são repetidas, quais foram vazadas, ser redirecionado ao \textit{site} da senha repetida ou vazada, verificar \textit{logs} ou alterações recentes nas credenciais, gerenciar sua conta ou recuperar a senha.
@@ -363,13 +386,14 @@ O usuário tem acesso ao \textit{Webservice} e à extensão do navegador. Na ext
     \centering
     \caption{Diagrama de casos de uso do administrador.}
     \includegraphics[width=1\linewidth]{useCaseAdmin.png}
-    \label{fig:placeholder9}
+    \label{fig:figura_9}
 \end{figure}
 
 O administrador possui acesso apenas ao \textit{Webservice}; lá, ele pode gerenciar usuários, banindo-os, enviar \textit{e-mail} de recuperação de senha e monitorar as estatísticas dos usuários.
 
 \subsection{Estratégias de segurança}
 
+As estratégias de segurança adotadas no \textit{MainDug} foram cuidadosamente selecionadas para garantir a proteção dos dados dos usuários, alinhando-se às melhores práticas recomendadas pela indústria e às diretrizes do OWASP (Open Web Application Security Project) \cite{owasp_top10}. A seguir, detalham-se as principais estratégias implementadas:
 
 \subsection{Mimissismo} da \textit{database}: O mimissismo da \textit{database} faz com que seja aplicada alguma criptografia ou ofuscação não só nos dados armazenados, mas também nos nomes dos atributos e tabelas. Isso faz com que mesmo com acesso ao banco de dados, o invasor não consiga determinar quais dados estão armazenados.
 \subsection{Criptografia da Senha-Mestra (\textit{one-way}):} A senha-mestra do usuário, que dá acesso ao cofre, é protegida usando um algoritmo de \textit{hash} adaptativo (como o \textit{bcrypt} ou \textit{Argon2}). Esta abordagem, recomendada pelo OWASP \cite{owasp_password}, torna a senha ilegível e computacionalmente inviável de ser revertida, protegendo-a contra ataques de força bruta mesmo em caso de vazamento do banco de dados.
@@ -380,8 +404,8 @@ O administrador possui acesso apenas ao \textit{Webservice}; lá, ele pode geren
 Nesta sessão serão descritas as tecnologias escolhidas para o desenvolvimento do \textit{MainDug} e a razão para essas escolhas.
 
 \subsubsection{\textit{Python}}
-A escolha do \textit{Python} como linguagem de programação principal para o back-end do \textit{MainDug} se deve a múltiplos fatores. Primeiramente, sua sintaxe clara e legível (conhecida como ``
-Pythonic") facilita a manutenção do código e, crucialmente para um projeto de código aberto, permite que a comunidade realize auditorias de segurança de forma mais eficaz.
+A escolha do \textit{Python} como linguagem de programação principal para o back-end do \textit{MainDug} se deve a múltiplos fatores. Primeiramente, sua sintaxe clara e legível (conhecida como `'
+Pythonic') facilita a manutenção do código e, crucialmente para um projeto de código aberto, permite que a comunidade realize auditorias de segurança de forma mais eficaz.
 
 Além disso, o \textit{Python} possui um ecossistema robusto e maduro, com vastas bibliotecas de terceiros, especialmente no que tange à segurança e à criptografia (como \textit{bcrypt}). Isso permitiu a implementação de algoritmos de criptografia fortes (RNF-001, RNF-002) sem a necessidade de reinventar soluções de segurança, garantindo o uso de padrões já testados e validados pela indústria.   
 
@@ -408,8 +432,8 @@ O \textit{PostgreSQL} é renomado por sua robustez, integridade de dados e confo
 \begin{figure}[H]
     \centering
     \caption{Diagrama de classes.}
-    \includegraphics[width=0.4\linewidth]{classDiagram.png}
-    \label{fig:placeholder10}
+    \includegraphics[width=1\linewidth]{classDiagram.png}
+    \label{fig:figura_10}
 \end{figure}
 
 \subsubsection{Classe \textit{User}}
@@ -444,22 +468,22 @@ Classe destinada ao gerenciamento das conexões entre o servidor e os usuários 
 \begin{figure}[H]
     \centering
     \caption{Diagrama entidade-relacionamento.}
-    \includegraphics[width=0.5\linewidth]{derDiagram.png}
-    \label{fig:placeholder11}
+    \includegraphics[width=1\linewidth]{derDiagram.png}
+    \label{fig:figura_11}
 \end{figure}
 
 \subsubsection{\textit{User}}
 A tabela \textit{User} gerencia as contas de acesso ao próprio sistema gerenciador. Ela armazena as credenciais de \textit{login} (\textit{login}, \textit{password}) do usuário, seu nível de permissão (\textit{role}) e se a conta está ativa (textit{enabled}) ou se sua senha foi comprometida (\textit{passwordPwened}).
 
 \subsubsection{\textit{Password}}
-Esta é a tabela principal do ``
-cofre", onde são armazenadas as credenciais salvas pelo usuário. Cada registro representa um \textit{login}/senha de um serviço externo (\textit{login}, \textit{password}, \textit{whereUserd}), vinculando-se ao \textit{User} (o dono) e a uma categoria.
+Esta é a tabela principal do `'
+cofre', onde são armazenadas as credenciais salvas pelo usuário. Cada registro representa um \textit{login}/senha de um serviço externo (\textit{login}, \textit{password}, \textit{whereUserd}), vinculando-se ao \textit{User} (o dono) e a uma categoria.
 
 \subsubsection{\textit{Filters}}
-\textit{Filters} é uma tabela auxiliar simples usada para organizar as senhas. Ela armazena os nomes das categorias (como ``
-Trabalho", ``
-Pessoal" e ``
-Redes Sociais") que são associadas aos registros na tabela \textit{Passwords} para facilitar a busca e a organização.
+\textit{Filters} é uma tabela auxiliar simples usada para organizar as senhas. Ela armazena os nomes das categorias (como `'
+Trabalho', `'
+Pessoal' e `'
+Redes Sociais') que são associadas aos registros na tabela \textit{Passwords} para facilitar a busca e a organização.
 
 \subsubsection{\textit{Logs}}
 A tabela \textit{Logs} é crucial para a auditoria de segurança. Ela registra um histórico detalhado de cada vez que uma credencial da tabela \textit{Passwords} é utilizada, armazenando informações vitais como o IP, a geolocalização (cidade, país), o sistema operacional e o navegador de quem realizou o acesso.
@@ -473,9 +497,9 @@ A tabela \textit{Logs} é crucial para a auditoria de segurança. Ela registra u
     \centering
     \caption{Tela de \textit{login}.}
     \includegraphics[width=1\linewidth]{telaLogn.png}
-    \label{fig:placeholder12}
+    \label{fig:figura_12}
 \end{figure}
-Esta é responsável por fornecer o \textit{login} ao usuário (RF-001). Ela contêm um campo para \textit{login}/nome de usuário e outro para sua senha mestra. Também possui um botão destinado ao envio do formulário, \textit{links} para a página de cadastro e para a página de recuperação de senha. 
+Esta é responsável por fornecer o \textit{login} ao usuário (RF-001). Ela contêm um campo para \textit{login}/nome de usuário e outro para sua senha mestra. Também possui um botão destinado ao envio do formulário, \textit{links} para a página de cadastro e para a página de recuperação de senha (Figura: \ref{fig:figura_12}). 
 
 
 \subsubsection{Tela de Cadastro}
@@ -483,70 +507,70 @@ Esta é responsável por fornecer o \textit{login} ao usuário (RF-001). Ela con
     \centering
     \caption{Tela de cadastro.}
     \includegraphics[width=1\linewidth]{telaCadastro.png}
-    \label{fig:placeholder13}
+    \label{fig:figura_13}
 \end{figure}
 
-Responsável por permitir que o usuário crie um cadastro no aplicativo (RF-002). Ela possui três campos, respectivamente para \textit{login}/\textit{e-mail}, senha-mestra e confirmação da senha-mestra. Possui também um botão para envio de formulário e \textit{links} para \textit{login} e recuperação de senha.
+Responsável por permitir que o usuário crie um cadastro no aplicativo (RF-002). Ela possui três campos, respectivamente para \textit{login}/\textit{e-mail}, senha-mestra e confirmação da senha-mestra. Possui também um botão para envio de formulário e \textit{links} para \textit{login} e recuperação de senha (Figura: \ref{fig:figura_13}).
 
 \subsubsection{Tela de recuperação de senha.}
 \begin{figure}[H]
     \centering
     \caption{Tela de recuperação de senha.}
     \includegraphics[width=1\linewidth]{telaRecuperar.png}
-    \label{fig:placeholder14}
+    \label{fig:figura_14}
 \end{figure}
 
-Dentro desta página há apenas um campo para o usuário inserir o \textit{login}/\textit{e-mail}, um botão para enviar o formulário e \textit{links} para as páginas de \textit{login} e cadastro. Sua função é permitir que o usuario recupere o acesso a conta a partir do \textit{e-mail}/\textit{login} (RF-010).
+Dentro desta página (Figura: \ref{fig:figura_14}) há apenas um campo para o usuário inserir o \textit{login}/\textit{e-mail}, um botão para enviar o formulário e \textit{links} para as páginas de \textit{login} e cadastro. Sua função é permitir que o usuario recupere o acesso a conta a partir do \textit{e-mail}/\textit{login} (RF-010).
 
 \subsubsection{Tela do \textit{Dashboard}.}
 \begin{figure}[H]
     \centering
     \caption{Tela principal do \textit{webservice}.}
     \includegraphics[width=1\linewidth]{telaDashboard.png}
-    \label{fig:placeholder15}
+    \label{fig:figura_15}
 \end{figure}
 
-Destinada a mostrar as informações principais do aplicativo ao usuário. Nela, encontra-se uma tabela com as credenciais salvas, opções para filtrar as credenciais na tabela (RF-009) e botões para editar, excluir (RF-012) e monitorar as credenciais salvas. Também há uma \textit{navbar} com \textit{links} para a página de edição da conta, saída da conta, mudança de tema entre claro/escuro e a página de estatísticas.
+Destinada a mostrar as informações principais do aplicativo ao usuário, como demonstrado na Figura: \ref{fig:figura_15}. Nela, encontra-se uma tabela com as credenciais salvas, opções para filtrar as credenciais na tabela (RF-009) e botões para editar, excluir (RF-012) e monitorar as credenciais salvas. Também há uma \textit{navbar} com \textit{links} para a página de edição da conta, saída da conta, mudança de tema entre claro/escuro e a página de estatísticas.
 
 \subsubsection{Tela de adição de credencial.}
 \begin{figure}[H]
     \centering
     \caption{Tela de adição de credenciais.}
     \includegraphics[width=1\linewidth]{telaAddCred.png}
-    \label{fig:placeholder16}
+    \label{fig:figura_16}
 \end{figure}
 
-Esta página aparece como um \textit{popup} e é responsável por permitir a adição de credenciais dentro do sistema via \textit{webservice} (RF-012). No formulário do \textit{popup} existem quatro campos para o usuário preencher que são destinados, respectivamente, ao \textit{login} da credencial dentro do \textit{site} de terceiros, à senha para essa credencial, ao endereço \textit{web} desse \textit{site} e às \textit{flags} ou filtros para esse cadastro e, por fim a página também possui um botão para salvar a credencial.
+Esta página (Figura: \ref{fig:figura_16}) aparece como um \textit{popup} e é responsável por permitir a adição de credenciais dentro do sistema via \textit{webservice} (RF-012). No formulário do \textit{popup} existem quatro campos para o usuário preencher que são destinados, respectivamente, ao \textit{login} da credencial dentro do \textit{site} de terceiros, à senha para essa credencial, ao endereço \textit{web} desse \textit{site} e às \textit{flags} ou filtros para esse cadastro e, por fim a página também possui um botão para salvar a credencial.
 
 \subsubsection{Tela de gerenciamento de filtros.}
 \begin{figure}[H]
     \centering
     \caption{Tela de gerenciamento de filtros.}
     \includegraphics[width=1\linewidth]{telaEstatisticas.png}
-    \label{fig:placeholder17}
+    \label{fig:figura_17}
 \end{figure}
 
-Página responsável por criar e deletar filtros para as credenciais. É composta por uma lista com todos os filtros, um botão para apagar cada um dos filtros e um botão para sair. As mudanças são salvas automaticamente no \textit{back-end}. 
+Página responsável por criar e deletar filtros para as credenciais (Figura: \ref{fig:figura_17}). É composta por uma lista com todos os filtros, um botão para apagar cada um dos filtros e um botão para sair. As mudanças são salvas automaticamente no \textit{back-end}. 
 
 \subsubsection{Tela de registros de credencial.}
 \begin{figure}[H]
     \centering
     \caption{Tela de registros de credencial.}
     \includegraphics[width=1\linewidth]{telaLogs.png}
-    \label{fig:placeholder18}
+    \label{fig:figura_18}
 \end{figure}
 
-Página responsável por mostrar ao usuário todos os registros relacionados à essa credencial, como uso do \textit{autocomplete}, vazamentos detectados e edição da credencial.
+Página responsável por mostrar ao usuário todos os registros relacionados à essa credencial, como uso do \textit{autocomplete}, vazamentos detectados e edição da credencial (Figura: \ref{fig:figura_18}).
 
 \subsubsection{Tela de perfil.}
 \begin{figure}[H]
     \centering
     \caption{Tela das configurações de perfil.}
     \includegraphics[width=1\linewidth]{telaPerfil.png}
-    \label{fig:placeholder19}
+    \label{fig:figura_19}
 \end{figure}
 
-Página destinada a todo o gerenciamento do perfil e conta do usuário (RF-007). Esta possui cinco campos para preenchimento, quatro deles destinados aos dados do usuário, respectivamente, para o \textit{login}, senha, confirmação de senha e \textit{e-mail} para recuperação da senha-mestra, já o último pode ser usado para personalizar a cor secundária do \textit{site} e, assim como os outros formulários, esta possui um botão para salvar as alterações.
+Página destinada a todo o gerenciamento do perfil e conta do usuário (RF-007). Conforme demonstrado na Figura: \ref{fig:figura_19} esta possui cinco campos para preenchimento, quatro deles destinados aos dados do usuário, respectivamente, para o \textit{login}, senha, confirmação de senha e \textit{e-mail} para recuperação da senha-mestra, já o último pode ser usado para personalizar a cor secundária do \textit{site} e, assim como os outros formulários, esta possui um botão para salvar as alterações.
 
 \subsubsection{Tela de exclusão de credencial.}
 
@@ -554,10 +578,10 @@ Página destinada a todo o gerenciamento do perfil e conta do usuário (RF-007).
     \centering
     \caption{Tela de exclusão.}
     \includegraphics[width=1\linewidth]{telaDelete.png}
-    \label{fig:placeholder20}
+    \label{fig:figura_20}
 \end{figure}
 
-Página dedicada a confirmação de exclusão de uma credencial (RF-007). Ela aparece como \textit{popup} e é composta por um botão para confirmar a exclusão e um botão para fechar a \textit{popup}.
+Página dedicada a confirmação de exclusão de uma credencial (RF-007). Ela aparece como \textit{popup} (Figura: \ref{fig:figura_20}) e é composta por um botão para confirmar a exclusão e um botão para fechar a \textit{popup}.
 
 
 \subsubsection{Tela de visualização das credencial.}
@@ -565,34 +589,34 @@ Página dedicada a confirmação de exclusão de uma credencial (RF-007). Ela ap
     \centering
     \caption{Tela de visualização.}
     \includegraphics[width=1\linewidth]{telaView.png}
-    \label{fig:placeholder21}
+    \label{fig:figura_21}
 \end{figure}
 
-Página destinada a visualização de uma credencial. Ela aparece como \textit{popup} e é composta por três campos, sendo eles respectivamente o endereço do \textit{site}, o \textit{login} e a senha. Nela também ha um botão para cancelar a ação.
+Página destinada a visualização de uma credencial. Ela aparece como \textit{popup} e é composta por três campos, sendo eles respectivamente o endereço do \textit{site}, o \textit{login} e a senha. Nela também ha um botão para cancelar a ação. Como demonstrado na Figura: \ref{fig:figura_21}.
 
 
 \subsection{Extensão}
-Para interagir com o navegador do usuário, foi desenvolvida uma extensão \textit{web} compatível com a API de extensões do \textit{Google Chrome} \cite{chrome_extensions}.
+Para interagir com o navegador do usuário, foi desenvolvida uma extensão \textit{web} compatível com a API de extensões do \textit{Google Chrome} \cite{chrome_extensions} que proporcionou a compatibilidade com os principais navegadores, como o \textit{Firefox}, \textit{Chrome} e o \textit{Edge} como descrito pelo RNF-007.
 
 \subsubsection{\textit{Popup} de \textit{login}}
 \begin{figure}[H]
     \centering
     \caption{\textit{Popup} de \textit{login}.}
     \includegraphics[width=0.5\linewidth]{loginExPage.png}
-    \label{fig:placeholder22}
+    \label{fig:figura_22}
 \end{figure}
 
-A Tela da extensão \textit{web} destinada ao \textit{login} do usuário (Figura 22) é a primeira página que aparece quando o usuario instala a extensão, ela possui dois campos, um para \textit{login} e outro para senha, nela também existem dois botões, um para enviar o formulário e outro para se registrar no serviço, que redireciona o usuário ao \textit{site} oficial.
+A Tela da extensão \textit{web} destinada ao \textit{login} do usuário (Figura: \ref{fig:figura_22}) é a primeira página que aparece quando o usuario instala a extensão, ela possui dois campos, um para \textit{login} e outro para senha, nela também existem dois botões, um para enviar o formulário e outro para se registrar no serviço, que redireciona o usuário ao \textit{site} oficial.
 
 \subsubsection{\textit{Popup} da tela inicial}
 \begin{figure}[H]
     \centering
     \caption{\textit{Popup} da tela inicial.}
     \includegraphics[width=0.5\linewidth]{homeExPage.png}
-    \label{fig:placeholder23}
+    \label{fig:figura_23}
 \end{figure}
 
-\textit{Popup} gerado pela extensão \textit{web} que se torna a página inicial do aplicativo enquanto o usuário estiver logado. Dentro dele o usuário pode ver todas as credenciais salvas e copiar-las
+\textit{Popup} gerado pela extensão \textit{web} que se torna a página inicial do aplicativo enquanto o usuário estiver logado demonstrado pela Figura: \ref{fig:figura_23}. Dentro dele o usuário pode ver todas as credenciais salvas e copiar-las.
 
 
 \subsubsection{\textit{Popup} de configurações}
@@ -600,28 +624,29 @@ A Tela da extensão \textit{web} destinada ao \textit{login} do usuário (Figura
     \centering
     \caption{\textit{Popup} da configuração.}
     \includegraphics[width=0.5\linewidth]{configExPage.png}
-    \label{fig:placeholder25}
+    \label{fig:figura_25}
 \end{figure}
 
-Tela responsavel pela configuração do comportamento da extensão \textit{web}. Dentro desta página existem quatro opções de personalização, sendo, respectivamente, o preenchimento automático de senhas (RF-004), a geração de senhas seguras (RF-003), o salvamento de credenciais automático, o recebimento de notificações e o modo escuro da extensão. Cada uma dessas opções pode ser ativada ou desativada pelo usuário. Além destas opções, aqui o usuário tambem pode exportar suas credenciais salvas em um arquivo '.csv'.
+Tela responsavel pela configuração do comportamento da extensão \textit{web} (Figura: \ref{fig:figura_25}). Dentro desta página existem quatro opções de personalização, sendo, respectivamente, o preenchimento automático de senhas (RF-004), a geração de senhas seguras (RF-003), o salvamento de credenciais automático, o recebimento de notificações e o modo escuro da extensão. Cada uma dessas opções pode ser ativada ou desativada pelo usuário. Além destas opções, aqui o usuário tambem pode exportar suas credenciais salvas em um arquivo '.csv'.
 
 \subsubsection{\textit{Popup} de conta}
 \begin{figure}[H]
     \centering
     \caption{\textit{Popup} de conta.}
     \includegraphics[width=0.5\linewidth]{accountExPage.png}
-    \label{fig:placeholder24}
+    \label{fig:figura_24}
 \end{figure}
 
-Tela destinada ao gerenciamento da conta do usuário dentro da extensão \textit{web}. Nela o usuario pode sair da conta atual ou ser redirecionado ao \textit{webservice} para editar suas informações de perfil.
+A Figura: \ref{fig:figura_24} apresenta a tela destinada ao gerenciamento da conta do usuário dentro da extensão \textit{web}. Nela o usuario pode sair da conta atual ou ser redirecionado ao \textit{webservice} para editar suas informações de perfil.
 
 \newpage
 \section{Conclusões}
-O desenvolvimento do \textit{MainDug} demonstrou ser uma resposta técnica viável e necessária ao crescente problema da centralização de dados e da perda de autonomia do usuário em serviços de gerenciamento de credenciais. Este trabalho atingiu seu objetivo principal ao projetar e prototipar uma arquitetura de código aberto que, diferentemente das soluções proprietárias analisadas, coloca o controle da infraestrutura e dos dados criptografados diretamente nas mãos do usuário. Embora o protótipo atual sirva como uma fundação robusta, o caminho para uma aplicação pronta para produção exigirá auditorias de segurança independentes e a expansão para plataformas móveis, como sugerido para trabalhos futuros. Em suma, o MainDug cumpre sua proposta de valor, não apenas como uma aplicação funcional, mas como uma prova de conceito de que é possível desenhar sistemas que fortalecem ativamente o direito à privacidade e à soberania digital do indivíduo na era da informação.
+O desenvolvimento do \textit{MainDug} demonstrou ser uma resposta técnica viável e necessária ao crescente problema da centralização de dados e da perda de autonomia do usuário em serviços de gerenciamento de credenciais. Este trabalho atingiu seu objetivo principal ao projetar e prototipar uma arquitetura de código aberto que, diferentemente das soluções proprietárias analisadas, coloca o controle da infraestrutura e dos dados criptografados diretamente nas mãos do usuário. Embora o protótipo atual sirva como uma fundação robusta, o caminho para uma aplicação pronta para produção exigirá auditorias de segurança independentes e a expansão para plataformas móveis, como sugerido para trabalhos futuros. Em suma, o MainDug cumpre sua proposta de valor, não apenas como uma aplicação funcional, mas como uma prova de conceito de que é possível desenhar sistemas que fortalecem ativamente o direito à privacidade e à soberania digital do indivíduo na era da informação. Também é importante ressaltar que o projeto está disponível no GitHub \cite{maindugweb}, incentivando a colaboração e o aprimoramento contínuo pela comunidade de desenvolvedores e entusiastas de segurança digital.
 
 
 \newpage
 \nocite{*}
+\section{Referências}
 \printbibliography[title={Referências}]
 
 \end{document}

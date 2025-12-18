@@ -1,6 +1,7 @@
 \babel@toc {portuguese}{}\relax 
 \contentsline {section}{\numberline {1}Introdução}{7}{section.1}%
 \contentsline {subsection}{\numberline {1.1}Objetivo}{7}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Objetivo}{8}{subsection.1.2}%
 \contentsline {section}{\numberline {2}Soluções Correlatas}{9}{section.2}%
 \contentsline {subsection}{\numberline {2.1}\textit {LastPass}}{9}{subsection.2.1}%
 \contentsline {subsection}{\numberline {2.2}\textit {1Password}}{12}{subsection.2.2}%
@@ -10,39 +11,39 @@
 \contentsline {subsection}{\numberline {3.2}Fase 2: Modelagem e Design do Sistema}{18}{subsection.3.2}%
 \contentsline {section}{\numberline {4}Resultados}{19}{section.4}%
 \contentsline {subsection}{\numberline {4.1}Requisitos Funcionais (RF)}{19}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}Requisitos não Funcionais (RNF)}{21}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.2}Requisitos não Funcionais (RNF)}{20}{subsection.4.2}%
 \contentsline {subsection}{\numberline {4.3}Diagrama de casos de uso}{21}{subsection.4.3}%
-\contentsline {subsubsection}{\numberline {4.3.1}Usuário}{21}{subsubsection.4.3.1}%
-\contentsline {subsubsection}{\numberline {4.3.2}Administrador}{22}{subsubsection.4.3.2}%
-\contentsline {subsection}{\numberline {4.4}Estratégias de segurança}{22}{subsection.4.4}%
-\contentsline {subsection}{\numberline {4.5}Mimissismo}{22}{subsection.4.5}%
-\contentsline {subsection}{\numberline {4.6}Criptografia da Senha-Mestra (\textit {one-way}):}{22}{subsection.4.6}%
-\contentsline {subsection}{\numberline {4.7}Criptografia do Cofre (\textit {both-ways}):}{23}{subsection.4.7}%
-\contentsline {subsection}{\numberline {4.8}Tecnologias}{23}{subsection.4.8}%
-\contentsline {subsubsection}{\numberline {4.8.1}\textit {Python}}{23}{subsubsection.4.8.1}%
-\contentsline {subsubsection}{\numberline {4.8.2}\textit {Flask}}{23}{subsubsection.4.8.2}%
-\contentsline {subsubsection}{\numberline {4.8.3}\textit {SQLAlchemy}}{24}{subsubsection.4.8.3}%
-\contentsline {subsubsection}{\numberline {4.8.4}\textit {PostgreSQL}}{24}{subsubsection.4.8.4}%
-\contentsline {subsection}{\numberline {4.9}Diagrama de classes}{25}{subsection.4.9}%
+\contentsline {subsubsection}{\numberline {4.3.1}Usuário}{22}{subsubsection.4.3.1}%
+\contentsline {subsubsection}{\numberline {4.3.2}Administrador}{23}{subsubsection.4.3.2}%
+\contentsline {subsection}{\numberline {4.4}Estratégias de segurança}{23}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Mimissismo}{23}{subsection.4.5}%
+\contentsline {subsection}{\numberline {4.6}Criptografia da Senha-Mestra (\textit {one-way}):}{24}{subsection.4.6}%
+\contentsline {subsection}{\numberline {4.7}Criptografia do Cofre (\textit {both-ways}):}{24}{subsection.4.7}%
+\contentsline {subsection}{\numberline {4.8}Tecnologias}{24}{subsection.4.8}%
+\contentsline {subsubsection}{\numberline {4.8.1}\textit {Python}}{24}{subsubsection.4.8.1}%
+\contentsline {subsubsection}{\numberline {4.8.2}\textit {Flask}}{24}{subsubsection.4.8.2}%
+\contentsline {subsubsection}{\numberline {4.8.3}\textit {SQLAlchemy}}{25}{subsubsection.4.8.3}%
+\contentsline {subsubsection}{\numberline {4.8.4}\textit {PostgreSQL}}{25}{subsubsection.4.8.4}%
+\contentsline {subsection}{\numberline {4.9}Diagrama de classes}{26}{subsection.4.9}%
 \contentsline {subsubsection}{\numberline {4.9.1}Classe \textit {User}}{26}{subsubsection.4.9.1}%
 \contentsline {subsubsection}{\numberline {4.9.2}Classe \textit {Password}}{26}{subsubsection.4.9.2}%
 \contentsline {subsubsection}{\numberline {4.9.3}Classe \textit {Filter}}{26}{subsubsection.4.9.3}%
-\contentsline {subsubsection}{\numberline {4.9.4}Classe \textit {Database}}{26}{subsubsection.4.9.4}%
-\contentsline {subsubsection}{\numberline {4.9.5}Classe \textit {Config}}{26}{subsubsection.4.9.5}%
-\contentsline {subsubsection}{\numberline {4.9.6}Classe \textit {Field}}{26}{subsubsection.4.9.6}%
-\contentsline {subsubsection}{\numberline {4.9.7}Classe \textit {GenForm}}{26}{subsubsection.4.9.7}%
+\contentsline {subsubsection}{\numberline {4.9.4}Classe \textit {Database}}{27}{subsubsection.4.9.4}%
+\contentsline {subsubsection}{\numberline {4.9.5}Classe \textit {Config}}{27}{subsubsection.4.9.5}%
+\contentsline {subsubsection}{\numberline {4.9.6}Classe \textit {Field}}{27}{subsubsection.4.9.6}%
+\contentsline {subsubsection}{\numberline {4.9.7}Classe \textit {GenForm}}{27}{subsubsection.4.9.7}%
 \contentsline {subsubsection}{\numberline {4.9.8}Classe \textit {NotificationManager}}{27}{subsubsection.4.9.8}%
 \contentsline {subsubsection}{\numberline {4.9.9}Classe \textit {SSEConnection}}{27}{subsubsection.4.9.9}%
 \contentsline {subsection}{\numberline {4.10}Diagrama entidade-relacionamento (DER)}{28}{subsection.4.10}%
-\contentsline {subsubsection}{\numberline {4.10.1}\textit {User}}{29}{subsubsection.4.10.1}%
-\contentsline {subsubsection}{\numberline {4.10.2}\textit {Password}}{29}{subsubsection.4.10.2}%
-\contentsline {subsubsection}{\numberline {4.10.3}\textit {Filters}}{29}{subsubsection.4.10.3}%
+\contentsline {subsubsection}{\numberline {4.10.1}\textit {User}}{28}{subsubsection.4.10.1}%
+\contentsline {subsubsection}{\numberline {4.10.2}\textit {Password}}{28}{subsubsection.4.10.2}%
+\contentsline {subsubsection}{\numberline {4.10.3}\textit {Filters}}{28}{subsubsection.4.10.3}%
 \contentsline {subsubsection}{\numberline {4.10.4}\textit {Logs}}{29}{subsubsection.4.10.4}%
-\contentsline {section}{\numberline {5}Protótipos de tela}{30}{section.5}%
-\contentsline {subsection}{\numberline {5.1}\textit {\textit {Webservice}}}{30}{subsection.5.1}%
-\contentsline {subsubsection}{\numberline {5.1.1}Tela de \textit {login}}{30}{subsubsection.5.1.1}%
-\contentsline {subsubsection}{\numberline {5.1.2}Tela de Cadastro}{31}{subsubsection.5.1.2}%
-\contentsline {subsubsection}{\numberline {5.1.3}Tela de recuperação de senha.}{32}{subsubsection.5.1.3}%
+\contentsline {section}{\numberline {5}Protótipos de tela}{29}{section.5}%
+\contentsline {subsection}{\numberline {5.1}\textit {\textit {Webservice}}}{29}{subsection.5.1}%
+\contentsline {subsubsection}{\numberline {5.1.1}Tela de \textit {login}}{29}{subsubsection.5.1.1}%
+\contentsline {subsubsection}{\numberline {5.1.2}Tela de Cadastro}{30}{subsubsection.5.1.2}%
+\contentsline {subsubsection}{\numberline {5.1.3}Tela de recuperação de senha.}{31}{subsubsection.5.1.3}%
 \contentsline {subsubsection}{\numberline {5.1.4}Tela do \textit {Dashboard}.}{32}{subsubsection.5.1.4}%
 \contentsline {subsubsection}{\numberline {5.1.5}Tela de adição de credencial.}{33}{subsubsection.5.1.5}%
 \contentsline {subsubsection}{\numberline {5.1.6}Tela de gerenciamento de filtros.}{34}{subsubsection.5.1.6}%
@@ -56,6 +57,15 @@
 \contentsline {subsubsection}{\numberline {5.2.3}\textit {Popup} de configurações}{39}{subsubsection.5.2.3}%
 \contentsline {subsubsection}{\numberline {5.2.4}\textit {Popup} de conta}{40}{subsubsection.5.2.4}%
 \contentsline {section}{\numberline {6}Conclusões}{41}{section.6}%
+\contentsline {section}{\numberline {7}Referências}{42}{section.7}%
+\babel@toc {portuguese}{}\relax 
+\babel@toc {portuguese}{}\relax 
+\babel@toc {portuguese}{}\relax 
+\babel@toc {portuguese}{}\relax 
+\babel@toc {portuguese}{}\relax 
+\babel@toc {portuguese}{}\relax 
+\babel@toc {portuguese}{}\relax 
+\babel@toc {portuguese}{}\relax 
 \babel@toc {portuguese}{}\relax 
 \babel@toc {portuguese}{}\relax 
 \babel@toc {portuguese}{}\relax 

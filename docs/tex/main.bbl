@@ -41,6 +41,153 @@
       \verb https://1password.com
       \endverb
     \endentry
+    \entry{abbate1999}{book}{}{}
+      \name{author}{1}{}{%
+        {{hash=AJ}{%
+           family={Abbate},
+           familyi={A\bibinitperiod},
+           given={Janet},
+           giveni={J\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {MIT Press}%
+      }
+      \strng{namehash}{AJ1}
+      \strng{fullhash}{AJ1}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Inventing the Internet}
+      \field{year}{1999}
+      \field{dateera}{ce}
+      \list{location}{1}{%
+        {Cambridge}%
+      }
+    \endentry
+    \entry{anderson2020}{book}{}{}
+      \name{author}{1}{}{%
+        {{hash=AR}{%
+           family={Anderson},
+           familyi={A\bibinitperiod},
+           given={Ross},
+           giveni={R\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Wiley}%
+      }
+      \strng{namehash}{AR1}
+      \strng{fullhash}{AR1}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{edition}{3}
+      \field{title}{Security Engineering: A Guide to Building Dependable Distributed Systems}
+      \field{year}{2020}
+      \field{dateera}{ce}
+      \list{location}{1}{%
+        {Indianapolis}%
+      }
+    \endentry
+    \entry{berners1999}{book}{}{}
+      \name{author}{2}{}{%
+        {{hash=BLT}{%
+           family={Berners-Lee},
+           familyi={B\bibinithyphendelim L\bibinitperiod},
+           given={Tim},
+           giveni={T\bibinitperiod}}}%
+        {{hash=FM}{%
+           family={Fischetti},
+           familyi={F\bibinitperiod},
+           given={Mark},
+           giveni={M\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {HarperCollins}%
+      }
+      \strng{namehash}{BLTFM1}
+      \strng{fullhash}{BLTFM1}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Weaving the Web: The Original Design and Ultimate Destiny of the World Wide Web}
+      \field{year}{1999}
+      \field{dateera}{ce}
+      \list{location}{1}{%
+        {San Francisco}%
+      }
+    \endentry
+    \entry{bonneau2012}{inproceedings}{}{}
+      \name{author}{4}{}{%
+        {{hash=BJ}{%
+           family={Bonneau},
+           familyi={B\bibinitperiod},
+           given={Joseph},
+           giveni={J\bibinitperiod}}}%
+        {{hash=HC}{%
+           family={Herley},
+           familyi={H\bibinitperiod},
+           given={Cormac},
+           giveni={C\bibinitperiod}}}%
+        {{hash=OOPV}{%
+           family={Oorschot},
+           familyi={O\bibinitperiod},
+           given={Paul\bibnamedelima C.\bibnamedelimi van},
+           giveni={P\bibinitperiod\bibinitdelim C\bibinitperiod\bibinitdelim v\bibinitperiod}}}%
+        {{hash=SF}{%
+           family={Stajano},
+           familyi={S\bibinitperiod},
+           given={Frank},
+           giveni={F\bibinitperiod}}}%
+      }
+      \strng{namehash}{BJ+1}
+      \strng{fullhash}{BJHCOOPVSF1}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{IEEE Symposium on Security and Privacy}
+      \field{pages}{553\bibrangedash 567}
+      \field{title}{The Quest to Replace Passwords: A Framework for Comparative Evaluation of Web Authentication Schemes}
+      \field{year}{2012}
+      \field{dateera}{ce}
+    \endentry
+    \entry{castells1996}{book}{}{}
+      \name{author}{1}{}{%
+        {{hash=CM}{%
+           family={Castells},
+           familyi={C\bibinitperiod},
+           given={Manuel},
+           giveni={M\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Paz e Terra}%
+      }
+      \strng{namehash}{CM1}
+      \strng{fullhash}{CM1}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{A Sociedade em Rede}
+      \field{year}{1996}
+      \field{dateera}{ce}
+      \list{location}{1}{%
+        {São Paulo}%
+      }
+    \endentry
     \entry{chrome_extensions}{online}{}{}
       \list{organization}{1}{%
         {Google}%
@@ -50,7 +197,6 @@
       \field{extradatescope}{labelyear}
       \field{labeldatesource}{}
       \field{labeltitlesource}{title}
-      \field{note}{URL original, não utilizar links do Google Translate.}
       \field{title}{Chrome Extensions: Develop - Overview}
       \field{urlday}{8}
       \field{urlmonth}{11}
@@ -62,6 +208,35 @@
       \endverb
       \verb{url}
       \verb https://developer.chrome.com/docs/extensions/develop
+      \endverb
+    \endentry
+    \entry{maindugweb}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=GL}{%
+           family={Gotardo},
+           familyi={G\bibinitperiod},
+           given={Leonardo},
+           giveni={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{GL1}
+      \strng{fullhash}{GL1}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{MainDugWeb: Repositório do Projeto MainDug}
+      \field{urlday}{18}
+      \field{urlmonth}{12}
+      \field{urlyear}{2024}
+      \field{year}{2024}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://github.com/LeoGotardo/MainDugWeb
+      \endverb
+      \verb{url}
+      \verb https://github.com/LeoGotardo/MainDugWeb
       \endverb
     \endentry
     \entry{google_passwords}{online}{}{}
@@ -86,6 +261,33 @@
       \verb https://passwords.google.com
       \endverb
     \endentry
+    \entry{florencio2007}{inproceedings}{}{}
+      \name{author}{2}{}{%
+        {{hash=FD}{%
+           family={Florêncio},
+           familyi={F\bibinitperiod},
+           given={Dinei},
+           giveni={D\bibinitperiod}}}%
+        {{hash=HC}{%
+           family={Herley},
+           familyi={H\bibinitperiod},
+           given={Cormac},
+           giveni={C\bibinitperiod}}}%
+      }
+      \strng{namehash}{FDHC1}
+      \strng{fullhash}{FDHC1}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the 16th International Conference on World Wide Web}
+      \field{pages}{657\bibrangedash 666}
+      \field{title}{A Large-Scale Study of Web Password Habits}
+      \field{year}{2007}
+      \field{dateera}{ce}
+    \endentry
     \entry{lastpass}{online}{}{}
       \list{organization}{1}{%
         {LastPass}%
@@ -107,6 +309,32 @@
       \verb{url}
       \verb https://www.lastpass.com/pt
       \endverb
+    \endentry
+    \entry{nissenbaum2009}{book}{}{}
+      \name{author}{1}{}{%
+        {{hash=NH}{%
+           family={Nissenbaum},
+           familyi={N\bibinitperiod},
+           given={Helen},
+           giveni={H\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Stanford University Press}%
+      }
+      \strng{namehash}{NH1}
+      \strng{fullhash}{NH1}
+      \field{sortinit}{N}
+      \field{sortinithash}{22369a73d5f88983a108b63f07f37084}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Privacy in Context: Technology, Policy, and the Integrity of Social Life}
+      \field{year}{2009}
+      \field{dateera}{ce}
+      \list{location}{1}{%
+        {Stanford}%
+      }
     \endentry
     \entry{owasp_crypto_storage}{online}{}{}
       \list{organization}{1}{%
@@ -174,6 +402,93 @@
       \verb https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
       \endverb
     \endentry
+    \entry{sasse2001}{article}{}{}
+      \name{author}{3}{}{%
+        {{hash=SMA}{%
+           family={Sasse},
+           familyi={S\bibinitperiod},
+           given={M.\bibnamedelima Angela},
+           giveni={M\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
+        {{hash=BS}{%
+           family={Brostoff},
+           familyi={B\bibinitperiod},
+           given={Sacha},
+           giveni={S\bibinitperiod}}}%
+        {{hash=WD}{%
+           family={Weirich},
+           familyi={W\bibinitperiod},
+           given={Dirk},
+           giveni={D\bibinitperiod}}}%
+      }
+      \strng{namehash}{SMABSWD1}
+      \strng{fullhash}{SMABSWD1}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{BT Technology Journal}
+      \field{number}{3}
+      \field{pages}{122\bibrangedash 131}
+      \field{title}{Transforming the 'Weakest Link': A Human/Computer Interaction Approach to Usable and Effective Security}
+      \field{volume}{19}
+      \field{year}{2001}
+      \field{dateera}{ce}
+    \endentry
+    \entry{schneier1996}{book}{}{}
+      \name{author}{1}{}{%
+        {{hash=SB}{%
+           family={Schneier},
+           familyi={S\bibinitperiod},
+           given={Bruce},
+           giveni={B\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {John Wiley \& Sons}%
+      }
+      \strng{namehash}{SB1}
+      \strng{fullhash}{SB1}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{edition}{2}
+      \field{title}{Applied Cryptography: Protocols, Algorithms, and Source Code in C}
+      \field{year}{1996}
+      \field{dateera}{ce}
+      \list{location}{1}{%
+        {New York}%
+      }
+    \endentry
+    \entry{schneier2015}{book}{}{}
+      \name{author}{1}{}{%
+        {{hash=SB}{%
+           family={Schneier},
+           familyi={S\bibinitperiod},
+           given={Bruce},
+           giveni={B\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {W. W. Norton \& Company}%
+      }
+      \strng{namehash}{SB1}
+      \strng{fullhash}{SB1}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Data and Goliath: The Hidden Battles to Collect Your Data and Control Your World}
+      \field{year}{2015}
+      \field{dateera}{ce}
+      \list{location}{1}{%
+        {New York}%
+      }
+    \endentry
     \entry{sqlalchemy}{online}{}{}
       \list{organization}{1}{%
         {SQLAlchemy}%
@@ -240,7 +555,28 @@
       \verb https://www.postgresql.org
       \endverb
     \endentry
+    \entry{verizon2023}{online}{}{}
+      \list{organization}{1}{%
+        {Verizon}%
+      }
+      \field{sortinit}{V}
+      \field{sortinithash}{afb52128e5b4dc4b843768c0113d673b}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labeltitlesource}{title}
+      \field{title}{Data Breach Investigations Report}
+      \field{urlday}{18}
+      \field{urlmonth}{12}
+      \field{urlyear}{2024}
+      \field{year}{2023}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://www.verizon.com/business/resources/reports/dbir/
+      \endverb
+      \verb{url}
+      \verb https://www.verizon.com/business/resources/reports/dbir/
+      \endverb
+    \endentry
   \enddatalist
 \endrefsection
 \endinput
-
