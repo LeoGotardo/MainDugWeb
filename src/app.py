@@ -6,13 +6,9 @@ from cryptograph import Cryptograph
 from dataclasses import dataclass
 from functools import wraps
 from icecream import ic
+from src.api.index import blueprint as apiBlueprint
 
 import requests, json, os, traceback, sys
-
-try:
-    from werkzeug.urls import url_parse
-except ImportError:
-    from urllib.parse import urlparse as url_parse
 
 
 database = Database()
@@ -22,6 +18,8 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 current_user : User | None
 ITEM_CONFIGS = json.load(open('./src/config.json', 'r'))
+apiBlueprint = apiBlueprint
+app.register_blueprint(apiBlueprint, url_prefix='/api')
 
 
 def onlySys(f):

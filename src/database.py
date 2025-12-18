@@ -1025,7 +1025,36 @@ class Database:
                 return False, 'User already exists'
         except Exception as e:
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+      
         
+    def addFlag(self, id: str, name: str) -> tuple[bool, str]:
+        try:
+            user = self.session.query(User).filter_by(id=id).first()
+            if user is None:
+                return False, 'Invalid user'
+            flag = Filters(userId=id, name=name)
+            self.session.add(flag)
+            self.session.commit()
+            
+            return True, 'Flag added'
+        except Exception as e:
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+        
+        
+    def deleteFlag(self, id: str, name: str) -> tuple[bool, str]:
+        try:
+            flag = self.session.query(Filters).filter_by(id=id, name=name).first()
+            
+            if flag is not None:
+                self.session.delete(flag)
+                self.session.commit()
+                
+                return True, 'Flag deleted'
+            else:
+                return False, 'Flag not found'
+        except Exception as e:
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+
 
     def deleteUser(self, id: str) -> tuple[bool, str]:
         try:
