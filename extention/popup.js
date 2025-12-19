@@ -1,289 +1,248 @@
-// ==========================================
-// POPUP.JS - MainDug Extension (API Integrado)
-// ==========================================
-
-// Configuração da API
-const API_BASE_URL = 'http://localhost:5000/api';
-
-// Estado global
+// Estado da aplicação
 let currentUser = null;
-let authToken = null;
-let allPasswords = [];
-let settings = {
-    autoFill: true,
-    autoSave: true,
-    notifications: true,
-    darkMode: false
-};
+let passwords = [];
+const settingsKey = 'maindug_settings';
 
-// ==========================================
-// INICIALIZAÇÃO
-// ==========================================
-
-document.addEventListener('DOMContentLoaded', async function() {
-    await loadSettings();
-    await checkAuth();
+// Inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuthStatus();
+    setupTabNavigation();
     setupEventListeners();
-    applyTheme();
+    loadSettings();
 });
 
-// ==========================================
-// AUTENTICAÇÃO
-// ==========================================
-
-async function checkAuth() {
-    const stored = await chrome.storage.local.get(['authToken', 'currentUser']);
-    
-    if (stored.authToken && stored.currentUser) {
-        authToken = stored.authToken;
-        currentUser = stored.currentUser;
-        
-        // Verificar se token ainda é válido
-        try {
-            const response = await fetch(`${API_BASE_URL}/auth/verify`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                }
-            });
-            
-            if (response.ok) {
-                showMainInterface();
-                await loadPasswords();
-            } else {
-                await handleLogout();
-            }
-        } catch (error) {
-            console.error('Erro ao verificar token:', error);
-            await handleLogout();
+// Verificar status de autenticação
+async function checkAuthStatus() {
+    chrome.storage.local.get(['authToken', 'userEmail'], (result) => {
+        if (result.authToken && result.userEmail) {
+            currentUser = { email: result.userEmail, token: result.authToken };
+            showAuthenticatedUI();
+            loadPasswords();
+            document.querySelector('.tab[data-tab="passwords"]').click();
+        } else {
+            showUnauthenticatedUI();
         }
-    } else {
-        showLoginInterface();
-    }
+    });
 }
 
-async function handleLogin(event) {
-    event.preventDefault();
+// Configurar navegação por abas
+function setupTabNavigation() {
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            
+            // Atualizar abas ativas
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            // Atualizar conteúdo
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            
+            // Carregar senhas quando abrir a aba
+            if (tabName === 'passwords' && currentUser) { // Corrigido para carregar apenas se logado
+                loadPasswords();
+            }
+        });
+    });
+}
+
+// Configurar event listeners
+function setupEventListeners() {
+    // Login
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    document.getElementById('registerBtn').addEventListener('click', handleRegister);
+    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
     
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
+    // Busca
+    document.getElementById('searchPasswords').addEventListener('input', handleSearch);
     
-    if (!email || !password) {
-        showStatus('loginStatus', 'Por favor, preencha todos os campos.', 'error');
-        return;
-    }
+    // Configurações
+    document.getElementById('autoSave').addEventListener('change', saveSettings);
+    document.getElementById('autoFill').addEventListener('change', saveSettings);
+    document.getElementById('notifications').addEventListener('change', saveSettings);
+    document.getElementById('darkMode').addEventListener('change', (e) => {
+        saveSettings();
+        toggleDarkMode(e.target.checked);
+    });
+    
+    // Exportar dados
+    document.getElementById('exportData').addEventListener('click', exportPasswords);
+}
+
+// Handler de login
+async function handleLogin(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    showStatus('loginStatus', 'Conectando...', 'info');
     
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        const response = await fetch('http://localhost:5000/api/auth/login', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
         
         const data = await response.json();
         
         if (response.ok) {
-            authToken = data.token;
-            currentUser = {
-                userId: data.userId,
-                email: data.user.email,
-                name: data.user.name
-            };
+            // Salvar token e email
+            chrome.storage.local.set({
+                authToken: data.token,
+                userEmail: email,
+                userId: data.userId
+            });
             
-            await chrome.storage.local.set({ authToken, currentUser });
+            currentUser = { email, token: data.token };
+            showStatus('loginStatus', 'Login realizado com sucesso!', 'success');
             
-            showMainInterface();
-            await loadPasswords();
-            showToast('Login realizado com sucesso!');
+            setTimeout(() => {
+                showAuthenticatedUI();
+                document.querySelector('[data-tab="passwords"]').click();
+            }, 1000);
         } else {
             showStatus('loginStatus', data.error || 'Erro ao fazer login', 'error');
         }
     } catch (error) {
-        console.error('Erro no login:', error);
         showStatus('loginStatus', 'Erro de conexão com o servidor', 'error');
     }
 }
 
+// Handler de registro
 async function handleRegister() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
     
     if (!email || !password) {
-        showStatus('loginStatus', 'Por favor, preencha todos os campos.', 'error');
+        showStatus('loginStatus', 'Preencha todos os campos', 'error');
         return;
     }
     
-    if (password.length < 6) {
-        showStatus('loginStatus', 'A senha deve ter pelo menos 6 caracteres.', 'error');
-        return;
-    }
+    showStatus('loginStatus', 'Criando conta...', 'info');
     
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        const response = await fetch('http://localhost:5000/api/auth/register', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-                email, 
-                password,
-                name: email.split('@')[0]
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
         });
         
         const data = await response.json();
         
         if (response.ok) {
-            showStatus('loginStatus', 'Conta criada! Fazendo login...', 'success');
-            
-            // Fazer login automático
-            setTimeout(() => {
-                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-            }, 1000);
+            showStatus('loginStatus', 'Conta criada com sucesso! Faça login.', 'success');
+            document.getElementById('loginForm').reset();
         } else {
             showStatus('loginStatus', data.error || 'Erro ao criar conta', 'error');
         }
     } catch (error) {
-        console.error('Erro no registro:', error);
         showStatus('loginStatus', 'Erro de conexão com o servidor', 'error');
     }
 }
 
-async function handleLogout() {
-    try {
-        if (authToken) {
-            await fetch(`${API_BASE_URL}/auth/logout`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Erro ao fazer logout:', error);
-    }
-    
-    await chrome.storage.local.remove(['authToken', 'currentUser']);
-    authToken = null;
-    currentUser = null;
-    allPasswords = [];
-    showLoginInterface();
-    showToast('Você saiu da sua conta.');
-}
-
-// ==========================================
-// GERENCIAMENTO DE SENHAS
-// ==========================================
-
-async function loadPasswords() {
-    if (!currentUser || !authToken) return;
-    
-    const loader = document.getElementById('passwordLoader');
-    const emptyState = document.getElementById('emptyState');
-    
-    loader.style.display = 'block';
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/passwords`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-        
-        if (response.ok) {
-            allPasswords = await response.json();
-            renderPasswords(allPasswords);
-            
-            if (allPasswords.length === 0) {
-                emptyState.style.display = 'block';
-            } else {
-                emptyState.style.display = 'none';
-            }
-        } else {
-            showToast('Erro ao carregar senhas');
-        }
-    } catch (error) {
-        console.error('Erro ao carregar senhas:', error);
-        showToast('Erro de conexão ao carregar senhas');
-    } finally {
-        loader.style.display = 'none';
-    }
-}
-
-function renderPasswords(passwords) {
-    const passwordList = document.getElementById('passwordList');
-    passwordList.innerHTML = '';
-    
-    passwords.forEach((pwd) => {
-        const item = document.createElement('div');
-        item.className = 'password-item';
-        item.innerHTML = `
-            <div class="password-info">
-                <span class="site-name">${escapeHtml(pwd.site)}</span>
-                <span class="username">${escapeHtml(pwd.username)}</span>
-            </div>
-            <button class="copy-btn" title="Copiar senha" data-id="${pwd.id}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-            </button>
-        `;
-        
-        item.querySelector('.copy-btn').addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await copyPassword(pwd.id);
-        });
-        
-        item.addEventListener('click', () => fillPassword(pwd.id));
-        
-        passwordList.appendChild(item);
+// Handler de logout
+function handleLogout() {
+    chrome.storage.local.remove(['authToken', 'userEmail', 'userId'], () => {
+        currentUser = null;
+        passwords = [];
+        showUnauthenticatedUI();
+        document.querySelector('.tab[data-tab="login"]').click();
     });
 }
 
-async function savePassword(site, username, password, url = null) {
-    if (!currentUser || !authToken) return;
+// Carregar senhas salvas
+async function loadPasswords() {
+    if (!currentUser) return;
+    
+    document.getElementById('passwordLoader').style.display = 'block';
+    document.getElementById('passwordList').innerHTML = '';
     
     try {
-        const response = await fetch(`${API_BASE_URL}/passwords`, {
-            method: 'POST',
+        const response = await fetch('http://localhost:5000/api/passwords', {
             headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                site,
-                username,
-                password,
-                url
-            })
+                'Authorization': `Bearer ${currentUser.token}`
+            }
         });
         
-        const data = await response.json();
-        
         if (response.ok) {
-            await loadPasswords();
-            showToast('Senha salva com sucesso!');
-            return true;
+            passwords = await response.json();
+            displayPasswords(passwords);
         } else {
-            showToast(data.error || 'Erro ao salvar senha');
-            return false;
+            showEmptyState();
         }
     } catch (error) {
-        console.error('Erro ao salvar senha:', error);
-        showToast('Erro de conexão ao salvar senha');
-        return false;
+        showEmptyState('Erro ao carregar senhas');
+    } finally {
+        document.getElementById('passwordLoader').style.display = 'none';
     }
 }
 
+// Exibir senhas
+function displayPasswords(passwordsToShow) {
+    const listElement = document.getElementById('passwordList');
+    
+    if (passwordsToShow.length === 0) {
+        showEmptyState('Nenhuma senha salva ainda');
+        return;
+    }
+    
+    listElement.innerHTML = passwordsToShow.map(pwd => `
+        <div class="password-item" data-id="${pwd._id || pwd.id}">
+            <div class="password-info">
+                <div class="password-site">${pwd.site || new URL(pwd.url).hostname}</div>
+                <div class="password-username">${pwd.username}</div>
+            </div>
+            <div class="password-actions">
+                <button class="icon-btn copy-btn" data-id="${pwd._id || pwd.id}" title="Copiar senha">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+                    </svg>
+                </button>
+                <button class="icon-btn fill-btn" data-id="${pwd._id || pwd.id}" title="Preencher">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+                <button class="icon-btn delete-btn" data-id="${pwd._id || pwd.id}" title="Excluir">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `).join('');
+
+    // Adicionar event listeners aos botões criados dinamicamente
+    listElement.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => copyPassword(e.currentTarget.dataset.id));
+    });
+    listElement.querySelectorAll('.fill-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => fillPassword(e.currentTarget.dataset.id));
+    });
+    listElement.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => deletePassword(e.currentTarget.dataset.id));
+    });
+}
+
+// Copiar senha
 async function copyPassword(passwordId) {
-    if (!authToken) return;
+    // Corrigido para funcionar com _id do MongoDB ou id
+    const pwd = passwords.find(p => (p._id || p.id) == passwordId);
+    if (!pwd) return;
     
     try {
-        const response = await fetch(`${API_BASE_URL}/passwords/${passwordId}/decrypt`, {
+        const response = await fetch(`http://localhost:5000/api/passwords/${passwordId}/decrypt`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${currentUser.token}`
             }
         });
         
@@ -291,311 +250,260 @@ async function copyPassword(passwordId) {
             const data = await response.json();
             await navigator.clipboard.writeText(data.password);
             showToast('Senha copiada!');
-        } else {
-            showToast('Erro ao descriptografar senha');
         }
     } catch (error) {
-        console.error('Erro ao copiar senha:', error);
-        showToast('Erro ao copiar senha');
+        showToast('Erro ao copiar senha', 'error');
     }
 }
 
+// Preencher senha na página ativa
 async function fillPassword(passwordId) {
-    if (!authToken) return;
+    const pwd = passwords.find(p => (p._id || p.id) == passwordId);
+    if (!pwd) return;
     
     try {
-        const pwd = allPasswords.find(p => p.id === passwordId);
-        if (!pwd) return;
-        
-        const response = await fetch(`${API_BASE_URL}/passwords/${passwordId}/decrypt`, {
+        const response = await fetch(`http://localhost:5000/api/passwords/${passwordId}/decrypt`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${currentUser.token}`
             }
         });
         
         if (response.ok) {
             const data = await response.json();
             
-            // Enviar mensagem para content script
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            
-            await chrome.tabs.sendMessage(tab.id, {
-                type: 'fillPassword',
-                data: {
-                    username: pwd.username,
-                    password: data.password
-                }
+            // Enviar mensagem para a aba ativa
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                    type: 'fillPassword',
+                    data: {
+                        username: pwd.username,
+                        password: data.password
+                    }
+                });
             });
             
-            showToast('Formulário preenchido!');
+            // Fechar popup
             window.close();
-        } else {
-            showToast('Erro ao descriptografar senha');
         }
     } catch (error) {
-        console.error('Erro ao preencher:', error);
-        showToast('Erro ao preencher formulário');
+        showToast('Erro ao preencher senha', 'error');
     }
 }
 
+// Deletar senha
 async function deletePassword(passwordId) {
-    if (!authToken) return;
-    
     if (!confirm('Tem certeza que deseja excluir esta senha?')) return;
     
     try {
-        const response = await fetch(`${API_BASE_URL}/passwords/${passwordId}`, {
+        const response = await fetch(`http://localhost:5000/api/passwords/${passwordId}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${currentUser.token}`
             }
         });
         
         if (response.ok) {
-            await loadPasswords();
+            passwords = passwords.filter(p => (p._id || p.id) != passwordId);
+            displayPasswords(passwords);
             showToast('Senha excluída');
-        } else {
-            showToast('Erro ao excluir senha');
         }
     } catch (error) {
-        console.error('Erro ao excluir:', error);
-        showToast('Erro ao excluir senha');
+        showToast('Erro ao excluir senha', 'error');
     }
 }
 
-// ==========================================
-// BUSCA
-// ==========================================
-
-function setupSearch() {
-    const searchInput = document.getElementById('searchPasswords');
+// Handler de busca
+function handleSearch(e) {
+    const query = e.target.value.toLowerCase();
     
-    searchInput.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        
-        const filtered = allPasswords.filter(pwd => 
-            pwd.site.toLowerCase().includes(searchTerm) || 
-            pwd.username.toLowerCase().includes(searchTerm)
-        );
-        
-        renderPasswords(filtered);
-    });
-}
-
-// ==========================================
-// CONFIGURAÇÕES
-// ==========================================
-
-async function loadSettings() {
-    const stored = await chrome.storage.local.get(['settings']);
-    if (stored.settings) {
-        settings = { ...settings, ...stored.settings };
+    if (!query) {
+        displayPasswords(passwords);
+        return;
     }
     
-    // Aplicar configurações aos elementos
-    document.getElementById('autoFill').checked = settings.autoFill;
-    document.getElementById('autoSave').checked = settings.autoSave;
-    document.getElementById('notifications').checked = settings.notifications;
-    document.getElementById('darkMode').checked = settings.darkMode;
+    const filtered = passwords.filter(pwd => 
+        pwd.site?.toLowerCase().includes(query) ||
+        pwd.url?.toLowerCase().includes(query) ||
+        pwd.username?.toLowerCase().includes(query)
+    );
+    
+    displayPasswords(filtered);
 }
 
-async function saveSettings() {
-    await chrome.storage.local.set({ settings });
+// Exportar senhas
+async function exportPasswords() {
+    if (!currentUser) {
+        showToast('Faça login primeiro', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('http://localhost:5000/api/passwords/export/csv', {
+            headers: {
+                'Authorization': `Bearer ${currentUser.token}`
+            }
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `passwords_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showToast('Senhas exportadas com sucesso');
+        }
+    } catch (error) {
+        showToast('Erro ao exportar senhas', 'error');
+    }
 }
 
-function setupSettings() {
-    // Auto Fill
-    document.getElementById('autoFill').addEventListener('change', async (e) => {
-        settings.autoFill = e.target.checked;
-        await saveSettings();
-        showToast(e.target.checked ? 'Preenchimento automático ativado' : 'Preenchimento automático desativado');
-    });
-    
-    // Auto Save
-    document.getElementById('autoSave').addEventListener('change', async (e) => {
-        settings.autoSave = e.target.checked;
-        await saveSettings();
-        showToast(e.target.checked ? 'Salvamento automático ativado' : 'Salvamento automático desativado');
-    });
-    
-    // Notifications
-    document.getElementById('notifications').addEventListener('change', async (e) => {
-        settings.notifications = e.target.checked;
-        await saveSettings();
-        showToast(e.target.checked ? 'Notificações ativadas' : 'Notificações desativadas');
-    });
-    
-    // Dark Mode
-    document.getElementById('darkMode').addEventListener('change', async (e) => {
-        settings.darkMode = e.target.checked;
-        await saveSettings();
-        applyTheme();
-        showToast(e.target.checked ? 'Modo escuro ativado' : 'Modo claro ativado');
+// Carregar configurações
+function loadSettings() {
+    chrome.storage.local.get([settingsKey], (result) => {
+        const settings = result[settingsKey] || {
+            autoSave: true,
+            autoFill: true,
+            notifications: true,
+            darkMode: false
+        };
+
+        document.getElementById('autoSave').checked = settings.autoSave;
+        document.getElementById('autoFill').checked = settings.autoFill;
+        document.getElementById('notifications').checked = settings.notifications;
+        document.getElementById('darkMode').checked = settings.darkMode;
+        
+        if (settings.darkMode) {
+            toggleDarkMode(true);
+        }
     });
 }
 
-function applyTheme() {
-    if (settings.darkMode) {
+// Salvar configurações
+function saveSettings() {
+    const settings = {
+        autoSave: document.getElementById('autoSave').checked,
+        autoFill: document.getElementById('autoFill').checked,
+        notifications: document.getElementById('notifications').checked,
+        darkMode: document.getElementById('darkMode').checked
+    };
+    
+    chrome.storage.local.set({ [settingsKey]: settings });
+}
+
+// Alternar modo escuro
+function toggleDarkMode(enabled) {
+    if (enabled) {
         document.body.classList.add('dark-mode');
     } else {
         document.body.classList.remove('dark-mode');
     }
 }
 
-// ==========================================
-// EXPORTAR DADOS
-// ==========================================
+// Mostrar UI autenticada
+function showAuthenticatedUI() {
+    const userInfo = document.getElementById('userInfo');
+    const passwordsTab = document.querySelector('.tab[data-tab="passwords"]');
+    const settingsTab = document.querySelector('.tab[data-tab="settings"]');
+    const loginTab = document.querySelector('.tab[data-tab="login"]');
 
-async function exportData() {
-    if (!authToken) return;
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/passwords/export/csv`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+    if (currentUser) {
+        document.getElementById('userEmail').textContent = currentUser.email;
+        userInfo.style.display = 'block';
         
-        if (response.ok) {
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            
-            await chrome.downloads.download({
-                url: url,
-                filename: 'maindug-passwords.csv',
-                saveAs: true
-            });
-            
-            showToast('Dados exportados com sucesso!');
-        } else {
-            showToast('Erro ao exportar dados');
-        }
-    } catch (error) {
-        console.error('Erro ao exportar:', error);
-        showToast('Erro ao exportar dados');
+        // Mostrar abas de usuário logado
+        passwordsTab.style.display = 'flex';
+        settingsTab.style.display = 'flex';
+        
+        // Esconder aba de login
+        loginTab.style.display = 'none';
     }
 }
 
-// ==========================================
-// NAVEGAÇÃO DE ABAS
-// ==========================================
+// Mostrar UI não autenticada
+function showUnauthenticatedUI() {
+    const userInfo = document.getElementById('userInfo');
+    const passwordsTab = document.querySelector('.tab[data-tab="passwords"]');
+    const settingsTab = document.querySelector('.tab[data-tab="settings"]');
+    const loginTab = document.querySelector('.tab[data-tab="login"]');
+    
+    userInfo.style.display = 'none';
 
-function setupTabs() {
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            const targetTab = tab.dataset.tab;
-            
-            // Remove active de todas
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
-            // Adiciona active na clicada
-            tab.classList.add('active');
-            document.getElementById(targetTab).classList.add('active');
-        });
-    });
+    // Esconder abas de usuário logado
+    passwordsTab.style.display = 'none';
+    settingsTab.style.display = 'none';
+
+    // Mostrar e ativar aba de login
+    loginTab.style.display = 'flex';
+    loginTab.click();
+    showEmptyState('Faça login para ver suas senhas salvas');
 }
 
-// ==========================================
-// UI
-// ==========================================
-
-function showLoginInterface() {
-    document.getElementById('mainHeader').style.display = 'none';
-    document.getElementById('mainNav').style.display = 'none';
-    
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.getElementById('login').classList.add('active');
+// Mostrar estado vazio
+function showEmptyState(message = 'Nenhuma senha salva ainda') {
+    const listElement = document.getElementById('passwordList');
+    listElement.innerHTML = `
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+            </svg>
+            <p>${message}</p>
+        </div>
+    `;
 }
 
-function showMainInterface() {
-    document.getElementById('mainHeader').style.display = 'flex';
-    document.getElementById('mainNav').style.display = 'flex';
-    document.getElementById('userInfo').style.display = 'flex';
-    document.getElementById('userEmail').textContent = currentUser.email;
-    document.getElementById('accountEmail').textContent = currentUser.email;
+// Mostrar status
+function showStatus(elementId, message, type) {
+    const element = document.getElementById(elementId);
     
-    // Atualizar foto de perfil
-    const name = currentUser.name || currentUser.email.split('@')[0];
-    document.getElementById('profilePic').src = 
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=667eea&color=fff&size=160`;
+    element.textContent = message;
+    element.className = `status-message ${type}`;
+    element.style.display = 'block';
     
-    // Mudar para aba de senhas
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    
-    document.querySelector('[data-tab="passwords"]').classList.add('active');
-    document.getElementById('passwords').classList.add('active');
+    if (type === 'success') {
+        setTimeout(() => {
+            element.style.display = 'none';
+        }, 3000);
+    }
 }
 
-function showToast(message) {
-    const toast = document.getElementById('toast');
+// Mostrar toast
+function showToast(message, type = 'success') {
+    // Criar elemento toast se não existir
+    let toast = document.getElementById('toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10000;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateX(100%);
+        `;
+        document.body.appendChild(toast);
+    }
+    
+    // Definir estilo baseado no tipo
+    const backgroundColor = type === 'error' ? '#dc3545' : '#28a745';
+    toast.style.backgroundColor = backgroundColor;
     toast.textContent = message;
-    toast.classList.add('show');
     
+    // Mostrar toast
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(0)';
+    
+    // Ocultar após 3 segundos
     setTimeout(() => {
-        toast.classList.remove('show');
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
     }, 3000);
 }
-
-function showStatus(elementId, message, type) {
-    const statusEl = document.getElementById(elementId);
-    statusEl.textContent = message;
-    statusEl.className = `status-message ${type}`;
-    statusEl.style.display = 'block';
-    
-    setTimeout(() => {
-        statusEl.style.display = 'none';
-    }, 5000);
-}
-
-// ==========================================
-// LISTENERS
-// ==========================================
-
-function setupEventListeners() {
-    // Login
-    document.getElementById('loginForm').addEventListener('submit', handleLogin);
-    document.getElementById('registerBtn').addEventListener('click', handleRegister);
-    
-    // Logout
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-    document.getElementById('logoutAccountBtn').addEventListener('click', handleLogout);
-    
-    // Busca
-    setupSearch();
-    
-    // Abas
-    setupTabs();
-    
-    // Configurações
-    setupSettings();
-    
-    // Exportar
-    document.getElementById('exportData').addEventListener('click', exportData);
-}
-
-// ==========================================
-// UTILITÁRIOS
-// ==========================================
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// ==========================================
-// MENSAGENS DO BACKGROUND
-// ==========================================
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'passwordDetected') {
-        if (settings.autoSave && currentUser && authToken) {
-            savePassword(message.site, message.username, message.password, message.url);
-        }
-    }
-    
-    sendResponse({ success: true });
-    return true;
-});
