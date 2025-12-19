@@ -6,11 +6,11 @@ function updateDashboardView() {
   const adminDashboard = document.getElementById("dashboard-admin");
 
   if (currentUserRole === "sysadmin") {
-    userDashboard.style.display = "none";
-    adminDashboard.style.display = "block";
+    if (userDashboard) userDashboard.style.display = "none";
+    if (adminDashboard) adminDashboard.style.display = "block";
   } else {
-    adminDashboard.style.display = "none";
-    userDashboard.style.display = "block";
+    if (adminDashboard) adminDashboard.style.display = "none";
+    if (userDashboard) userDashboard.style.display = "block";
   }
 }
 
@@ -31,18 +31,14 @@ document.addEventListener("DOMContentLoaded", function () {
   const THEME_KEY = "theme";
   const COLOR_KEY = "primaryColor";
 
-  // --- Funções Helper de Cor (precisam estar disponíveis para os listeners) ---
+  // --- Funções Helper de Cor ---
   function hexToRgb(hex) {
-    let r = 0,
-      g = 0,
-      b = 0;
+    let r = 0, g = 0, b = 0;
     if (hex.length == 4) {
-      // #f03
       r = parseInt(hex[1] + hex[1], 16);
       g = parseInt(hex[2] + hex[2], 16);
       b = parseInt(hex[3] + hex[3], 16);
     } else if (hex.length == 7) {
-      // #ff0033
       r = parseInt(hex.substring(1, 3), 16);
       g = parseInt(hex.substring(3, 5), 16);
       b = parseInt(hex.substring(5, 7), 16);
@@ -51,9 +47,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function hexToHsl(hex) {
-    let r = 0,
-      g = 0,
-      b = 0;
+    let r = 0, g = 0, b = 0;
     if (hex.length == 4) {
       r = parseInt(hex[1] + hex[1], 16);
       g = parseInt(hex[2] + hex[2], 16);
@@ -66,26 +60,17 @@ document.addEventListener("DOMContentLoaded", function () {
     r /= 255;
     g /= 255;
     b /= 255;
-    let max = Math.max(r, g, b),
-      min = Math.min(r, g, b);
-    let h,
-      s,
-      l = (max + min) / 2;
+    let max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
     if (max == min) {
-      h = s = 0; // grayscale
+      h = s = 0;
     } else {
       let d = max - min;
       s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
       switch (max) {
-        case r:
-          h = (g - b) / d + (g < b ? 6 : 0);
-          break;
-        case g:
-          h = (b - r) / d + 2;
-          break;
-        case b:
-          h = (r - g) / d + 4;
-          break;
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
       }
       h /= 6;
     }
@@ -109,23 +94,16 @@ document.addEventListener("DOMContentLoaded", function () {
       root.style.setProperty("--page-bg", `hsl(${h}, ${bgSat}%, 10%)`);
       root.style.setProperty("--card-bg", `hsl(${h}, ${bgSat}%, 15%)`);
       root.style.setProperty("--input-bg", `hsl(${h}, ${bgSat}%, 12%)`);
-      root.style.setProperty(
-        "--custom-border-color",
-        `hsl(${h}, ${borderSat}%, 25%)`
-      );
+      root.style.setProperty("--custom-border-color", `hsl(${h}, ${borderSat}%, 25%)`);
       root.style.setProperty("--text-primary", `hsl(${h}, ${bgSat}%, 95%)`);
       root.style.setProperty("--text-secondary", `hsl(${h}, ${bgSat}%, 65%)`);
       root.style.setProperty("--table-striped-bg", `hsl(${h}, ${bgSat}%, 12%)`);
       root.style.setProperty("--table-hover-bg", `hsl(${h}, ${bgSat}%, 20%)`);
     } else {
-      // light
       root.style.setProperty("--page-bg", `hsl(${h}, ${bgSat}%, 98%)`);
       root.style.setProperty("--card-bg", `hsl(${h}, ${bgSat}%, 100%)`);
       root.style.setProperty("--input-bg", `hsl(${h}, ${bgSat}%, 100%)`);
-      root.style.setProperty(
-        "--custom-border-color",
-        `hsl(${h}, ${borderSat}%, 90%)`
-      );
+      root.style.setProperty("--custom-border-color", `hsl(${h}, ${borderSat}%, 90%)`);
       root.style.setProperty("--text-primary", `hsl(${h}, ${bgSat}%, 10%)`);
       root.style.setProperty("--text-secondary", `hsl(${h}, ${bgSat}%, 40%)`);
       root.style.setProperty("--table-striped-bg", `hsl(${h}, ${bgSat}%, 95%)`);
@@ -133,6 +111,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // Torna applyAppTheme global para uso em account.html
+  window.applyAppTheme = applyAppTheme;
 
   // --- Lógica do Seletor de Tema ---
   const themeSwitcher = document.getElementById("theme-switcher");
@@ -206,17 +186,16 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll(".image-input-container").forEach((container) => {
     const input = container.querySelector('input[type="file"]');
     const preview = container.querySelector(".image-input-preview");
-    const previewPlaceholder = container.querySelector(".image-input-placeholder");
     const previewImg = container.querySelector("img");
 
-    if (preview) {
+    if (preview && input) {
       preview.addEventListener("click", () => input.click());
     }
 
-    if (input) {
+    if (input && previewImg) {
       input.addEventListener("change", function () {
         const file = this.files[0];
-        if (file && previewImg) {
+        if (file) {
           const reader = new FileReader();
           reader.onload = function (e) {
             previewImg.src = e.target.result;
@@ -269,17 +248,69 @@ document.addEventListener("DOMContentLoaded", function () {
       const selectedLogs = Array.from(document.querySelectorAll(".log-checkbox:checked"))
         .map(checkbox => checkbox.value);
       
-      fetch("/api/log/deleteLogs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ logs: selectedLogs }),
-      }).then((response) => {
-        if (response.ok) {
-          alert("Logs excluídos com sucesso.");
+      if (selectedLogs.length === 0) {
+        if (window.customAlert) {
+          window.customAlert.warning('Selecione pelo menos um log para excluir');
         } else {
-          alert("Erro ao excluir logs.");
+          alert('Selecione pelo menos um log para excluir');
         }
-      });
+        return;
+      }
+      
+      const confirmMsg = `Tem certeza que deseja excluir ${selectedLogs.length} log${selectedLogs.length > 1 ? 's' : ''}?`;
+      
+      const executeDeletion = () => {
+        const loading = window.showLoading ? window.showLoading('Excluindo logs...') : null;
+        
+        fetch("/moreInfo", {
+          method: "DELETE",
+          headers: { 
+            "Content-Type": "application/x-www-form-urlencoded" 
+          },
+          body: new URLSearchParams({
+            'logs': selectedLogs.join(',')
+          })
+        })
+        .then((response) => response.json())
+        .then((data) => {
+          if (loading && loading.close) loading.close();
+          
+          if (data.success) {
+            if (window.customAlert) {
+              window.customAlert.success(data.message || 'Logs excluídos com sucesso').then(() => {
+                window.location.reload();
+              });
+            } else {
+              alert(data.message || 'Logs excluídos com sucesso');
+              window.location.reload();
+            }
+          } else {
+            if (window.customAlert) {
+              window.customAlert.error(data.message || 'Erro ao excluir logs');
+            } else {
+              alert(data.message || 'Erro ao excluir logs');
+            }
+          }
+        })
+        .catch((error) => {
+          if (loading && loading.close) loading.close();
+          console.error('Erro:', error);
+          
+          if (window.customAlert) {
+            window.customAlert.error('Erro ao comunicar com o servidor');
+          } else {
+            alert('Erro ao comunicar com o servidor');
+          }
+        });
+      };
+      
+      if (window.customAlert) {
+        window.customAlert.confirm(confirmMsg, 'Confirmar Exclusão').then(confirmed => {
+          if (confirmed) executeDeletion();
+        });
+      } else {
+        if (confirm(confirmMsg)) executeDeletion();
+      }
     });
   }
 
@@ -324,7 +355,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const button = event.relatedTarget;
       const site = button.getAttribute("data-site");
       const user = button.getAttribute("data-user");
-      const pass = button.getAttribute("data-pass");
       const flags = button.getAttribute("data-flags");
 
       const modalTitle = editPasswordModal.querySelector(".modal-title");
@@ -337,55 +367,21 @@ document.addEventListener("DOMContentLoaded", function () {
       if (modalTitle) modalTitle.textContent = "Editar: " + site;
       if (siteInput) siteInput.value = site;
       if (usernameInput) usernameInput.value = user;
-      if (flagsInput) flagsInput.value = flags || "";
+      
+      // Limpar senha (opcional na edição)
       if (passInput) {
-        passInput.value = pass;
+        passInput.value = "";
         passInput.type = "password";
       }
       if (toggleIcon) toggleIcon.className = "bi bi-eye-fill";
-    });
-  }
-
-  // Simula o salvamento do formulário de Edição
-  const editForm = document.getElementById("editPasswordForm");
-  if (editForm) {
-    editForm.addEventListener("submit", function (e) {
-      e.preventDefault();
       
-      const loginInput = document.getElementById("edit-username");
-      const siteInput = document.getElementById("edit-site");
-      const passwordInput = document.getElementById("edit-password");
-      const flagsInput = document.getElementById("edit-flags");
-
-      if (!loginInput || !siteInput || !passwordInput || !flagsInput) {
-        alert("Erro: Campos do formulário não encontrados.");
-        return;
-      }
-
-      fetch("/editPassword", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          login: loginInput.value,
-          site: siteInput.value,
-          password: passwordInput.value,
-          flags: flagsInput.value,
-        }),
-      }).then((response) => {
-        if (response.ok) {
-          alert("Credenciais salvas com sucesso.");
-          const modalInstance = bootstrap.Modal.getInstance(editPasswordModal);
-          if (modalInstance) modalInstance.hide();
-        } else {
-          alert("Erro ao salvar credenciais.");
-        }
-      });
+      // Não preencher flags aqui, pois agora é um select múltiplo
+      // A lógica está em _modals.html
     });
   }
 
   // Lógica do Modal de Deletar
   const deletePasswordModal = document.getElementById("deletePasswordModal");
-  const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
   
   if (deletePasswordModal) {
     deletePasswordModal.addEventListener("show.bs.modal", function (event) {
@@ -394,148 +390,125 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const siteNameElement = deletePasswordModal.querySelector("#delete-site-name");
       if (siteNameElement) siteNameElement.textContent = site;
-      
-      if (confirmDeleteBtn) {
-        confirmDeleteBtn.setAttribute("data-delete-id", site);
-      }
-    });
-  }
-
-  if (confirmDeleteBtn) {
-    confirmDeleteBtn.addEventListener("click", function () {
-      const site = this.getAttribute("data-delete-id");
-      alert(`Simulando exclusão da credencial para: ${site}`);
-
-      const rowToRemove = document.querySelector(`#credentialsTable tbody tr[data-site="${site}"]`);
-      if (rowToRemove) {
-        rowToRemove.remove();
-      }
-
-      if (deletePasswordModal) {
-        const modalInstance = bootstrap.Modal.getInstance(deletePasswordModal);
-        if (modalInstance) modalInstance.hide();
-      }
-    });
-  }
-
-  // Lógica de feedback do formulário "Minha Conta"
-  const accountForm = document.querySelector("#page-account form");
-  if (accountForm) {
-    accountForm.addEventListener("submit", function (e) {
-      handleAccountSave(e);
     });
   }
 
   // Lógica de Filtro/Busca da Tabela
   const searchInput = document.getElementById("credentialSearchInput");
   if (searchInput) {
-    searchInput.addEventListener("keyup", function () {
-      const filter = searchInput.value.toLowerCase();
-
-      fetch("api/credentials/filterPasswords?query=" + encodeURIComponent(filter), {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.credentials) {
-          refreshCredentials(data.credentials);
-        } else {
-          refreshCredentials([]);
-        }
-      })
-      .catch(() => {
-        refreshCredentials([]);
-      });
-    });
-  }
-
-  // Lógica de Gerenciamento de Flags
-  const manageFlagsModal = document.getElementById("manageFlagsModal");
-  const flagList = document.getElementById("flag-management-list");
-  const flagCarousel = document.getElementById("flagFilterCarousel");
-  const addFlagForm = document.getElementById("addFlagForm");
-  
-  let availableFlags = [];
-  
-  // Tenta parsear as flags do Jinja
-  try {
-    const flagsString = "{{ userInfo.flags if userInfo is defined else '[]' }}";
-    availableFlags = JSON.parse(flagsString.replace(/'/g, '"'));
-  } catch(e) {
-    availableFlags = [];
-  }
-
-  function renderFlags() {
-    if (!flagList || !flagCarousel) return;
+    // Debounce para evitar muitas requisições
+    let searchTimeout;
     
-    flagList.innerHTML = "";
-    const allButton = flagCarousel.querySelector('button[onclick*="all"]');
-    flagCarousel.innerHTML = "";
-    if (allButton) flagCarousel.appendChild(allButton);
-
-    availableFlags.forEach((flag) => {
-      const li = document.createElement("li");
-      li.className = "list-group-item d-flex justify-content-between align-items-center";
-      li.textContent = flag;
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "btn-close";
-      deleteBtn.setAttribute("aria-label", "Remover");
-      deleteBtn.onclick = () => removeFlag(flag);
-      li.appendChild(deleteBtn);
-      flagList.appendChild(li);
-
-      const carouselBtn = document.createElement("button");
-      carouselBtn.className = "btn btn-xs btn-outline-primary";
-      carouselBtn.textContent = flag.charAt(0).toUpperCase() + flag.slice(1);
-      carouselBtn.onclick = () => filterByFlag(carouselBtn, flag);
-      flagCarousel.appendChild(carouselBtn);
-    });
-  }
-
-  function removeFlag(flagToRemove) {
-    fetch("/api/flags/removeFlag", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ flag: flagToRemove }),
-    }).then((response) => {
-      if (response.ok) {
-        availableFlags = availableFlags.filter((f) => f !== flagToRemove);
-        renderFlags();
-      } else {
-        alert("Erro ao remover flag.");
-      }
-    });
-  }
-
-  if (addFlagForm) {
-    addFlagForm.addEventListener("submit", function (e) {
-      e.preventDefault();
-      const input = document.getElementById("newFlagInput");
-      if (!input) return;
+    searchInput.addEventListener("keyup", function () {
+      clearTimeout(searchTimeout);
       
-      const newFlag = input.value.trim().toLowerCase();
-      if (newFlag && !availableFlags.includes(newFlag)) {
-        fetch("/api/flags/addFlag", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ flag: newFlag }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              availableFlags.push(newFlag);
-              renderFlags();
-              input.value = "";
-            } else {
-              alert(data.error || "Erro ao adicionar flag");
-            }
-          });
-      }
+      searchTimeout = setTimeout(() => {
+        const filter = searchInput.value.toLowerCase();
+        const tableRows = document.querySelectorAll("#credentialsTable tbody tr");
+        
+        // Filtro no frontend (mais rápido para pequenos datasets)
+        tableRows.forEach(row => {
+          const site = row.querySelector('td:first-child')?.textContent.toLowerCase() || '';
+          const user = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+          
+          if (site.includes(filter) || user.includes(filter)) {
+            row.style.display = "";
+          } else {
+            row.style.display = "none";
+          }
+        });
+      }, 300); // Aguarda 300ms após parar de digitar
     });
   }
 
-  if (manageFlagsModal) {
-    manageFlagsModal.addEventListener("show.bs.modal", renderFlags);
-  }
+  // Inicializa a visualização do dashboard
+  updateDashboardView();
+  updateNavbar();
 });
+
+// --- Funções Globais ---
+
+// Função para filtrar por flag (chamada do HTML)
+function filterByFlag(buttonElement, flag) {
+  // Atualiza estilos dos botões
+  document.querySelectorAll('#flagFilterCarousel .btn').forEach(btn => {
+    btn.classList.remove('btn-primary', 'active');
+    btn.classList.add('btn-outline-primary');
+  });
+  buttonElement.classList.add('btn-primary', 'active');
+  buttonElement.classList.remove('btn-outline-primary');
+  
+  // Filtra linhas da tabela
+  const tableRows = document.querySelectorAll("#credentialsTable tbody tr");
+  tableRows.forEach(row => {
+    if (flag === 'all') {
+      row.style.display = "";
+    } else {
+      const rowFlags = (row.getAttribute('data-flags') || '').split(',').map(f => f.trim());
+      if (rowFlags.includes(flag)) {
+        row.style.display = "";
+      } else {
+        row.style.display = "none";
+      }
+    }
+  });
+}
+
+// Função para ordenar tabela (chamada do HTML)
+function sortTable(column, element) {
+  const form = document.getElementById('searchForm');
+  if (!form) return;
+  
+  const icon = element.querySelector('i');
+  
+  // Atualiza todos os ícones
+  document.querySelectorAll('#credentialsTable th a i').forEach(i => {
+    if (i !== icon) {
+      i.className = 'bi bi-sort-alpha-down';
+    }
+  });
+  
+  // Toggle do ícone clicado
+  const currentOrder = form.querySelector('input[name="sortOrder"]').value;
+  if (currentOrder === 'asc') {
+    icon.className = 'bi bi-sort-alpha-down-alt';
+    form.querySelector('input[name="sortOrder"]').value = 'desc';
+  } else {
+    icon.className = 'bi bi-sort-alpha-down';
+    form.querySelector('input[name="sortOrder"]').value = 'asc';
+  }
+  
+  form.querySelector('input[name="sort"]').value = column;
+  form.submit();
+}
+
+// Função para feedback de salvamento de conta
+function handleAccountSave(event) {
+  event.preventDefault();
+  const form = event.target;
+  const saveBtn = form.querySelector('button[type="submit"]');
+  
+  if (!saveBtn) return;
+  
+  const originalHtml = saveBtn.innerHTML;
+  
+  // Validação de senha
+  const password = form.querySelector('#acc-password')?.value;
+  const passwordConfirm = form.querySelector('#acc-passwordConfirm')?.value;
+  
+  if (password && password !== passwordConfirm) {
+    if (window.customAlert) {
+      window.customAlert.error('As senhas não coincidem');
+    } else {
+      alert('As senhas não coincidem');
+    }
+    return;
+  }
+  
+  // Mostrar loading
+  saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Salvando...';
+  saveBtn.disabled = true;
+
+  // Submeter formulário
+  form.submit();
+}

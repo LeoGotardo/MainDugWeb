@@ -13,8 +13,8 @@ import requests, json, os, traceback, sys
 database = Database()
 cryptograph = Cryptograph()
 app = Config.app
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+loginManager = LoginManager(app)
+loginManager.login_view = 'login'
 current_user : User | None
 ITEM_CONFIGS = json.load(open('./src/config.json', 'r'))
 apiBlueprint = apiBlueprint
@@ -32,14 +32,16 @@ def onlySys(f):
     return wrapper
 
 
-@login_manager.user_loader
+@loginManager.user_loader
 def load_user(user_id):
-    success, user = database.getUser(user_id)
-    if success == False:
-        return None
-    return user
+    db_manager = Database()
+    success, user = db_manager.getUser(user_id)
+    
+    if success is True:
+        return user
+    return None
 
-def setup_error_handlers(app):
+def setupErrorHandlers(app):
     """Configura todos os error handlers da aplicação"""
     
     @app.errorhandler(Exception)
@@ -80,7 +82,7 @@ def setup_error_handlers(app):
         if app.config.get('DEBUG') or (current_user.is_authenticated and current_user.role in ['sysadmin', 'super']):
             errorDetails = str(e)
             debugInfo = {
-                'file': errorFile.split('/')[-1] if errorFile else 'N/A',  # Apenas nome do arquivo
+                'file': errorFile.split('/')[-1] if errorFile else 'N/A',
                 'line': errorLine,
                 'function': errorFunction,
                 'code': errorCode,
@@ -127,52 +129,70 @@ def index():
                             else:
                                 raise Exception(users)
                         else:
-                            return render_template('index.html', deashboardInfo=statistcs, passwords=statistcs['pagination'])
+                            return render_template('index.html', deashboardInfo=statistcs)
                     case _:
                         return redirect(url_for('notFound'))
             case 'POST':
-                query = request.form.get('query')
-                sort = request.form.get('sort')
-                sortOrder = request.form.get('sortOrder')
-                page = request.form.get('page')
-                perPage = request.form.get('perPage')
+                action = request.form.get('action')
                 
-                success, statistcs = database.getDashboardInfo(userId=current_user.id)
-                match success:
-                    case False:
-                        flash(statistcs, 'danger')
-                        return render_template('index.html', deashboardInfo={})
-                    case -1:
-                        raise Exception(statistcs)
-                    case True:
-                        if current_user.role == 'sysadmin':
-                            users = database.getUsers(userId=current_user.id, method='get', itemType='user')
-                            if users == False:
-                                flash(users, 'danger')
-                                return render_template('index.html', deashboardInfo=statistcs, users={})
-                            elif users == True:
-                                return render_template('index.html', deashboardInfo=statistcs, users=users)
-                            elif users == -1:
-                                raise Exception(users)
-                        else:
-                            passwords = database.getPasswords(userId=current_user.id, itemType='password', method='get')
-                            match passwords:
-                                case False:
-                                    flash(passwords, 'danger')
-                                    return render_template('index.html', deashboardInfo=statistcs, passwords={})
-                                case True:
-                                    return render_template('index.html', deashboardInfo=statistcs, passwords=passwords)
-                                case -1:
-                                    raise Exception(passwords)
-                    case _:
-                        return redirect(url_for('notFound'))
+                if action == 'search':
+                    query = request.form.get('query', '')
+                    sort = request.form.get('sort', 'site')
+                    sortOrder = request.form.get('sortOrder', 'asc')
+                    page = int(request.form.get('page', 1))
+                    perPage = int(request.form.get('perPage', 10))
                     
-                ic(passwords)
-                return render_template('index.html', deashboardInfo=statistcs, passwords=passwords, query=query, sort=sort, sortOrder=sortOrder, page=page, perPage=perPage)
+                    success, statistcs = database.getDashboardInfo(
+                        userId=current_user.id,
+                        page=page,
+                        perPage=perPage,
+                        sort=sort,
+                        sortOrder=sortOrder,
+                        query=query
+                    )
+                    
+                    if success:
+                        return render_template('index.html', deashboardInfo=statistcs)
+                    else:
+                        flash(statistcs, 'danger')
+                        return redirect(url_for('index'))
+                
+                elif action == 'add':
+                    # Adicionar nova credencial
+                    site = request.form.get('site')
+                    login = request.form.get('login')
+                    password = request.form.get('password')
+                    flags = request.form.getlist('flags')
+                    
+                    # Aqui você implementaria a lógica de adicionar
+                    flash('Credencial adicionada com sucesso!', 'success')
+                    return redirect(url_for('index'))
+                
+                elif action == 'edit':
+                    # Editar credencial
+                    passwordId = request.form.get('password_id')
+                    # Implementar lógica de edição
+                    flash('Credencial atualizada com sucesso!', 'success')
+                    return redirect(url_for('index'))
+                
+                elif action == 'delete':
+                    # Deletar credencial
+                    passwordId = request.form.get('password_id')
+                    # Implementar lógica de deleção
+                    flash('Credencial excluída com sucesso!', 'success')
+                    return redirect(url_for('index'))
+                
+                return redirect(url_for('index'))
             case _:
                 return redirect(url_for('notFound'))
     else:
         return redirect(url_for('login'))
+    
+    
+@app.route('/dashboard/', methods=['GET', 'POST'])
+@login_required
+def dashboard():
+    return redirect(url_for('index'))
 
 
 @app.route('/login/', methods=['GET', 'POST'])
@@ -181,10 +201,10 @@ def login():
         case 'GET':
             return render_template('login.html')
         case 'POST':
-            login_form = request.form
+            loginForm = request.form
             
-            if login_form.get('login') and login_form.get('password'):
-                success, user = database.validUser(login_form.get('login'), login_form.get('password'))
+            if loginForm.get('login') and loginForm.get('password'):
+                success, user = database.validUser(loginForm.get('login'), loginForm.get('password'))
                 
                 if success:
                     login_user(user)
@@ -251,8 +271,6 @@ def signup():
                     elif success == -1:
                         raise Exception(result)
                     else:
-                        # CORREÇÃO: Não passa o objeto User diretamente
-                        # Em vez disso, faz login e deixa o Flask-Login gerenciar
                         login_user(result, remember=True)
                         flash('Conta criada com sucesso!', 'success')
                         return redirect(url_for('index'))
@@ -298,27 +316,7 @@ def account():
             else:
                 flash('Conta atualizada com sucesso!', 'success')
                 return redirect(url_for('index'))
-            
-@app.route('/home/', methods=['GET', 'POST'])
-@login_required
-def home():
-    match request.method:
-        case 'GET':
-            return render_template('index.html', tempo='20')
-        case 'POST':
-            if current_user.role == "sysadmin":
-                pass
-            else:
-                success, passwords = database.getPasswords(userId=current_user.id)
-                if success == False:
-                    flash(passwords, 'danger')
-                    return render_template('index.html')
-                elif success == -1:
-                    raise Exception(passwords)
-                return render_template('index.html', passwords=passwords)
-        case _:
-            return redirect(url_for('notFound'))
-        
+
 
 @app.route('/stats/', methods=['GET', 'POST'])
 @login_required
@@ -334,7 +332,7 @@ def stats():
             return render_template('stats.html', stats=stats)
         case 'POST':
             return render_template('stats.html')
-        
+
 
 @app.route('/moreInfo', methods=['GET', 'DELETE'])
 @login_required
@@ -360,8 +358,145 @@ def moreInfo():
             return redirect(url_for('notFound'))
 
 
+@app.route('/flags/add', methods=['POST'])
+@login_required
+def addFlag():
+    """Adiciona uma nova flag para o usuário"""
+    try:
+        flagName = request.form.get('flagName', '').strip().lower()
+        
+        if not flagName:
+            return jsonify({'success': False, 'error': 'Nome da flag é obrigatório'}), 400
+        
+        if len(flagName) < 2:
+            return jsonify({'success': False, 'error': 'Nome da flag deve ter pelo menos 2 caracteres'}), 400
+        
+        # Adiciona a flag no banco
+        success, msg = database.addFlag(id=current_user.id, name=flagName)
+        
+        if success:
+            flash('Flag adicionada com sucesso!', 'success')
+            return jsonify({'success': True, 'message': 'Flag adicionada com sucesso'}), 200
+        else:
+            return jsonify({'success': False, 'error': msg}), 400
+            
+    except Exception as e:
+        app.logger.error(f'Erro ao adicionar flag: {e}')
+        return jsonify({'success': False, 'error': 'Erro interno ao adicionar flag'}), 500
+
+
+@app.route('/flags/delete', methods=['POST'])
+@login_required
+def deleteFlag():
+    """Remove uma flag do usuário"""
+    try:
+        flagId = request.form.get('flag_id', '').strip()
+        
+        if not flagId:
+            return jsonify({'success': False, 'message': 'ID da flag é obrigatório'}), 400
+        
+        # Remove a flag do banco
+        success, msg = database.deleteFlag(id=current_user.id, name=flagId)
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Flag removida com sucesso'}), 200
+        else:
+            return jsonify({'success': False, 'message': msg}), 400
+            
+    except Exception as e:
+        app.logger.error(f'Erro ao remover flag: {e}')
+        return jsonify({'success': False, 'message': 'Erro interno ao remover flag'}), 500
+    
+    
+@app.route('/addPassword', methods=['POST'])
+@login_required
+def addPassword():
+    site = request.form.get('site', '').strip()
+    login = request.form.get('login', '').strip()
+    password = request.form.get('password', '').strip()
+    flags = list(request.form.getlist('flags'))
+
+    if not site or not login or not password:
+        flash('Todos os campos são obrigatórios!', 'danger')
+        return redirect(url_for('index'))
+
+    success, msg = database.addPassword(
+        userId=current_user.id,
+        site=site,
+        login=login,
+        password=password,
+        flags=flags
+    )
+
+    if success == True:
+        flash('Credencial adicionada com sucesso!', 'success')
+    elif success == False:
+        flash(msg, 'danger')
+    else:
+        raise Exception(msg)
+
+    return redirect(url_for('index'))
+
+
+@app.route('/editPassword', methods=['POST'])
+@login_required
+def editPassword():
+    try:
+        passwordId = request.form.get('password_id', '').strip()
+        site = request.form.get('site', '').strip()
+        login = request.form.get('login', '').strip()
+        password = request.form.get('password', '').strip()
+        flags = list(request.form.getlist('flags'))
+
+        if not passwordId or not site or not login or not password:
+            flash('Todos os campos são obrigatórios!', 'danger')
+            return redirect(url_for('index'))
+
+        success, msg = database.updatePassword(
+            passwordId=passwordId,
+            site=site,
+            login=login,
+            password=password,
+            flags=flags
+        )
+
+        if success:
+            flash('Credencial atualizada com sucesso!', 'success')
+        else:
+            flash(msg, 'danger')
+
+    except Exception as e:
+        app.logger.error(f'Erro ao atualizar credencial: {e}')
+        flash('Erro interno ao atualizar credencial', 'danger')
+
+    return redirect(url_for('index'))
+
+
+@app.route('/deletePassword', methods=['POST'])
+@login_required
+def deletePassword():
+    try:
+        passwordId = request.form.get('password_id', '').strip()
+
+        if not passwordId:
+            flash('ID da credencial é obrigatório!', 'danger')
+            return redirect(url_for('index'))
+
+        success, msg = database.deletePassword(passwordId=passwordId, userId=current_user.id)
+
+        if success:
+            flash('Credencial excluída com sucesso!', 'success')
+        else:
+            flash(msg, 'danger')
+
+    except Exception as e:
+        app.logger.error(f'Erro ao excluir credencial: {e}')
+        flash('Erro interno ao excluir credencial', 'danger')
+
+    return redirect(url_for('index'))
+
 # Configura os error handlers
-setup_error_handlers(app)
+setupErrorHandlers(app)
 
 
 if __name__ == '__main__':

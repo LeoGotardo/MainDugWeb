@@ -18,7 +18,6 @@ class Config:
     ENCRYPT_KEY = os.getenv('SecretKey')
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-    ic(SECRET_KEY)
     app.config['SECRET_KEY'] = SECRET_KEY
     db = SQLAlchemy(app)
     session = db.session
@@ -151,15 +150,14 @@ class Passwords(UserMixin, Config.db.Model):
     id = Config.db.Column('col_b0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
     userId = Config.db.Column('col_b1', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
     
-    # MUDANÇA: LargeBinary → String (armazena base64)
     _login_encrypted = Config.db.Column('col_b2', Config.db.String(500), nullable=False)
     _login_hash = Config.db.Column('col_b2_hash', Config.db.String(64), nullable=False, index=True)
     _password_encrypted = Config.db.Column('col_b3', Config.db.String(500), nullable=False)
     _site_encrypted = Config.db.Column('col_b4', Config.db.String(500), nullable=False)
     _site_hash = Config.db.Column('col_b4_hash', Config.db.String(64), nullable=False, index=True)
     status = Config.db.Column('col_b5', Config.db.Boolean, nullable=False, default=False)
-    _lastUse_encrypted = Config.db.Column('col_b6', Config.db.String(500), nullable=True)
-    _whereUsed_encrypted = Config.db.Column('col_b7', Config.db.String(500), nullable=True)
+    _lastUse_encrypted = Config.db.Column('col_b6', Config.db.String(500), nullable=True, default=None)
+    _whereUsed_encrypted = Config.db.Column('col_b7', Config.db.String(500), nullable=True, default=None)
     
     @hybrid_property
     def login(self):
@@ -213,17 +211,22 @@ class Passwords(UserMixin, Config.db.Model):
             
     @hybrid_property
     def password(self):
-        if self._password_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._password_encrypted) if isinstance(self._password_encrypted, str) else self._password_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting password: {decrypted}')
+         # Usar getattr garante que pegamos o VALOR da coluna na instância
+        val = getattr(self, '_password_encrypted', None)
+        
+        if val is None or isinstance(val, str) == False or val == "":
+            return None
+        
+        response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+        if response == True:
+            encrypted_bytes = base64.b64decode(val)
+            success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+            if success:
+                return decrypted
             else:
-                raise ValueError(f'{response} \nError generating decryption key')
+                raise ValueError(f'Error decrypting password: {decrypted}')
+        else:
+            raise ValueError(f'{response} \nError generating decryption key')
         return None
     
     @password.setter
@@ -293,25 +296,30 @@ class Passwords(UserMixin, Config.db.Model):
             
     @hybrid_property
     def lastUse(self):
-        encrypted_value = self._lastUse_encrypted 
+        # Usar getattr garante que pegamos o VALOR da coluna na instância
+        val = getattr(self, '_lastUse_encrypted', None)
         
-        if encrypted_value is None or encrypted_value == "":
+        if val is None or isinstance(val, str) == False or val == "":
             return None
         
-        try:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._lastUse_encrypted) if isinstance(self._lastUse_encrypted, str) else self._lastUse_encrypted
+        response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
+        if response == True:
+            try:
+                # val aqui agora é a string Base64 vinda do banco
+                encrypted_bytes = base64.b64decode(val)
+                
                 success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
                 if success:
                     return decrypted
                 else:
-                    raise ValueError(f'Error decrypting lastUse: {decrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        except Exception as e:
-           raise(f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}')
-    
+                    # Se falhar, logamos mas não quebramos o app
+                    print(f"Erro na decriptação: {decrypted}")
+                    return None
+            except Exception as e:
+                print(f"Erro ao processar Base64: {e}")
+                return None
+        return None
+
     @lastUse.setter
     def lastUse(self, value):
         if value:
@@ -333,11 +341,14 @@ class Passwords(UserMixin, Config.db.Model):
             response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
             if response == True:
                 encrypted_bytes = base64.b64decode(self._whereUsed_encrypted) if isinstance(self._whereUsed_encrypted, str) else self._whereUsed_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
+                if encrypted_bytes:
+                    success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
+                    if success:
+                        return decrypted
+                    else:
+                        raise ValueError(f'Error decrypting whereUsed: {decrypted}')
                 else:
-                    raise ValueError(f'Error decrypting whereUsed: {decrypted}')
+                    return None
             else:
                 raise ValueError(f'{response} \nError generating decryption key')
         return None
@@ -669,11 +680,13 @@ class Logs(UserMixin, Config.db.Model):
     
     def get_id(self):
         return str(self.id)
+    
+class PasswordFlags(Config.db.Model):
+    __tablename__ = 'tbl_4'
+    passwordId = Config.db.Column('col_e0', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0'), primary_key=True)
+    flagId = Config.db.Column('col_e1', Config.db.Integer, Config.db.ForeignKey('tbl_3.col_d0'), primary_key=True)
 
-password_flags = Config.db.Table('tbl_4',
-    Config.db.Column('col_e0', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0')),
-    Config.db.Column('col_e1', Config.db.Integer, Config.db.ForeignKey('tbl_3.col_d0'))
-)
+
 
 class Filters(UserMixin, Config.db.Model):
     __tablename__ = 'tbl_3'
@@ -682,7 +695,7 @@ class Filters(UserMixin, Config.db.Model):
     userId = Config.db.Column('col_d2', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
     
     flags = Config.db.relationship('Filters', 
-                                   secondary=password_flags,
+                                   secondary=PasswordFlags.__table__,
                                    backref=Config.db.backref('passwords', lazy='dynamic'))
     
     def toDict(self):
@@ -894,6 +907,90 @@ class Database:
         except Exception as e:
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
+        
+    def getStats(self, userId: str) -> tuple[bool, dict | str]:
+        """
+        Retorna estatísticas de segurança das senhas do usuário
+        
+        Args:
+            userId (str): ID do usuário
+            
+        Returns:
+            tuple[bool, dict | str]: (True, estatísticas) ou (False, mensagem_erro)
+        """
+        try:
+            user = self.session.query(User).filter_by(id=userId).first()
+            if not user:
+                return False, 'Usuário não encontrado'
+            
+            # Busca todas as senhas do usuário
+            passwords = self.session.query(Passwords).filter_by(userId=userId).all()
+            
+            # Contadores
+            leakedPasswords = []
+            weakPasswords = []
+            reusedPasswordsDict = {}
+            
+            for password in passwords:
+                # Senhas vazadas
+                if password.status:
+                    leakedPasswords.append({
+                        'id': password.id,
+                        'site': password.site,
+                        'login': password.login
+                    })
+                
+                # Senhas fracas (menos de 8 caracteres ou muito simples)
+                decryptedPass = password.password
+                if decryptedPass and len(decryptedPass) < 8:
+                    weakPasswords.append({
+                        'id': password.id,
+                        'site': password.site,
+                        'login': password.login,
+                        'reason': 'Menos de 8 caracteres'
+                    })
+                
+                # Senhas reutilizadas
+                if decryptedPass:
+                    if decryptedPass in reusedPasswordsDict:
+                        reusedPasswordsDict[decryptedPass].append({
+                            'id': password.id,
+                            'site': password.site,
+                            'login': password.login
+                        })
+                    else:
+                        reusedPasswordsDict[decryptedPass] = [{
+                            'id': password.id,
+                            'site': password.site,
+                            'login': password.login
+                        }]
+            
+            # Filtra apenas senhas que foram reusadas (aparecem mais de uma vez)
+            reusedPasswords = {
+                k: v for k, v in reusedPasswordsDict.items() 
+                if len(v) > 1
+            }
+            
+            stats = {
+                'totalPasswords': len(passwords),
+                'leakedCount': len(leakedPasswords),
+                'weakCount': len(weakPasswords),
+                'reusedCount': len(reusedPasswords),
+                'leakedPasswords': leakedPasswords,
+                'weakPasswords': weakPasswords,
+                'reusedPasswords': [
+                    {
+                        'sites': [p['site'] for p in sites],
+                        'count': len(sites)
+                    }
+                    for sites in reusedPasswords.values()
+                ]
+            }
+            
+            return True, stats
+            
+        except Exception as e:
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     @canHandle
     def getUsers(self, headers: list[dict[str, str]] = [], pagination: bool = False, query: str = None, page: int = 1, perPage: int = 10, sort: str = 'name', sortOrder: str = 'asc') -> tuple[bool, list[dict[User]]] | tuple[bool, str]:
@@ -1180,27 +1277,39 @@ class Database:
         except Exception as e:
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
-    
-    def addPassword(self, gerentId, id: str, site: str, login: str, password: str ) -> tuple[bool, str]:
+    def addPassword(self, userId: str, site: str, login: str, password: str, flags: list[str]) -> tuple[bool, str]:
         try:
-            user = self.session.query(User).filter_by(id=id).first()
-            if user is None:
-                return False, 'Invalid user'
-            response = self.cryptograph.keyGenerator(id)
-            if response[0] == False:
-                return False, response[1]
-            key = response[1]
-            response = self.cryptograph.encryptSentence(password, key)
-            if response[0] == False:
-                return False, response[1]  
-            password = response[1]
-            cred = Passwords(user_id=id, password=password, site=site, login=login, lastUse=datetime.datetime.now())
-            self.session.add(cred)
-            self.session.commit()
+            user = self.session.query(User).filter_by(id=userId).first()
+            if not user:
+                return False, 'Usuário não encontrado'
             
-            return True, 'Password added'
+            nova_senha = Passwords(
+                userId=userId, 
+                site=site, 
+                login=login, 
+                password=password, 
+                lastUse=datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+            )
+            
+            self.session.add(nova_senha)
+            self.session.flush()
+
+            for flag_name in flags:
+                flag_obj = self.session.query(Filters).filter_by(userId=userId, name=flag_name).first()
+                
+                if flag_obj:
+                    nova_relacao = PasswordFlags(passwordId=nova_senha.id, flagId=flag_obj.id)
+                    self.session.add(nova_relacao)
+                else:
+                    self.session.rollback()
+                    return False, f'Flag "{flag_name}" não encontrada para este usuário.'
+
+            self.session.commit()
+            return True, 'Senha e flags cadastradas com sucesso'
+            
         except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            self.session.rollback()
+            return -1, f'Erro ao adicionar senha: {str(e)}'
 
 
     @canHandle
