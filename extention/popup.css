@@ -1,0 +1,406 @@
+/* --- Variáveis de Cor e Reset Básico --- */
+:root {
+    --primary-color: #667eea;
+    --primary-dark: #5a67d8;
+    --background-light: #f7fafc;
+    --background-dark: #1a202c;
+    --text-light: #1a202c;
+    --text-dark: #edf2f7;
+    --border-light: #e2e8f0;
+    --border-dark: #4a5568;
+    --card-light: #ffffff;
+    --card-dark: #2d3748;
+    --success-color: #38a169;
+    --error-color: #e53e3e;
+    --info-color: #3182ce;
+
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --border-radius: 8px;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+body {
+    font-family: var(--font-family);
+    margin: 0;
+    background-color: var(--background-light);
+    color: var(--text-light);
+    width: 380px;
+    min-height: 400px;
+    max-height: 580px;
+    overflow-y: auto;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+body.dark-mode {
+    background-color: var(--background-dark);
+    color: var(--text-dark);
+}
+
+/* --- Container Principal --- */
+.container {
+    padding: 16px;
+}
+
+/* --- Cabeçalho --- */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--primary-color);
+}
+
+.logo svg {
+    color: var(--primary-color);
+}
+
+#userInfo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: #718096;
+}
+
+body.dark-mode #userInfo {
+    color: #a0aec0;
+}
+
+/* --- Botões --- */
+.btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--border-radius);
+    background-color: var(--card-light);
+    color: var(--text-light);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+body.dark-mode .btn {
+    background-color: var(--card-dark);
+    border-color: var(--border-dark);
+    color: var(--text-dark);
+}
+
+.btn.primary {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.btn:hover {
+    background-color: #edf2f7;
+}
+
+body.dark-mode .btn:hover {
+    background-color: #4a5568;
+}
+
+.btn.primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #a0aec0;
+    border-radius: 50%;
+}
+
+.icon-btn:hover {
+    color: var(--primary-color);
+    background-color: rgba(102, 126, 234, 0.1);
+}
+
+/* --- Abas (Tabs) --- */
+.tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: 16px;
+}
+
+body.dark-mode .tabs {
+    border-color: var(--border-dark);
+}
+
+.tab {
+    flex: 1;
+    padding: 10px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    color: #718096;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+body.dark-mode .tab {
+    color: #a0aec0;
+}
+
+.tab.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* --- Formulários --- */
+#loginForm {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #4a5568;
+}
+
+body.dark-mode .form-group label {
+    color: #cbd5e0;
+}
+
+.form-group input, #searchPasswords {
+    padding: 10px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--border-radius);
+    background-color: var(--card-light);
+    color: var(--text-light);
+    font-size: 14px;
+}
+
+body.dark-mode .form-group input, body.dark-mode #searchPasswords {
+    background-color: var(--card-dark);
+    border-color: var(--border-dark);
+    color: var(--text-dark);
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.form-actions .btn {
+    flex: 1;
+}
+
+/* --- Lista de Senhas --- */
+#searchPasswords {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+}
+
+#passwordList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.password-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: var(--card-light);
+    border: 1px solid var(--border-light);
+    border-radius: var(--border-radius);
+}
+
+body.dark-mode .password-item {
+    background-color: var(--card-dark);
+    border-color: var(--border-dark);
+}
+
+.password-site {
+    font-weight: 500;
+}
+
+.password-username {
+    font-size: 12px;
+    color: #718096;
+}
+
+body.dark-mode .password-username {
+    color: #a0aec0;
+}
+
+.password-actions {
+    display: flex;
+    gap: 4px;
+}
+
+/* --- Configurações --- */
+.settings-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.settings-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.settings-actions {
+    margin-top: 24px;
+    border-top: 1px solid var(--border-light);
+    padding-top: 16px;
+}
+
+body.dark-mode .settings-actions {
+    border-color: var(--border-dark);
+}
+
+.settings-actions .btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* --- Componente Switch --- */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 22px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--primary-color);
+}
+
+input:checked + .slider:before {
+    transform: translateX(18px);
+}
+
+/* --- Estados (Vazio, Loading, Status) --- */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #a0aec0;
+}
+
+.empty-state svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    color: #cbd5e0;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.status-message {
+    padding: 10px;
+    border-radius: var(--border-radius);
+    font-size: 13px;
+    text-align: center;
+}
+
+.status-message.success { background-color: var(--success-color); color: white; }
+.status-message.error { background-color: var(--error-color); color: white; }
+.status-message.info { background-color: var(--info-color); color: white; }
+
+/* --- Toast --- */
+#toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 20px;
+    border-radius: var(--border-radius);
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+}
+
+#toast.show {
+    opacity: 1;
+    transform: translate(-50%, -10px);
+}
