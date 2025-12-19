@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "SecurePass",
+  "name": "MainDug",
   "version": "1.0.0",
-  "description": "Gerenciador de senhas SecurePass para uma navegação mais segura.",
+  "description": "Gerenciador de senhas MainDug para uma navegação mais segura.",
   "permissions": [
     "storage",
     "activeTab",
@@ -43,7 +43,7 @@
   ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "securepass@maindug.com",
+      "id": "suport@maindug.com",
       "strict_min_version": "109.0"
     },
     "gecko_android": {
