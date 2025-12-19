@@ -1221,9 +1221,9 @@ class Database:
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
-    def deleteFlag(self, id: str, name: str) -> tuple[bool, str]:
+    def deleteFlag(self, id: str, flagId: str) -> tuple[bool, str]:
         try:
-            flag = self.session.query(Filters).filter_by(id=id, name=name).first()
+            flag = self.session.query(Filters).filter_by(id=flagId, userId=id).first()
             
             if flag is not None:
                 self.session.delete(flag)
@@ -1304,12 +1304,58 @@ class Database:
                     self.session.rollback()
                     return False, f'Flag "{flag_name}" não encontrada para este usuário.'
 
+            
+            leak, msg =self.checkPasswordPwned(password)
+            
+            if leak == True:
+                Passwords.status = True
+                Passwords.timesLeaked = int(msg)
+            else:
+                Passwords.status = False
+                
             self.session.commit()
             return True, 'Senha e flags cadastradas com sucesso'
             
         except Exception as e:
             self.session.rollback()
             return -1, f'Erro ao adicionar senha: {str(e)}'
+        
+        
+    def updatePassword(self, passwordId: str, site: str, login: str, password: str, flags: list[str]) -> tuple[bool, str]:
+        try:
+            Password = self.session.query(Passwords).filter_by(id=passwordId).first()
+            if not Password:
+                return False, 'Senha não encontrada'
+            
+            Password.site = site
+            Password.login = login
+            Password.password = password
+            
+            for flag_name in flags:
+                flag_obj = self.session.query(Filters).filter_by(userId=Password.userId, name=flag_name).first()
+                
+                if flag_obj:
+                    nova_relacao = PasswordFlags(passwordId=Password.id, flagId=flag_obj.id)
+                    self.session.add(nova_relacao)
+                else:
+                    self.session.rollback()
+                    return False, f'Flag "{flag_name}" não encontrada para este usuário.'
+            
+            
+            leak, msg =self.checkPasswordPwned(Password.password)
+            
+            if leak == True:
+                Password.status = True
+                Password.timesLeaked = int(msg)
+            else:
+                Password.status = False
+                
+            self.session.commit()
+            return True, 'Senha e flags atualizadas com sucesso'
+            
+        except Exception as e:
+            self.session.rollback()
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 
 
     @canHandle
@@ -1424,12 +1470,12 @@ class Database:
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
-    def deletePassword(self, passwordID: str, userID: str) -> tuple[bool, str]:
+    def deletePassword(self, passwordId: str, userId: str) -> tuple[bool, str]:
         try:
-            password = self.session.query(Passwords).filter_by(id=passwordID).first()
+            password = self.session.query(Passwords).filter_by(id=passwordId).first()
             
             if password is not None:
-                if password.user_id == userID:
+                if password.userId == userId:
                     self.session.delete(password)
                     self.session.commit()
                     

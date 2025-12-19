@@ -392,11 +392,13 @@ def deleteFlag():
     try:
         flagId = request.form.get('flag_id', '').strip()
         
+        ic(flagId)
+        
         if not flagId:
             return jsonify({'success': False, 'message': 'ID da flag é obrigatório'}), 400
         
         # Remove a flag do banco
-        success, msg = database.deleteFlag(id=current_user.id, name=flagId)
+        success, msg = database.deleteFlag(id=current_user.id, flagId=flagId)
         
         if success:
             return jsonify({'success': True, 'message': 'Flag removida com sucesso'}), 200
@@ -404,8 +406,7 @@ def deleteFlag():
             return jsonify({'success': False, 'message': msg}), 400
             
     except Exception as e:
-        app.logger.error(f'Erro ao remover flag: {e}')
-        return jsonify({'success': False, 'message': 'Erro interno ao remover flag'}), 500
+       raise Exception(e)
     
     
 @app.route('/addPassword', methods=['POST'])
@@ -460,8 +461,10 @@ def editPassword():
             flags=flags
         )
 
-        if success:
+        if success == True:
             flash('Credencial atualizada com sucesso!', 'success')
+        elif success == -1:
+            raise Exception(msg)
         else:
             flash(msg, 'danger')
 
@@ -484,8 +487,10 @@ def deletePassword():
 
         success, msg = database.deletePassword(passwordId=passwordId, userId=current_user.id)
 
-        if success:
+        if success == True:
             flash('Credencial excluída com sucesso!', 'success')
+        elif success == -1:
+            raise Exception(msg)
         else:
             flash(msg, 'danger')
 

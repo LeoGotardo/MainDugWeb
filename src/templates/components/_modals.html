@@ -102,7 +102,7 @@
                 <h5 class="modal-title">Editar Credencial: <span id="edit-site-name"></span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('index') }}" method="POST" id="editPasswordForm">
+            <form action="{{ url_for('editPassword') }}" method="POST" id="editPasswordForm">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="edit">
                     <input type="hidden" name="password_id" id="edit-password-id">
@@ -160,7 +160,7 @@
                 <h5 class="modal-title">Confirmar Exclusão</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('index') }}" method="POST" id="deletePasswordForm">
+            <form action="{{ url_for('deletePassword') }}" method="POST" id="deletePasswordForm">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="password_id" id="delete-password-id">
