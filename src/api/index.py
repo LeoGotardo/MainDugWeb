@@ -4,19 +4,6 @@ import jwt
 from datetime import datetime, timedelta
 import os
 
-# Importar funções do database
-from database.functions import (
-    getUserByEmail,
-    verifyPassword,
-    updateLastLogin,
-    getUserPasswords,
-    getPasswordById,
-    decryptPasswordData,
-    updatePasswordUsage,
-    generateSecurePassword,
-    calculatePasswordStrength,
-    logSecurityEvent
-)
 
 blueprint = Blueprint('blueprint', __name__)
 
