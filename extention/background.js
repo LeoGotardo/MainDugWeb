@@ -1,11 +1,11 @@
-// background.js - Service Worker para a extensão SecurePass
+// background.js - Service Worker para a extensão MainDug (API Integrado)
 
 // URL base da API
 const API_BASE_URL = 'http://localhost:5000/api';
 
 // Listener para quando a extensão é instalada
 chrome.runtime.onInstalled.addListener(() => {
-    console.log('SecurePass Extension instalada');
+    console.log('MainDug Extension instalada');
     
     // Definir configurações padrão
     chrome.storage.local.get(['settings'], (result) => {
@@ -36,7 +36,7 @@ function createContextMenus() {
         
         chrome.contextMenus.create({
             id: 'savePassword',
-            title: 'Salvar senha com SecurePass',
+            title: 'Salvar senha com MainDug',
             contexts: ['password']
         });
         
@@ -70,7 +70,7 @@ async function handleGeneratePassword(tab) {
         const authData = await getAuthData();
         
         if (!authData.token) {
-            showNotification('Erro', 'Faça login no SecurePass primeiro');
+            showNotification('Erro', 'Faça login no MainDug primeiro');
             return;
         }
         
@@ -156,7 +156,7 @@ function handleSavePasswordContext(tab) {
         type: 'detectForms'
     }, (response) => {
         if (response && response.passwordFields > 0) {
-            showNotification('SecurePass', 'Preencha o formulário e envie para salvar a senha automaticamente');
+            showNotification('MainDug', 'Preencha o formulário e envie para salvar a senha automaticamente');
         } else {
             showNotification('Erro', 'Nenhum campo de senha encontrado nesta página');
         }
@@ -169,7 +169,7 @@ async function handleFillPasswordContext(tab) {
         const authData = await getAuthData();
         
         if (!authData.token) {
-            showNotification('Erro', 'Faça login no SecurePass primeiro');
+            showNotification('Erro', 'Faça login no MainDug primeiro');
             return;
         }
         
@@ -329,11 +329,10 @@ async function decryptPassword(passwordId, token) {
 // Obter dados de autenticação
 function getAuthData() {
     return new Promise((resolve) => {
-        chrome.storage.local.get(['authToken', 'userEmail', 'userId'], (result) => {
+        chrome.storage.local.get(['authToken', 'currentUser'], (result) => {
             resolve({
                 token: result.authToken,
-                email: result.userEmail,
-                userId: result.userId
+                user: result.currentUser
             });
         });
     });
@@ -365,7 +364,7 @@ async function handlePageLoaded(pageData, tab) {
 }
 
 // Mostrar notificação
-function showNotification(title, message, iconUrl = 'icon128.png') {
+function showNotification(title, message, iconUrl = 'icons/icon128.png') {
     chrome.notifications.create({
         type: 'basic',
         iconUrl: iconUrl,
@@ -402,8 +401,8 @@ setInterval(async () => {
             
             if (!response.ok) {
                 // Token expirado, fazer logout
-                chrome.storage.local.remove(['authToken', 'userEmail', 'userId']);
-                showNotification('Sessão Expirada', 'Por favor, faça login novamente no SecurePass');
+                chrome.storage.local.remove(['authToken', 'currentUser']);
+                showNotification('Sessão Expirada', 'Por favor, faça login novamente no MainDug');
             }
         } catch (error) {
             console.error('Erro ao verificar token:', error);
@@ -419,7 +418,7 @@ chrome.runtime.onStartup.addListener(() => {
 // Verificar conexão com servidor
 async function checkServerConnection() {
     try {
-        const response = await fetch(`${API_BASE_URL}/health`);
+        const response = await fetch(`${API_BASE_URL.replace('/api', '')}/health`);
         if (response.ok) {
             console.log('Conexão com servidor estabelecida');
         }
@@ -444,13 +443,4 @@ chrome.commands?.onCommand.addListener((command) => {
     }
 });
 
-// Backup periódico de configurações
-setInterval(() => {
-    chrome.storage.local.get(['settings'], (result) => {
-        if (result.settings) {
-            console.log('Backup de configurações realizado');
-        }
-    });
-}, 3600000); // A cada 1 hora
-
-console.log('SecurePass Background Script carregado');
+console.log('MainDug Background Script carregado e conectado à API');
