@@ -8,7 +8,9 @@
     "activeTab",
     "tabs",
     "notifications",
-    "contextMenus"
+    "contextMenus",
+    "alarms",
+    "downloads"
   ],
   "host_permissions": [
     "<all_urls>"

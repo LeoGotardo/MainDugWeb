@@ -1,6 +1,3 @@
-let currentUserRole = "{{ current_user.role if current_user.is_authenticated else 'guest' }}";
-let currentUserName = "{{ current_user.login if current_user.is_authenticated else '' }}";
-
 function updateDashboardView() {
   const userDashboard = document.getElementById("dashboard-user");
   const adminDashboard = document.getElementById("dashboard-admin");

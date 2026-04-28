@@ -3,20 +3,23 @@ from flask import redirect, url_for, render_template, request, flash, jsonify
 from api.index import blueprint as apiBlueprint
 from database import Database, Config, User
 from cryptograph import Cryptograph
-from dataclasses import dataclass
 from functools import wraps
-from icecream import ic
+from dotenv import load_dotenv
 
-import requests, json, os, traceback, sys
+import requests
+import json
+import os
+import traceback
+import sys
 
-
+load_dotenv()
 database = Database()
 cryptograph = Cryptograph()
 app = Config.app
 loginManager = LoginManager(app)
 loginManager.login_view = 'login'
 current_user : User | None
-ITEM_CONFIGS = json.load(open('./src/config.json', 'r'))
+ITEM_CONFIGS = json.load(open(os.path.join(os.path.dirname(__file__), 'config.json'), 'r'))
 apiBlueprint = apiBlueprint
 app.register_blueprint(apiBlueprint, url_prefix='/api')
 
@@ -24,11 +27,11 @@ app.register_blueprint(apiBlueprint, url_prefix='/api')
 def onlySys(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
         if current_user.role == 'sysadmin':
             return f(*args, **kwargs)
-        else:
-            return redirect(url_for('login'))
-        
+        return redirect(url_for('login'))
     return wrapper
 
 
@@ -120,14 +123,11 @@ def index():
                         raise Exception(statistcs)
                     case True:
                         if current_user.role == 'sysadmin':
-                            users = database.getUsers(userId=current_user.id, method='get', itemType='user')
-                            if users == False:
-                                flash(users, 'danger')
-                                return render_template('index.html', deashboardInfo=statistcs, users={})
-                            elif users == True:
-                                return render_template('index.html', deashboardInfo=statistcs, users=users)
-                            else:
-                                raise Exception(users)
+                            u_success, users = database.getUsers()
+                            if not u_success:
+                                flash('Erro ao carregar usuários', 'danger')
+                                return render_template('index.html', deashboardInfo=statistcs, users=[])
+                            return render_template('index.html', deashboardInfo=statistcs, users=users)
                         else:
                             return render_template('index.html', deashboardInfo=statistcs)
                     case _:
@@ -347,8 +347,9 @@ def moreInfo():
             
             return render_template('moreInfo.html', passwordInfo=passwordInfo)
         case 'DELETE':
-            logs = list(request.form.getlist('logs'))
-            
+            logs_raw = request.form.get('logs', '')
+            logs = [l.strip() for l in logs_raw.split(',') if l.strip()]
+
             success, msg = database.deletePasswordLogs(logs=logs, userId=current_user.id, itemType='password')
             if not success:
                 return jsonify({'success': False, 'message': msg}), 400
@@ -391,9 +392,7 @@ def deleteFlag():
     """Remove uma flag do usuário"""
     try:
         flagId = request.form.get('flag_id', '').strip()
-        
-        ic(flagId)
-        
+
         if not flagId:
             return jsonify({'success': False, 'message': 'ID da flag é obrigatório'}), 400
         

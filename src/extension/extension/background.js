@@ -1,13 +1,14 @@
 // background.js - Service Worker para a extensão SecurePass
 
-// URL base da API
-const API_BASE_URL = 'http://localhost:5000/api';
+async function getApiBaseUrl() {
+    const result = await chrome.storage.local.get(['apiBaseUrl']);
+    return result.apiBaseUrl || 'http://localhost:5000/api';
+}
 
 // Listener para quando a extensão é instalada
 chrome.runtime.onInstalled.addListener(() => {
     console.log('SecurePass Extension instalada');
-    
-    // Definir configurações padrão
+
     chrome.storage.local.get(['settings'], (result) => {
         if (!result.settings) {
             chrome.storage.local.set({
@@ -20,9 +21,11 @@ chrome.runtime.onInstalled.addListener(() => {
             });
         }
     });
-    
-    // Criar menus de contexto
+
     createContextMenus();
+
+    // Schedule periodic token check using alarms (MV3-compatible)
+    chrome.alarms.create('checkToken', { periodInMinutes: 5 });
 });
 
 // Criar menus de contexto
@@ -75,7 +78,7 @@ async function handleGeneratePassword(tab) {
         }
         
         // Gerar senha via API
-        const response = await fetch(`${API_BASE_URL}/generate-password`, {
+        const response = await fetch(`${await getApiBaseUrl()}/generate-password`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${authData.token}`,
@@ -125,29 +128,38 @@ async function handleGeneratePassword(tab) {
     }
 }
 
-// Gerar senha localmente (fallback)
+// Gerar senha localmente (fallback) usando CSPRNG
 function generateSecurePasswordLocal(length = 16) {
     const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const lowercase = 'abcdefghijklmnopqrstuvwxyz';
     const numbers = '0123456789';
     const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-    
     const allChars = uppercase + lowercase + numbers + symbols;
-    let password = '';
-    
-    // Garantir pelo menos um caractere de cada tipo
-    password += uppercase[Math.floor(Math.random() * uppercase.length)];
-    password += lowercase[Math.floor(Math.random() * lowercase.length)];
-    password += numbers[Math.floor(Math.random() * numbers.length)];
-    password += symbols[Math.floor(Math.random() * symbols.length)];
-    
-    // Preencher o resto
-    for (let i = password.length; i < length; i++) {
-        password += allChars[Math.floor(Math.random() * allChars.length)];
+
+    function randomIndex(max) {
+        const arr = new Uint32Array(1);
+        crypto.getRandomValues(arr);
+        return arr[0] % max;
     }
-    
-    // Embaralhar
-    return password.split('').sort(() => Math.random() - 0.5).join('');
+
+    let password = [
+        uppercase[randomIndex(uppercase.length)],
+        lowercase[randomIndex(lowercase.length)],
+        numbers[randomIndex(numbers.length)],
+        symbols[randomIndex(symbols.length)],
+    ];
+
+    for (let i = password.length; i < length; i++) {
+        password.push(allChars[randomIndex(allChars.length)]);
+    }
+
+    // Fisher-Yates shuffle using CSPRNG
+    for (let i = password.length - 1; i > 0; i--) {
+        const j = randomIndex(i + 1);
+        [password[i], password[j]] = [password[j], password[i]];
+    }
+
+    return password.join('');
 }
 
 // Salvar senha via menu de contexto
@@ -240,7 +252,7 @@ async function handleSavePassword(passwordData, sendResponse) {
             return;
         }
         
-        const response = await fetch(`${API_BASE_URL}/passwords`, {
+        const response = await fetch(`${await getApiBaseUrl()}/passwords`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${authData.token}`,
@@ -289,7 +301,7 @@ async function handleRequestPasswords(domain, url, sendResponse) {
 // Buscar senhas para um domínio específico
 async function getPasswordsForDomain(domain, token) {
     try {
-        const response = await fetch(`${API_BASE_URL}/passwords?search=${encodeURIComponent(domain)}`, {
+        const response = await fetch(`${await getApiBaseUrl()}/passwords?search=${encodeURIComponent(domain)}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -313,7 +325,7 @@ async function getPasswordsForDomain(domain, token) {
 
 // Descriptografar senha
 async function decryptPassword(passwordId, token) {
-    const response = await fetch(`${API_BASE_URL}/passwords/${passwordId}/decrypt`, {
+    const response = await fetch(`${await getApiBaseUrl()}/passwords/${passwordId}/decrypt`, {
         headers: {
             'Authorization': `Bearer ${token}`
         }
@@ -388,28 +400,26 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
 });
 
-// Verificar periodicamente se o token ainda é válido
-setInterval(async () => {
-    const authData = await getAuthData();
-    
-    if (authData.token) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/auth/verify`, {
-                headers: {
-                    'Authorization': `Bearer ${authData.token}`
+// Handle alarms (MV3-compatible periodic tasks)
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name === 'checkToken') {
+        const authData = await getAuthData();
+        if (authData.token) {
+            try {
+                const apiBase = await getApiBaseUrl();
+                const response = await fetch(`${apiBase}/auth/verify`, {
+                    headers: { 'Authorization': `Bearer ${authData.token}` }
+                });
+                if (!response.ok) {
+                    chrome.storage.local.remove(['authToken', 'userEmail', 'userId']);
+                    showNotification('Sessão Expirada', 'Por favor, faça login novamente no SecurePass');
                 }
-            });
-            
-            if (!response.ok) {
-                // Token expirado, fazer logout
-                chrome.storage.local.remove(['authToken', 'userEmail', 'userId']);
-                showNotification('Sessão Expirada', 'Por favor, faça login novamente no SecurePass');
+            } catch (error) {
+                console.error('Erro ao verificar token:', error);
             }
-        } catch (error) {
-            console.error('Erro ao verificar token:', error);
         }
     }
-}, 300000); // Verificar a cada 5 minutos
+});
 
 // Sync com servidor quando online
 chrome.runtime.onStartup.addListener(() => {
@@ -419,7 +429,7 @@ chrome.runtime.onStartup.addListener(() => {
 // Verificar conexão com servidor
 async function checkServerConnection() {
     try {
-        const response = await fetch(`${API_BASE_URL}/health`);
+        const response = await fetch(`${await getApiBaseUrl()}/health`);
         if (response.ok) {
             console.log('Conexão com servidor estabelecida');
         }
@@ -443,14 +453,5 @@ chrome.commands?.onCommand.addListener((command) => {
             break;
     }
 });
-
-// Backup periódico de configurações
-setInterval(() => {
-    chrome.storage.local.get(['settings'], (result) => {
-        if (result.settings) {
-            console.log('Backup de configurações realizado');
-        }
-    });
-}, 3600000); // A cada 1 hora
 
 console.log('SecurePass Background Script carregado');

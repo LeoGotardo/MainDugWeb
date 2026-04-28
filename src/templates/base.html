@@ -43,6 +43,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='scripts/alert.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/button.js') }}"></script>
+    <script>
+        var currentUserRole = "{{ current_user.role if current_user.is_authenticated else 'guest' }}";
+        var currentUserName = "{{ current_user.login if current_user.is_authenticated else '' }}";
+    </script>
     <script src="{{ url_for('static', filename='scripts/script.js') }}"></script>
     
     {% block extra_scripts %}{% endblock %}

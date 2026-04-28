@@ -1,4 +1,5 @@
-import locale, sys, os, uuid, hashlib, requests, datetime, hashlib, base64
+import locale, sys, os, uuid, hashlib, requests, datetime, base64
+from types import SimpleNamespace
 
 from sqlalchemy.ext.hybrid import hybrid_property, Comparator
 from flask_sqlalchemy import SQLAlchemy
@@ -8,7 +9,6 @@ from collections import Counter
 from dotenv import load_dotenv
 from functools import wraps
 from flask import Flask
-from icecream import ic
 
 class Config:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
@@ -36,6 +36,7 @@ class User(UserMixin, Config.db.Model):
     _role_encrypted = Config.db.Column('col_a3', Config.db.String(500), nullable=False, default=lambda: base64.b64encode(Cryptograph.encryptSentence('user', Cryptograph.keyGenerator(Config.ENCRYPT_KEY)[1])[1]).decode('utf-8'))
     enabled = Config.db.Column('col_a4', Config.db.Boolean, default=True, nullable=False)
     passwordPwned = Config.db.Column('col_a5', Config.db.Boolean, default=False, nullable=False)
+    profilePic = Config.db.Column('col_a6', Config.db.String(500), nullable=True, default=None)
     
     @hybrid_property
     def login(self):
@@ -123,10 +124,11 @@ class User(UserMixin, Config.db.Model):
     def toDict(self):
         return {
             'id': self.id,
-            'login': self.login,  
-            'role': self.role,    
+            'login': self.login,
+            'role': self.role,
             'enabled': self.enabled,
             'passwordPwned': self.passwordPwned,
+            'profilePic': self.profilePic,
         }
         
     @property
@@ -399,7 +401,7 @@ class Passwords(UserMixin, Config.db.Model):
 class Logs(UserMixin, Config.db.Model):
     __tablename__ = 'tbl_2'
     id = Config.db.Column('col_c0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
-    passwordId = Config.db.Column('col_c1', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0'), nullable=False)
+    passwordId = Config.db.Column('col_c1', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0', ondelete='CASCADE'), nullable=False)
     lastUse = Config.db.Column('col_c2', Config.db.DateTime, nullable=True)
     
     _ip_encrypted = Config.db.Column('col_c3', Config.db.String(500), nullable=True)
@@ -683,8 +685,8 @@ class Logs(UserMixin, Config.db.Model):
     
 class PasswordFlags(Config.db.Model):
     __tablename__ = 'tbl_4'
-    passwordId = Config.db.Column('col_e0', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0'), primary_key=True)
-    flagId = Config.db.Column('col_e1', Config.db.Integer, Config.db.ForeignKey('tbl_3.col_d0'), primary_key=True)
+    passwordId = Config.db.Column('col_e0', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0', ondelete='CASCADE'), primary_key=True)
+    flagId = Config.db.Column('col_e1', Config.db.Integer, Config.db.ForeignKey('tbl_3.col_d0', ondelete='CASCADE'), primary_key=True)
 
 
 
@@ -694,9 +696,9 @@ class Filters(UserMixin, Config.db.Model):
     name = Config.db.Column('col_d1', Config.db.String(50), nullable=False)
     userId = Config.db.Column('col_d2', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
     
-    flags = Config.db.relationship('Filters', 
-                                   secondary=PasswordFlags.__table__,
-                                   backref=Config.db.backref('passwords', lazy='dynamic'))
+    passwords = Config.db.relationship('Passwords',
+                                      secondary=PasswordFlags.__table__,
+                                      backref=Config.db.backref('filters', lazy='dynamic'))
     
     def toDict(self):
         return {
@@ -732,57 +734,6 @@ class Database:
         self.createSysadmin()
         
     
-    def canHandle(f):
-        @wraps(f)
-        def wrapper(self, userId: str, itemType: str, method: str, item: Passwords | User = None, *args, **kwargs):
-            current_user = Config.session.query(User).filter_by(id=userId).first()
-            # ...
-            match method:
-                case 'get':
-                    match itemType:
-                        case 'user':
-                            success, users = f(self, userId, *args, **kwargs)
-                            if success is not True:
-                                return False, users
-                            if current_user.role == 'sysadmin':
-                                return True, users
-                            else:
-                                return False, 403
-                        case 'password':
-                            success, passwords = f(self, userId, *args, **kwargs)
-                            if success is not True:
-                                return False, passwords
-                            if current_user.role == 'sysadmin':
-                                return True, passwords
-                            else:
-                                passwords = [password for password in passwords if password['user_id'] == current_user.id]
-                                return True, passwords
-                        case _:
-                            return False, f'Invalid itemType'
-                case 'post':
-                    if item:
-                        match itemType:
-                            case 'user':
-                                if current_user.role == 'sysadmin':
-                                    success, msg = f(self, userId, item, *args, **kwargs)
-                                    if not success:
-                                        return False, msg
-                                    return True, msg
-                            case 'password':
-                                owner = Config.session.query(User).filter_by(id=item.user_id).first()
-                                if owner or current_user.role == 'sysadmin':
-                                    success, msg = f(self, userId, item, *args, **kwargs)
-                                    if not success:
-                                        return False, msg
-                                    return True, msg
-                                else:
-                                    return False, 'Invalid user'
-                    return False, 'For post requests you need an item.'
-                case _:
-                    return False, f'Invalid method'
-        
-        return wrapper
-        
     def createTables(self) -> None:
         with Config.app.app_context():
             self.db.create_all()
@@ -791,12 +742,15 @@ class Database:
     def createSysadmin(self) -> None:
         with Config.app.app_context():
             try:
+                login_hash = hashlib.sha256('sysadmin'.encode('utf-8')).hexdigest()
+                existing = self.session.query(User).filter(User._login_hash == login_hash).first()
+                if existing:
+                    return
                 user = User(login='sysadmin', password=self.iscryptograph.encryptPass('sysadmin'), role='sysadmin')
                 self.session.add(user)
                 self.session.commit()
             except Exception as e:
                 self.session.rollback()
-                return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
     
     
     def getDashboardInfo(self, userId: str, page: int =1, perPage: int = 10, sort: str = 'date', sortOrder: str = 'asc', query: str = '') -> tuple[bool, dict]:
@@ -825,14 +779,24 @@ class Database:
             user: User | None = self.session.query(User).filter_by(id=userId).first()
             if user:
                 if user.role == 'super':
-                    with Config.app.app_context():
-                        
-                        
-
-                            
-                        return True, {
-
+                    totalUsers = self.session.query(User).count()
+                    totalPasswords = self.session.query(Passwords).count()
+                    leakedCount = self.session.query(Passwords).filter(Passwords.status == True).count()
+                    return True, {
+                        'passwordCount': totalPasswords,
+                        'leakedCount': leakedCount,
+                        'repeatedCount': 0,
+                        'totalUsers': totalUsers,
+                        'flags': [],
+                        'passwords': [],
+                        'pagination': {
+                            'currentPage': 1, 'totalPages': 0, 'total': totalPasswords,
+                            'perPage': perPage, 'hasPrev': False, 'hasNext': False,
+                            'prevPage': None, 'nextPage': None, 'visiblePages': [],
+                            'showFirst': False, 'showLast': False,
+                            'showLeftEllipsis': False, 'showRightEllipsis': False
                         }
+                    }
                 else:
                     baseQuery = self.session.query(Passwords).filter(Passwords.userId == userId)
                     flags = self.session.query(Filters).filter(Filters.userId == userId).all()
@@ -992,21 +956,19 @@ class Database:
         except Exception as e:
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
-    @canHandle
-    def getUsers(self, headers: list[dict[str, str]] = [], pagination: bool = False, query: str = None, page: int = 1, perPage: int = 10, sort: str = 'name', sortOrder: str = 'asc') -> tuple[bool, list[dict[User]]] | tuple[bool, str]:
+    def getUsers(self, headers: list[dict[str, str]] = [], pagination: bool = False, query: str = None, page: int = 1, perPage: int = 10, sort: str = 'login', sortOrder: str = 'asc') -> tuple[bool, list[dict[User]]] | tuple[bool, str]:
         try:
             sortOptions = {
-                'login': User.login,
+                'login': User._login_hash,
                 'enabled': User.enabled,
                 'passwordPwned': User.passwordPwned,
-                'role': User.role,
             }
-            
-            sortColumn = sortOptions.get(sort, User.login)
-            
+
+            sortColumn = sortOptions.get(sort, User._login_hash)
+
             with Config.app.app_context():
                 base_query = self.session.query(User)
-                    
+
                 if query:
                     base_query = base_query.filter(User.login.ilike(f'%{query}%'))
                 
@@ -1251,9 +1213,12 @@ class Database:
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
         
-    def updateUser(self, id: str, login: str = None, password: str = None, role: str = None) -> tuple[bool, str]:
+    def updateUser(self, id: str, login: str = None, password: str = None, role: str = None, profilePic: str = None) -> tuple[bool, str]:
         try:
             user = self.session.query(User).filter_by(id=id).first()
+
+            if user is None:
+                return False, 'Invalid id'
 
             if login is None:
                 login = user.login
@@ -1263,18 +1228,17 @@ class Database:
                 password = self.iscryptograph.encryptPass(password)
             if role is None:
                 role = user.role
-            
-            if user is not None:
-                user.login = login
-                user.password = password
-                user.role = role
-                    
-                self.session.commit()
-                    
-                return True, 'User updated'
-            else:
-                return False, 'Invalid id'
+
+            user.login = login
+            user.password = password
+            user.role = role
+            if profilePic is not None:
+                user.profilePic = profilePic
+
+            self.session.commit()
+            return True, 'User updated'
         except Exception as e:
+            self.session.rollback()
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     def addPassword(self, userId: str, site: str, login: str, password: str, flags: list[str]) -> tuple[bool, str]:
@@ -1305,14 +1269,12 @@ class Database:
                     return False, f'Flag "{flag_name}" não encontrada para este usuário.'
 
             
-            leak, msg =self.checkPasswordPwned(password)
-            
+            leak, msg = self.checkPasswordPwned(password)
             if leak == True:
-                Passwords.status = True
-                Passwords.timesLeaked = int(msg)
+                nova_senha.status = True
             else:
-                Passwords.status = False
-                
+                nova_senha.status = False
+
             self.session.commit()
             return True, 'Senha e flags cadastradas com sucesso'
             
@@ -1342,11 +1304,9 @@ class Database:
                     return False, f'Flag "{flag_name}" não encontrada para este usuário.'
             
             
-            leak, msg =self.checkPasswordPwned(Password.password)
-            
+            leak, msg = self.checkPasswordPwned(Password.password)
             if leak == True:
                 Password.status = True
-                Password.timesLeaked = int(msg)
             else:
                 Password.status = False
                 
@@ -1358,24 +1318,22 @@ class Database:
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
 
 
-    @canHandle
-    def getPasswords(self, userId, headers: list[dict[str, str]] = [], pagination: bool = False, query: str = None, page: int = 1, perPage: int = 10, sort: str = 'pewed', sortOrder: str = 'asc') -> tuple[bool, list[dict[User]]] | tuple[bool, str]:
+    def getPasswords(self, userId: str, headers: list[dict[str, str]] = [], pagination: bool = False, query: str = None, page: int = 1, perPage: int = 10, sort: str = 'site', sortOrder: str = 'asc') -> tuple[bool, list[dict[User]]] | tuple[bool, str]:
         try:
             sortOptions = {
-                'lastUse': Passwords.lastUse,
-                'site': Passwords.site,
-                'login': Passwords.login,
-                'strength': Passwords.strength,
+                'lastUse': Passwords._lastUse_encrypted,
+                'site': Passwords._site_hash,
+                'login': Passwords._login_hash,
                 'status': Passwords.status,
             }
-            
-            sortColumn = sortOptions.get(sort, Passwords.name)
-            
+
+            sortColumn = sortOptions.get(sort, Passwords._site_hash)
+
             with Config.app.app_context():
                 base_query = self.session.query(Passwords).filter(Passwords.userId == userId)
-                    
+
                 if query:
-                    base_query = base_query.filter(Passwords.name.ilike(f'%{query}%'))
+                    base_query = base_query.filter(Passwords._site_hash.ilike(f'%{query}%'))
                 
                 # Aplicar ordenação
                 if sortOrder == 'desc':
@@ -1473,18 +1431,19 @@ class Database:
     def deletePassword(self, passwordId: str, userId: str) -> tuple[bool, str]:
         try:
             password = self.session.query(Passwords).filter_by(id=passwordId).first()
-            
-            if password is not None:
-                if password.userId == userId:
-                    self.session.delete(password)
-                    self.session.commit()
-                    
-                    return True, 'Password deleted'
-                else:
-                    return False, 'Password not found'
-            else:
+
+            if password is None:
                 return False, 'Password not found'
+            if password.userId != userId:
+                return False, 'Password not found'
+
+            self.session.query(PasswordFlags).filter_by(passwordId=passwordId).delete()
+            self.session.query(Logs).filter_by(passwordId=passwordId).delete()
+            self.session.delete(password)
+            self.session.commit()
+            return True, 'Password deleted'
         except Exception as e:
+            self.session.rollback()
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
@@ -1507,12 +1466,13 @@ class Database:
             
             return False, "A senha não foi encontrada em violações conhecidas."
         except Exception as e:
-            return f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
     def findUserLogin(self, login: str) -> tuple[bool, User | str]:
         try:
-            user = self.session.query(User).filter_by(login=login).first()
+            login_hash = hashlib.sha256(login.encode('utf-8')).hexdigest()
+            user = self.session.query(User).filter(User._login_hash == login_hash).first()
             
             if user is not None:
                 return True, user
@@ -1524,29 +1484,17 @@ class Database:
 
     def updatePasswordStatus(self, id: str) -> tuple[bool, str]:
         try:
-            credentials = self.session.query(Passwords).filter_by(user_id=id, status=False).all()
-            if credentials is not None:
-                response = self.cryptograph.keyGenerator(id)
-                if response[0] == False:
-                    return False, response[1]
-                key = response[1]
-                for credential in credentials:
-                    response = self.cryptograph.decryptSentence(credential.password, key)
-                    if response[0] == False:
-                        return False, response[1]
-                    userPassword = response[1]
-                    response = self.checkPasswordPwned(userPassword)
-                    if response[0] == True:
-                        credential.status = True
-                        credential.timesLeaked = int(response[1])
-                    else:
-                        credential.status = False
-                self.session.commit()
-                
-                return True, 'Passwords updated'
-            else:
-                return True, 'Passwords updated'
+            credentials = self.session.query(Passwords).filter_by(userId=id, status=False).all()
+            for credential in credentials:
+                userPassword = credential.password
+                if not userPassword:
+                    continue
+                leaked, msg = self.checkPasswordPwned(userPassword)
+                credential.status = leaked == True
+            self.session.commit()
+            return True, 'Passwords updated'
         except Exception as e:
+            self.session.rollback()
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
 
@@ -1579,7 +1527,7 @@ class Database:
         
     def getLeakedPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
         try:
-            passwords = self.session.query(Passwords).filter_by(user_id=id).filter(Passwords.status == True).all()
+            passwords = self.session.query(Passwords).filter_by(userId=id).filter(Passwords.status == True).all()
             
             if passwords is not None:
                 return True, passwords
@@ -1591,15 +1539,12 @@ class Database:
         
     def getMostUsedPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
         try:
-            passwords = self.session.query(Passwords).filter_by(user_id=id).all()
-            
+            passwords = self.session.query(Passwords).filter_by(userId=id).all()
+
             if passwords is not None:
-                passwordList = [Cryptograph.decryptSentence(password.password, id)[1] for password in passwords]
-                
+                passwordList = [p.password for p in passwords if p.password is not None]
                 passwordCounter = Counter(passwordList)
-                
                 mostUsedPasswords = passwordCounter.most_common(10)
-                
                 return True, mostUsedPasswords
             else:
                 return False, 'Cant find any passwords'
@@ -1607,6 +1552,53 @@ class Database:
             return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
         
     
+    def getPasswordLogs(self, passwordId: str, userId: str, itemType: str = 'password') -> tuple[bool, object | str]:
+        try:
+            password = self.session.query(Passwords).filter_by(id=passwordId, userId=userId).first()
+            if not password:
+                return False, 'Credencial não encontrada ou acesso negado'
+
+            logs = self.session.query(Logs).filter_by(passwordId=passwordId).order_by(Logs.lastUse.desc()).all()
+
+            flags_objs = self.session.query(Filters).join(
+                PasswordFlags, PasswordFlags.flagId == Filters.id
+            ).filter(PasswordFlags.passwordId == password.id).all()
+
+            result = SimpleNamespace(
+                id=password.id,
+                site=password.site,
+                login=password.login,
+                status=password.status,
+                flags=[f.name for f in flags_objs],
+                logs=logs,
+            )
+            return True, result
+        except Exception as e:
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+
+
+    def deletePasswordLogs(self, logs: list, userId: str, itemType: str = 'password') -> tuple[bool, str]:
+        try:
+            deleted = 0
+            for logId in logs:
+                if not logId:
+                    continue
+                log = self.session.query(Logs).filter_by(id=int(logId)).first()
+                if not log:
+                    continue
+                password = self.session.query(Passwords).filter_by(id=log.passwordId, userId=userId).first()
+                if not password:
+                    return False, 'Acesso negado'
+                self.session.delete(log)
+                deleted += 1
+
+            self.session.commit()
+            return True, f'{deleted} log(s) excluído(s) com sucesso'
+        except Exception as e:
+            self.session.rollback()
+            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+
+
     def getGoodPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
         try:
             passwords = self.session.query(Passwords).filter_by(user_id=id).filter(Passwords.status == False).all()

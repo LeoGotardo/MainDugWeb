@@ -309,12 +309,15 @@ async function loadSettings() {
     if (stored.settings) {
         settings = { ...settings, ...stored.settings };
     }
-    
-    // Aplicar configurações aos elementos
-    document.getElementById('autoFill').checked = settings.autoFill;
-    document.getElementById('autoSave').checked = settings.autoSave;
-    document.getElementById('notifications').checked = settings.notifications;
-    document.getElementById('darkMode').checked = settings.darkMode;
+
+    const setChecked = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = value;
+    };
+    setChecked('autoFill', settings.autoFill);
+    setChecked('autoSave', settings.autoSave);
+    setChecked('notifications', settings.notifications);
+    setChecked('darkMode', settings.darkMode);
 }
 
 async function saveSettings() {
@@ -493,28 +496,78 @@ function setupEventListeners() {
 // UTILITÁRIOS DE SEGURANÇA
 // ==========================================
 
-async function hashPassword(password) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-}
-
-async function verifyPassword(password, hash) {
-    const passwordHash = await hashPassword(password);
-    return passwordHash === hash;
+async function getOrCreateEncryptionKey() {
+    const stored = await chrome.storage.local.get(['encryptionKey']);
+    if (stored.encryptionKey) {
+        return crypto.subtle.importKey(
+            'jwk', stored.encryptionKey,
+            { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']
+        );
+    }
+    const key = await crypto.subtle.generateKey(
+        { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']
+    );
+    const exported = await crypto.subtle.exportKey('jwk', key);
+    await chrome.storage.local.set({ encryptionKey: exported });
+    return key;
 }
 
 async function encryptPassword(password) {
-    // Implementação simplificada - em produção, usar AES-256
-    return btoa(password);
+    const key = await getOrCreateEncryptionKey();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encoded = new TextEncoder().encode(password);
+    const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+    const combined = new Uint8Array(iv.length + encrypted.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(encrypted), iv.length);
+    return btoa(String.fromCharCode(...combined));
 }
 
-async function decryptPassword(encryptedPassword) {
-    // Implementação simplificada - em produção, usar AES-256
-    return atob(encryptedPassword);
+async function decryptPassword(encryptedData) {
+    try {
+        const key = await getOrCreateEncryptionKey();
+        const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
+        const iv = combined.slice(0, 12);
+        const ciphertext = combined.slice(12);
+        const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+        return new TextDecoder().decode(decrypted);
+    } catch {
+        // Legacy fallback for old btoa-encoded data
+        try { return atob(encryptedData); } catch { return ''; }
+    }
+}
+
+async function hashPassword(password) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const keyMaterial = await crypto.subtle.importKey(
+        'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
+    );
+    const bits = await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, keyMaterial, 256
+    );
+    const hashArr = new Uint8Array(bits);
+    const toHex = arr => Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `${toHex(salt)}:${toHex(hashArr)}`;
+}
+
+async function verifyPassword(password, storedHash) {
+    if (!storedHash.includes(':')) {
+        // Legacy unsalted SHA-256 — still verify but format changed on next login
+        const data = new TextEncoder().encode(password);
+        const hash = await crypto.subtle.digest('SHA-256', data);
+        const hex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+        return hex === storedHash;
+    }
+    const [saltHex, expectedHex] = storedHash.split(':');
+    const salt = Uint8Array.from(saltHex.match(/.{2}/g).map(b => parseInt(b, 16)));
+    const keyMaterial = await crypto.subtle.importKey(
+        'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
+    );
+    const bits = await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, keyMaterial, 256
+    );
+    const hex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
+    return hex === expectedHex;
 }
 
 function escapeHtml(text) {
