@@ -11,13 +11,22 @@ from functools import wraps
 from flask import Flask
 
 class Config:
-    locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+    try:
+        locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+    except locale.Error:
+        pass
     load_dotenv()
-    SECRET_KEY = os.getenv('SecretKey') 
+    SECRET_KEY = os.getenv('SecretKey')
     DEFAULT_PASSWORD = os.getenv('DefaultPassword')
     ENCRYPT_KEY = os.getenv('SecretKey')
-    app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+    _src_dir = os.path.dirname(os.path.abspath(__file__))
+    app = Flask(__name__,
+                template_folder=os.path.join(_src_dir, 'templates'),
+                static_folder=os.path.join(_src_dir, 'static'))
+    _db_url = os.getenv('DATABASE_URL', f'sqlite:///{os.path.join(_src_dir, "instance", "database.db")}')
+    if _db_url.startswith('postgres://'):
+        _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
     app.config['SECRET_KEY'] = SECRET_KEY
     db = SQLAlchemy(app)
     session = db.session
@@ -1601,7 +1610,7 @@ class Database:
 
     def getGoodPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
         try:
-            passwords = self.session.query(Passwords).filter_by(user_id=id).filter(Passwords.status == False).all()
+            passwords = self.session.query(Passwords).filter_by(userId=id).filter(Passwords.status == False).all()
             
             if passwords is not None:
                 return True, passwords

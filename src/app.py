@@ -499,6 +499,26 @@ def deletePassword():
 
     return redirect(url_for('index'))
 
+
+@app.route('/password/view', methods=['POST'])
+@login_required
+def viewPassword():
+    try:
+        passwordId = request.form.get('password_id', '').strip()
+        if not passwordId:
+            return jsonify({'success': False, 'message': 'ID inválido'}), 400
+
+        success, result = database.getPassword(credId=passwordId)
+        if success is True:
+            if str(result.userId) != str(current_user.id):
+                return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+            return jsonify({'success': True, 'password': result.password})
+        return jsonify({'success': False, 'message': result}), 403
+    except Exception as e:
+        app.logger.error(f'Erro ao buscar credencial: {e}')
+        return jsonify({'success': False, 'message': 'Erro interno'}), 500
+
+
 # Configura os error handlers
 setupErrorHandlers(app)
 

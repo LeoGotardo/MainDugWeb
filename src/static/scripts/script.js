@@ -325,9 +325,9 @@ document.addEventListener("DOMContentLoaded", function () {
   if (viewPasswordModal) {
     viewPasswordModal.addEventListener("show.bs.modal", function (event) {
       const button = event.relatedTarget;
+      const passwordId = button.getAttribute("data-id");
       const site = button.getAttribute("data-site");
       const user = button.getAttribute("data-user");
-      const pass = button.getAttribute("data-pass");
 
       const modalTitle = viewPasswordModal.querySelector(".modal-title");
       const siteInput = viewPasswordModal.querySelector("#view-site");
@@ -339,8 +339,16 @@ document.addEventListener("DOMContentLoaded", function () {
       if (siteInput) siteInput.value = site;
       if (usernameInput) usernameInput.value = user;
       if (passInput) {
-        passInput.value = pass;
+        passInput.value = "Carregando...";
         passInput.type = "password";
+        fetch("/password/view", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ password_id: passwordId })
+        })
+          .then(r => r.json())
+          .then(data => { passInput.value = data.success ? data.password : "Erro ao carregar"; })
+          .catch(() => { passInput.value = "Erro ao carregar"; });
       }
       if (toggleIcon) toggleIcon.className = "bi bi-eye-fill";
     });

@@ -107,12 +107,12 @@
                                 </td>
                                 <td class="text-nowrap">{{ password.lastUse or 'Nunca' }}</td>
                                 <td class="text-nowrap">
-                                    <button class="btn btn-sm btn-outline-primary" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#viewPasswordModal" 
-                                        data-site="{{ password.site }}" 
-                                        data-user="{{ password.login }}" 
-                                        data-pass="{{ password.password }}" 
+                                    <button class="btn btn-sm btn-outline-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#viewPasswordModal"
+                                        data-id="{{ password.id }}"
+                                        data-site="{{ password.site }}"
+                                        data-user="{{ password.login }}"
                                         title="Visualizar">
                                         <i class="bi bi-eye-fill"></i>
                                     </button>

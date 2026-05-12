@@ -6,3 +6,5 @@ argon2-cffi
 flask_admin
 requests
 flask
+jwt
+psycopg2-binary

@@ -1,5 +1,5 @@
 __pycache__/
 instance/
-dug
+venv
 .env
 test.py
