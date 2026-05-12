@@ -1,3 +1,12 @@
+import sys, os
+
+_src_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _src_dir)
+# Remove any cached 'api' module that points to the Vercel entry wrapper
+for _key in list(sys.modules.keys()):
+    if _key == 'api' or _key.startswith('api.'):
+        del sys.modules[_key]
+
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask import redirect, url_for, render_template, request, flash, jsonify
 from api.index import blueprint as apiBlueprint
