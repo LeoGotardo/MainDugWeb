@@ -1,11 +1,11 @@
 {
   "builds": [
     {
-      "src": "api/index.py",
+      "src": "wsgi.py",
       "use": "@vercel/python"
     }
   ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/api/index" }
+    { "source": "/(.*)", "destination": "/wsgi" }
   ]
 }

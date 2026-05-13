@@ -3,3 +3,5 @@ instance/
 venv
 .env
 test.py
+.vercel
+.env*.local
