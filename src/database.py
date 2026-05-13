@@ -23,7 +23,7 @@ class Config:
     app = Flask(__name__,
                 template_folder=os.path.join(_src_dir, 'templates'),
                 static_folder=os.path.join(_src_dir, 'static'))
-    _db_url = os.getenv('DATABASE_URL', f'sqlite:///{os.path.join(_src_dir, "instance", "database.db")}')
+    _db_url = os.getenv('DATABASE_URL', 'sqlite:////tmp/database.db')
     if _db_url.startswith('postgres://'):
         _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
