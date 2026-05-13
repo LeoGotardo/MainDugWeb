@@ -1,6 +1,8 @@
 import sys, os
+from dotenv import load_dotenv
 
 _src_dir = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(_src_dir, '.env'))
 sys.path.insert(0, _src_dir)
 # Remove any cached 'api' module that points to the Vercel entry wrapper
 for _key in list(sys.modules.keys()):
@@ -13,7 +15,6 @@ from api.index import blueprint as apiBlueprint
 from database import Database, Config, User
 from cryptograph import Cryptograph
 from functools import wraps
-from dotenv import load_dotenv
 
 import requests
 import json

@@ -1,5 +1,8 @@
 import sys, os
+from dotenv import load_dotenv
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+_src_dir = os.path.join(os.path.dirname(__file__), '..', 'src')
+load_dotenv(os.path.join(_src_dir, '.env'))
+sys.path.insert(0, _src_dir)
 
 from app import app
