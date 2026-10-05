@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}MainDug{% endblock %}</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,6 +17,7 @@
     
     <!-- Script de tema no head para evitar flash -->
     <script src="{{ url_for('static', filename='scripts/head.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/csrf.js') }}"></script>
 </head>
 
 <body class="min-vh-100">
@@ -44,8 +46,8 @@
     <script src="{{ url_for('static', filename='scripts/alert.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/button.js') }}"></script>
     <script>
-        var currentUserRole = "{{ current_user.role if current_user.is_authenticated else 'guest' }}";
-        var currentUserName = "{{ current_user.login if current_user.is_authenticated else '' }}";
+        var currentUserRole = {{ (current_user.role if current_user.is_authenticated else 'guest') | tojson }};
+        var currentUserName = {{ (current_user.login if current_user.is_authenticated else '') | tojson }};
     </script>
     <script src="{{ url_for('static', filename='scripts/script.js') }}"></script>
     

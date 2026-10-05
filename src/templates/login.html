@@ -9,6 +9,7 @@
     <h2 class="text-center mb-4">Login</h2>
     
     <form action="{{ url_for('login') }}" method="POST" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="mb-3">
             <label for="login" class="form-label">Usuário (Login)</label>
             <div class="input-group">

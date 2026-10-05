@@ -1,10 +1,15 @@
-flask_sqlalchemy
-python-dotenv
-cryptography
-flask_login
-argon2-cffi
-flask_admin
-requests
-flask
-jwt
-psycopg2-binary
+argon2-cffi==25.1.0
+cryptography==47.0.0
+Flask==3.1.3
+Flask-Limiter==4.1.1
+Flask-Login==0.6.3
+Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.3.0
+psycopg2-binary==2.9.13
+PyJWT==2.15.1
+python-dotenv==1.2.2
+requests==2.33.1
+SQLAlchemy==2.0.49
+
+# dev / test
+pytest==9.1.1

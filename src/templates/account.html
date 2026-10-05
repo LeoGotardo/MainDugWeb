@@ -7,6 +7,7 @@
     
     <div class="content-box">
         <form action="{{ url_for('account') }}" method="POST" autocomplete="off" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <h4 class="mb-3">Informações Básicas</h4>
             
             <div class="d-flex flex-column align-items-center mb-5 image-input-container">

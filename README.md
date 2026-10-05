@@ -70,20 +70,20 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Create `src/.env` with:
+Copy `.env.example` to `.env` and fill it in. `src/settings.py` refuses to start and lists
+any missing key. `SECRET_KEY`, `ENCRYPTION_KEY` and `JWT_SECRET` must be three different values.
 
-```
-SecretKey=<flask + encryption secret key>
-DefaultPassword=<default password used for seeded/admin accounts>
-DATABASE_URL=postgresql://user:password@localhost:5432/maindug   # omit to fall back to sqlite
-JWT_SECRET=<secret for signing extension API tokens>
-SITE_URL=https://your-deployment-url
-```
-
-Run the app:
+Run the app and the tests:
 
 ```bash
 python src/app.py
+python -m pytest
+```
+
+No admin account is created automatically. Create one with:
+
+```bash
+BOOTSTRAP_ADMIN_LOGIN=<login> BOOTSTRAP_ADMIN_PASSWORD=<12+ chars> python scripts/createAdmin.py
 ```
 
 ### Browser extension
@@ -92,7 +92,7 @@ Load `src/extension/extension` (or `extention/` for the standalone prototype) as
 
 ## Deployment
 
-The repo is configured to deploy on Vercel: `api/wsgi.py` is the serverless entry point, and `vercel.json` routes all requests to it. See [`VERCEL_ATTEMPTS.md`](VERCEL_ATTEMPTS.md) for the history of issues hit while wiring this up (mainly the `api/index.py` naming clash between Vercel's convention and the internal API blueprint).
+The repo is configured to deploy on Vercel: `api/wsgi.py` is the serverless entry point, and `vercel.json` routes all requests to it. See [`VERCEL_ATTEMPTS.md`](VERCEL_ATTEMPTS.md) for the history of issues hit while wiring this up (mainly the `api/index.py` naming clash between Vercel's convention and the internal API blueprint, now resolved by moving the blueprint to `src/apiRoutes.py`).
 
 ## Known issues
 

@@ -1,135 +1,125 @@
-import locale, sys, os, uuid, hashlib, requests, datetime, base64
+import locale, sys, os, uuid, datetime, hashlib, math, requests
 from types import SimpleNamespace
 
-from sqlalchemy.ext.hybrid import hybrid_property, Comparator
 from flask_sqlalchemy import SQLAlchemy
-from cryptograph import Cryptograph
 from flask_login import UserMixin
 from collections import Counter
-from dotenv import load_dotenv
-from functools import wraps
 from flask import Flask
+
+import settings
+from cryptograph import Cryptograph, encryptField, decryptField, lookupHash
+
 
 class Config:
     try:
         locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
     except locale.Error:
         pass
-    load_dotenv()
-    SECRET_KEY = os.getenv('SecretKey')
-    DEFAULT_PASSWORD = os.getenv('DefaultPassword')
-    ENCRYPT_KEY = os.getenv('SecretKey')
     _src_dir = os.path.dirname(os.path.abspath(__file__))
     app = Flask(__name__,
                 template_folder=os.path.join(_src_dir, 'templates'),
                 static_folder=os.path.join(_src_dir, 'static'))
-    _db_url = os.getenv('DATABASE_URL', 'sqlite:////tmp/database.db')
-    if _db_url.startswith('postgres://'):
-        _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
-    app.config['SECRET_KEY'] = SECRET_KEY
+    app.config.update(
+        SECRET_KEY=settings.SECRET_KEY,
+        SQLALCHEMY_DATABASE_URI=settings.DATABASE_URL,
+        SQLALCHEMY_ENGINE_OPTIONS={'pool_pre_ping': True},
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+        SESSION_COOKIE_SECURE=settings.IS_PROD,
+        REMEMBER_COOKIE_HTTPONLY=True,
+        REMEMBER_COOKIE_SAMESITE='Lax',
+        REMEMBER_COOKIE_SECURE=settings.IS_PROD,
+        REMEMBER_COOKIE_DURATION=datetime.timedelta(days=7),
+        MAX_CONTENT_LENGTH=1024 * 1024,
+        DEBUG=settings.DEBUG,
+    )
     db = SQLAlchemy(app)
     session = db.session
 
 
+def _errorMsg(e: Exception) -> str:
+    return f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+
+
+def encryptedProperty(columnAttr: str, hashAttr: str | None = None) -> property:
+    """
+    Atributo que cifra ao gravar e decifra ao ler a coluna `columnAttr`.
+    Com `hashAttr`, também mantém o hash de busca (HMAC) daquela coluna.
+    Para filtrar por esses campos, compare a coluna de hash com `lookupHash(valor)`.
+    """
+    def getter(self):
+        return decryptField(getattr(self, columnAttr))
+
+    def setter(self, value):
+        if value:
+            value = str(value)
+            setattr(self, columnAttr, encryptField(value))
+            if hashAttr:
+                setattr(self, hashAttr, lookupHash(value))
+        else:
+            setattr(self, columnAttr, None)
+            if hashAttr:
+                setattr(self, hashAttr, None)
+
+    return property(getter, setter)
+
+
+def buildPagination(page: int, perPage: int, total: int, window: int = 2) -> dict:
+    totalPages = max(1, math.ceil(total / perPage)) if total else 0
+    page = min(max(1, page), totalPages or 1)
+    start = max(1, page - window)
+    end = min(totalPages, page + window)
+    visible = list(range(start, end + 1)) if totalPages else []
+    return {
+        'currentPage': page,
+        'totalPages': totalPages,
+        'total': total,
+        'perPage': perPage,
+        'hasPrev': page > 1,
+        'hasNext': page < totalPages,
+        'prevPage': page - 1 if page > 1 else None,
+        'nextPage': page + 1 if page < totalPages else None,
+        'visiblePages': visible,
+        'showFirst': bool(visible) and 1 not in visible,
+        'showLast': bool(visible) and totalPages not in visible,
+        'showLeftEllipsis': start > 2,
+        'showRightEllipsis': end < totalPages - 1,
+    }
+
+
+def _paginate(items: list, page: int, perPage: int) -> tuple[list, dict]:
+    pagination = buildPagination(page, perPage, len(items))
+    offset = (pagination['currentPage'] - 1) * perPage
+    return items[offset:offset + perPage], pagination
+
+
+def _parseLastUse(value: str | None) -> datetime.datetime:
+    try:
+        return datetime.datetime.strptime(value, '%d/%m/%Y %H:%M:%S')
+    except (TypeError, ValueError):
+        return datetime.datetime.min
+
 
 class User(UserMixin, Config.db.Model):
     __tablename__ = 'tbl_0'
-    
+
     id = Config.db.Column('col_a0', Config.db.String(36), default=lambda: str(uuid.uuid4()), primary_key=True, nullable=False)
-    
     _login_encrypted = Config.db.Column('col_a1', Config.db.String(500), unique=True, nullable=False)
     _login_hash = Config.db.Column('col_a1_hash', Config.db.String(64), unique=True, nullable=False, index=True)
     password = Config.db.Column('col_a2', Config.db.String(255), nullable=False)
-    
-    _role_encrypted = Config.db.Column('col_a3', Config.db.String(500), nullable=False, default=lambda: base64.b64encode(Cryptograph.encryptSentence('user', Cryptograph.keyGenerator(Config.ENCRYPT_KEY)[1])[1]).decode('utf-8'))
+    _role_encrypted = Config.db.Column('col_a3', Config.db.String(500), nullable=False, default=lambda: encryptField('user'))
     enabled = Config.db.Column('col_a4', Config.db.Boolean, default=True, nullable=False)
     passwordPwned = Config.db.Column('col_a5', Config.db.Boolean, default=False, nullable=False)
     profilePic = Config.db.Column('col_a6', Config.db.String(500), nullable=True, default=None)
-    
-    @hybrid_property
-    def login(self):
-        if self._login_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._login_encrypted) if isinstance(self._login_encrypted, str) else self._login_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting login: {decrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @login.setter
-    def login(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._login_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                    self._login_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
-                else:
-                    raise ValueError(f'Error encrypting login: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._login_encrypted = None
-            self._login_hash = None
-    
-    @login.expression
-    def login(cls):
-        return cls._login_hash
-    
-    @login.comparator
-    class LoginComparator(Comparator):
-        def __eq__(self, other):
-            if other is None:
-                return self.__clause_element__().is_(None)
-            otherHash = hashlib.sha256(other.encode('utf-8')).hexdigest()
-            return self.__clause_element__() == otherHash
-        
-        def __ne__(self, other):
-            if other is None:
-                return self.__clause_element__().isnot(None)
-            otherHash = hashlib.sha256(other.encode('utf-8')).hexdigest()
-            return self.__clause_element__() != otherHash
-            
-    @hybrid_property
-    def role(self):
-        if self._role_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                # Converte de base64 string para bytes antes de decriptar
-                encrypted_bytes = base64.b64decode(self._role_encrypted) if isinstance(self._role_encrypted, str) else self._role_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting role: {decrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        else:
-            return None
-    
-    @role.setter
-    def role(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    # Converte bytes para base64 string
-                    self._role_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                else:
-                    raise ValueError(f'Error encrypting role: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key') 
-        else:
-            self._role_encrypted = None
-    
+
+    login = encryptedProperty('_login_encrypted', '_login_hash')
+    role = encryptedProperty('_role_encrypted')
+
+    @property
+    def is_active(self):
+        # Conta desativada não autentica e perde a sessão no próximo request.
+        return bool(self.enabled)
+
     def toDict(self):
         return {
             'id': self.id,
@@ -139,28 +129,12 @@ class User(UserMixin, Config.db.Model):
             'passwordPwned': self.passwordPwned,
             'profilePic': self.profilePic,
         }
-        
-    @property
-    def is_authenticated(self):
-        return True
-    
-    @property
-    def is_active(self):
-        return True
-    
-    @property
-    def is_anonymous(self):
-        return False
-    
-    def get_id(self):
-        return str(self.id)
 
 
-class Passwords(UserMixin, Config.db.Model):
+class Passwords(Config.db.Model):
     __tablename__ = 'tbl_1'
-    id = Config.db.Column('col_b0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
+    id = Config.db.Column('col_b0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)
     userId = Config.db.Column('col_b1', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
-    
     _login_encrypted = Config.db.Column('col_b2', Config.db.String(500), nullable=False)
     _login_hash = Config.db.Column('col_b2_hash', Config.db.String(64), nullable=False, index=True)
     _password_encrypted = Config.db.Column('col_b3', Config.db.String(500), nullable=False)
@@ -169,250 +143,38 @@ class Passwords(UserMixin, Config.db.Model):
     status = Config.db.Column('col_b5', Config.db.Boolean, nullable=False, default=False)
     _lastUse_encrypted = Config.db.Column('col_b6', Config.db.String(500), nullable=True, default=None)
     _whereUsed_encrypted = Config.db.Column('col_b7', Config.db.String(500), nullable=True, default=None)
-    
-    @hybrid_property
-    def login(self):
-        if self._login_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._login_encrypted) if isinstance(self._login_encrypted, str) else self._login_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting login: {decrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @login.setter
-    def login(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._login_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                    self._login_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
-                else:
-                    raise ValueError(f'Error encrypting login: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._login_encrypted = None
-            self._login_hash = None
-    
-    @login.expression
-    def login(cls):
-        return cls._login_hash
-    
-    @login.comparator
-    class LoginComparator(Comparator):
-        def __eq__(self, other):
-            if other is None:
-                return self.__clause_element__().is_(None)
-            otherHash = hashlib.sha256(other.encode('utf-8')).hexdigest()
-            return self.__clause_element__() == otherHash
-        
-        def __ne__(self, other):
-            if other is None:
-                return self.__clause_element__().isnot(None)
-            otherHash = hashlib.sha256(other.encode('utf-8')).hexdigest()
-            return self.__clause_element__() != otherHash
-            
-    @hybrid_property
-    def password(self):
-         # Usar getattr garante que pegamos o VALOR da coluna na instância
-        val = getattr(self, '_password_encrypted', None)
-        
-        if val is None or isinstance(val, str) == False or val == "":
-            return None
-        
-        response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-        if response == True:
-            encrypted_bytes = base64.b64decode(val)
-            success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-            if success:
-                return decrypted
-            else:
-                raise ValueError(f'Error decrypting password: {decrypted}')
-        else:
-            raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @password.setter
-    def password(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._password_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                else:
-                    raise ValueError(f'Error encrypting password: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._password_encrypted = None
-            
-    @hybrid_property
-    def site(self):
-        if self._site_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._site_encrypted) if isinstance(self._site_encrypted, str) else self._site_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting site: {decrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @site.setter
-    def site(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._site_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                    self._site_hash = hashlib.sha256(value.encode('utf-8')).hexdigest()
-                else:
-                    raise ValueError(f'Error encrypting site: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._site_encrypted = None
-            self._site_hash = None
-    
-    @site.expression
-    def site(cls):
-        return cls._site_hash
-    
-    @site.comparator
-    class SiteComparator(Comparator):
-        def __eq__(self, other):
-            if other is None:
-                return self.__clause_element__().is_(None)
-            otherHash = hashlib.sha256(other.encode('utf-8')).hexdigest()
-            return self.__clause_element__() == otherHash
-        
-        def __ne__(self, other):
-            if other is None:
-                return self.__clause_element__().isnot(None)
-            otherHash = hashlib.sha256(other.encode('utf-8')).hexdigest()
-            return self.__clause_element__() != otherHash
-            
-    @hybrid_property
-    def lastUse(self):
-        # Usar getattr garante que pegamos o VALOR da coluna na instância
-        val = getattr(self, '_lastUse_encrypted', None)
-        
-        if val is None or isinstance(val, str) == False or val == "":
-            return None
-        
-        response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-        if response == True:
-            try:
-                # val aqui agora é a string Base64 vinda do banco
-                encrypted_bytes = base64.b64decode(val)
-                
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    # Se falhar, logamos mas não quebramos o app
-                    print(f"Erro na decriptação: {decrypted}")
-                    return None
-            except Exception as e:
-                print(f"Erro ao processar Base64: {e}")
-                return None
-        return None
 
-    @lastUse.setter
-    def lastUse(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._lastUse_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                else:
-                    raise ValueError(f'Error encrypting lastUse: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._lastUse_encrypted = None
-            
-    @hybrid_property
-    def whereUsed(self):
-        if self._whereUsed_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._whereUsed_encrypted) if isinstance(self._whereUsed_encrypted, str) else self._whereUsed_encrypted
-                if encrypted_bytes:
-                    success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                    if success:
-                        return decrypted
-                    else:
-                        raise ValueError(f'Error decrypting whereUsed: {decrypted}')
-                else:
-                    return None
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @whereUsed.setter
-    def whereUsed(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._whereUsed_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                else:
-                    raise ValueError(f'Error encrypting whereUsed: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._whereUsed_encrypted = None
+    login = encryptedProperty('_login_encrypted', '_login_hash')
+    password = encryptedProperty('_password_encrypted')
+    site = encryptedProperty('_site_encrypted', '_site_hash')
+    lastUse = encryptedProperty('_lastUse_encrypted')
+    whereUsed = encryptedProperty('_whereUsed_encrypted')
 
-    def toDict(self):  
-        return {
+    @property
+    def flags(self) -> list[str]:
+        return [f.name for f in self.filters]
+
+    def toDict(self, includePassword: bool = False):
+        data = {
             'id': self.id,
             'user_id': self.userId,
             'site': self.site,
             'login': self.login,
-            'password': self.password,
             'status': self.status,
             'lastUse': self.lastUse,
             'whereUsed': self.whereUsed,
+            'flags': self.flags,
         }
-      
-    @property
-    def is_authenticated(self):
-        return True
-    
-    @property
-    def is_active(self):
-        return True
-    
-    @property
-    def is_anonymous(self):
-        return False
-    
-    def get_id(self):
-        return str(self.id)
+        if includePassword:
+            data['password'] = self.password
+        return data
 
 
-class Logs(UserMixin, Config.db.Model):
+class Logs(Config.db.Model):
     __tablename__ = 'tbl_2'
-    id = Config.db.Column('col_c0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)  
+    id = Config.db.Column('col_c0', Config.db.Integer, primary_key=True, nullable=False, autoincrement=True)
     passwordId = Config.db.Column('col_c1', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0', ondelete='CASCADE'), nullable=False)
     lastUse = Config.db.Column('col_c2', Config.db.DateTime, nullable=True)
-    
     _ip_encrypted = Config.db.Column('col_c3', Config.db.String(500), nullable=True)
     _cidade_encrypted = Config.db.Column('col_c4', Config.db.String(500), nullable=True)
     _estado_encrypted = Config.db.Column('col_c5', Config.db.String(500), nullable=True)
@@ -421,247 +183,16 @@ class Logs(UserMixin, Config.db.Model):
     _os_encrypted = Config.db.Column('col_c8', Config.db.String(500), nullable=True)
     _browser_encrypted = Config.db.Column('col_c9', Config.db.String(500), nullable=True)
     _version_encrypted = Config.db.Column('col_c10', Config.db.String(500), nullable=True)
-    
-    @hybrid_property    
-    def ip(self):    
-        if self._ip_encrypted:    
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)    
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._ip_encrypted) if isinstance(self._ip_encrypted, str) else self._ip_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting ip: {decrypted}')
-            else:    
-                raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @ip.setter
-    def ip(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._ip_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                else:
-                    raise ValueError(f'Error encrypting ip: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._ip_encrypted = None
-            
-    @hybrid_property
-    def cidade(self):
-        if self._cidade_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._cidade_encrypted) if isinstance(self._cidade_encrypted, str) else self._cidade_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting cidade: {decrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @cidade.setter
-    def cidade(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._cidade_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                else:
-                    raise ValueError(f'Error encrypting cidade: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._cidade_encrypted = None
-            
-    @hybrid_property
-    def estado(self):
-        if self._estado_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._estado_encrypted) if isinstance(self._estado_encrypted, str) else self._estado_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting estado: {decrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @estado.setter
-    def estado(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._estado_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                else:
-                    raise ValueError(f'Error encrypting estado: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._estado_encrypted = None
-            
-    @hybrid_property
-    def pais(self):
-        if self._pais_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._pais_encrypted) if isinstance(self._pais_encrypted, str) else self._pais_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting pais: {decrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @pais.setter
-    def pais(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._pais_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                else:
-                    raise ValueError(f'Error encrypting pais: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._pais_encrypted = None
-            
-    @hybrid_property
-    def asn(self):
-        if self._asn_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._asn_encrypted) if isinstance(self._asn_encrypted, str) else self._asn_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting asn: {decrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @asn.setter
-    def asn(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._asn_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                else:
-                    raise ValueError(f'Error encrypting asn: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._asn_encrypted = None
-            
-    @hybrid_property
-    def os(self):
-        if self._os_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._os_encrypted) if isinstance(self._os_encrypted, str) else self._os_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting os: {decrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @os.setter
-    def os(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._os_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                else:
-                    raise ValueError(f'Error encrypting os: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._os_encrypted = None
-            
-    @hybrid_property
-    def browser(self):
-        if self._browser_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._browser_encrypted) if isinstance(self._browser_encrypted, str) else self._browser_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting browser: {decrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @browser.setter
-    def browser(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._browser_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                else:
-                    raise ValueError(f'Error encrypting browser: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._browser_encrypted = None
-            
-    @hybrid_property
-    def version(self):
-        if self._version_encrypted:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                encrypted_bytes = base64.b64decode(self._version_encrypted) if isinstance(self._version_encrypted, str) else self._version_encrypted
-                success, decrypted = Cryptograph.decryptSentence(encrypted_bytes, key)
-                if success:
-                    return decrypted
-                else:
-                    raise ValueError(f'Error decrypting version: {decrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating decryption key')
-        return None
-    
-    @version.setter
-    def version(self, value):
-        if value:
-            response, key = Cryptograph.keyGenerator(Config.ENCRYPT_KEY)
-            if response == True:
-                success, encrypted = Cryptograph.encryptSentence(value, key)
-                if success:
-                    self._version_encrypted = base64.b64encode(encrypted).decode('utf-8') if isinstance(encrypted, bytes) else encrypted
-                else:
-                    raise ValueError(f'Error encrypting version: {encrypted}')
-            else:
-                raise ValueError(f'{response} \nError generating encryption key')
-        else:
-            self._version_encrypted = None
-                   
+
+    ip = encryptedProperty('_ip_encrypted')
+    cidade = encryptedProperty('_cidade_encrypted')
+    estado = encryptedProperty('_estado_encrypted')
+    pais = encryptedProperty('_pais_encrypted')
+    asn = encryptedProperty('_asn_encrypted')
+    os = encryptedProperty('_os_encrypted')
+    browser = encryptedProperty('_browser_encrypted')
+    version = encryptedProperty('_version_encrypted')
+
     def toDict(self):
         return {
             'id': self.id,
@@ -675,928 +206,425 @@ class Logs(UserMixin, Config.db.Model):
             'OS': self.os,
             'browser': self.browser,
             'version': self.version,
-        }   
-    
-    @property
-    def is_authenticated(self):
-        return True
-    
-    @property
-    def is_active(self):
-        return True
-    
-    @property
-    def is_anonymous(self):
-        return False
-    
-    def get_id(self):
-        return str(self.id)
-    
+        }
+
+
 class PasswordFlags(Config.db.Model):
     __tablename__ = 'tbl_4'
     passwordId = Config.db.Column('col_e0', Config.db.Integer, Config.db.ForeignKey('tbl_1.col_b0', ondelete='CASCADE'), primary_key=True)
     flagId = Config.db.Column('col_e1', Config.db.Integer, Config.db.ForeignKey('tbl_3.col_d0', ondelete='CASCADE'), primary_key=True)
 
 
-
-class Filters(UserMixin, Config.db.Model):
+class Filters(Config.db.Model):
     __tablename__ = 'tbl_3'
     id = Config.db.Column('col_d0', Config.db.Integer, primary_key=True)
     name = Config.db.Column('col_d1', Config.db.String(50), nullable=False)
     userId = Config.db.Column('col_d2', Config.db.String(36), Config.db.ForeignKey('tbl_0.col_a0'), nullable=False)
-    
+
     passwords = Config.db.relationship('Passwords',
-                                      secondary=PasswordFlags.__table__,
-                                      backref=Config.db.backref('filters', lazy='dynamic'))
-    
+                                       secondary=PasswordFlags.__table__,
+                                       backref=Config.db.backref('filters', lazy='dynamic'))
+
     def toDict(self):
         return {
             'id': self.id,
             'name': self.name,
             'user_id': self.userId,
-            'passwords_id': [r.id for r in self.passwordsId]
+            'passwords_id': [p.id for p in self.passwords],
         }
 
-    @property
-    def is_authenticated(self):
-        return True
-    
-    @property
-    def is_active(self):
-        return True
-    
-    @property
-    def is_anonymous(self):
-        return False
-    
-    def get_id(self):
-        return str(self.id)
 
 class Database:
     def __init__(self) -> None:
         self.db = Config.db
         self.session = Config.session
-        self.cryptograph = Cryptograph
         self.iscryptograph = Cryptograph()
-        
         self.createTables()
-        self.createSysadmin()
-        
-    
+
     def createTables(self) -> None:
         with Config.app.app_context():
             self.db.create_all()
-            
-    
-    def createSysadmin(self) -> None:
-        with Config.app.app_context():
-            try:
-                login_hash = hashlib.sha256('sysadmin'.encode('utf-8')).hexdigest()
-                existing = self.session.query(User).filter(User._login_hash == login_hash).first()
-                if existing:
-                    return
-                user = User(login='sysadmin', password=self.iscryptograph.encryptPass('sysadmin'), role='sysadmin')
-                self.session.add(user)
-                self.session.commit()
-            except Exception as e:
-                self.session.rollback()
-    
-    
-    def getDashboardInfo(self, userId: str, page: int =1, perPage: int = 10, sort: str = 'date', sortOrder: str = 'asc', query: str = '') -> tuple[bool, dict]:
-        """
-        Gera estatísticas do dashboard baseadas no perfil do usuário.
-        Para super users: estatísticas globais. Para outros: estatísticas da loja.
 
-        Args:
-            storeId (str): ID da loja para filtrar estatísticas
-            page (int): Página atual para paginação de logs
-            rowsPerPage (int): Quantidade de logs por página
-            userId (str): ID do usuário solicitante (determina nível de acesso)
+    def _userFlags(self, userId: str, names: list[str]) -> tuple[bool, list[Filters] | str]:
+        flags = []
+        for name in dict.fromkeys(n.strip().lower() for n in names if n and n.strip()):
+            flag = self.session.query(Filters).filter_by(userId=userId, name=name).first()
+            if flag is None:
+                return False, f'Flag "{name}" não encontrada para este usuário.'
+            flags.append(flag)
+        return True, flags
 
-        Returns:
-            tuple[bool, dict]: (True, dados_estatisticas) com contadores e rankings,
-                            (False, mensagem_erro) se falha
-        """
+    def _userPasswords(self, userId: str, query: str = '', sort: str = 'site', sortOrder: str = 'asc') -> list[Passwords]:
+        """Todas as credenciais do usuário, filtradas e ordenadas já decifradas (busca por substring não funciona sobre dados cifrados)."""
+        passwords = self.session.query(Passwords).filter(Passwords.userId == userId).all()
+
+        query = (query or '').strip().lower()
+        if query:
+            passwords = [p for p in passwords if query in (p.site or '').lower() or query in (p.login or '').lower()]
+
+        sortKeys = {
+            'site': lambda p: (p.site or '').lower(),
+            'login': lambda p: (p.login or '').lower(),
+            'status': lambda p: p.status,
+            'lastUse': lambda p: _parseLastUse(p.lastUse),
+        }
+        passwords.sort(key=sortKeys.get(sort, sortKeys['site']), reverse=sortOrder == 'desc')
+        return passwords
+
+    def getDashboardInfo(self, userId: str, page: int = 1, perPage: int = 10, sort: str = 'site', sortOrder: str = 'asc', query: str = '') -> tuple[bool, dict | str]:
         try:
-            perPage = int(perPage)
             page = int(page)
-            sort = str(sort)
-            sortOrder = str(sortOrder)
-            query = str(query)
-            
-            
+            perPage = min(max(int(perPage), 1), 100)
+
             user: User | None = self.session.query(User).filter_by(id=userId).first()
-            if user:
-                if user.role == 'super':
-                    totalUsers = self.session.query(User).count()
-                    totalPasswords = self.session.query(Passwords).count()
-                    leakedCount = self.session.query(Passwords).filter(Passwords.status == True).count()
-                    return True, {
-                        'passwordCount': totalPasswords,
-                        'leakedCount': leakedCount,
-                        'repeatedCount': 0,
-                        'totalUsers': totalUsers,
-                        'flags': [],
-                        'passwords': [],
-                        'pagination': {
-                            'currentPage': 1, 'totalPages': 0, 'total': totalPasswords,
-                            'perPage': perPage, 'hasPrev': False, 'hasNext': False,
-                            'prevPage': None, 'nextPage': None, 'visiblePages': [],
-                            'showFirst': False, 'showLast': False,
-                            'showLeftEllipsis': False, 'showRightEllipsis': False
-                        }
-                    }
-                else:
-                    baseQuery = self.session.query(Passwords).filter(Passwords.userId == userId)
-                    flags = self.session.query(Filters).filter(Filters.userId == userId).all()
-                    
-                    # Executa a query paginada
-                    paginatedPasswords = baseQuery.paginate(
-                        page=page, 
-                        per_page=perPage, 
-                        error_out=False
-                    )
-                    
-                    # 1. Gera a lista de navegação (Ex: [1, 2, None, 4, 5, 6, None, 10])
-                    # O iter_pages já cria a lógica inteligente de "..." (None)
-                    iter_pages_list = list(paginatedPasswords.iter_pages())
-                    
-                    # 2. Cria uma lista apenas com números para fazer as validações de lógica (sem None)
-                    visible_numbers = [x for x in iter_pages_list if x is not None]
-
-                    # Contagens para estatísticas (mantive sua lógica original aqui)
-                    # Nota: Se tiver muitos dados, fazer .all() aqui pode ser pesado. 
-                    # O ideal seria usar count() no banco, mas mantive sua lógica:
-                    all_passwords_for_stats = baseQuery.all() 
-                    passwordCount = len(all_passwords_for_stats)
-                    leakedCount = sum(1 for p in all_passwords_for_stats if p.status)
-                    decrypted_pass_list = [p.password for p in all_passwords_for_stats if p.password is not None]
-                    counts = Counter(decrypted_pass_list)
-                    repeatedCount = sum(1 for count in counts.values() if count > 1)
-
-                    return True, {
-                        'passwordCount': passwordCount,
-                        'leakedCount': leakedCount,
-                        'repeatedCount': repeatedCount,
-                        'flags': flags,
-                        'passwords': paginatedPasswords.items, 
-                        'pagination': {
-                            'currentPage': paginatedPasswords.page,
-                            'totalPages': paginatedPasswords.pages,
-                            'total': paginatedPasswords.total,
-                            'perPage': paginatedPasswords.per_page,
-                            'hasPrev': paginatedPasswords.has_prev,
-                            'hasNext': paginatedPasswords.has_next,
-                            'prevPage': paginatedPasswords.prev_num if paginatedPasswords.has_prev else None,
-                            'nextPage': paginatedPasswords.next_num if paginatedPasswords.has_next else None,
-                            
-                            
-                            'visiblePages': iter_pages_list, 
-                            
-                            'showFirst': 1 not in visible_numbers, 
-                            
-                            'showLast': paginatedPasswords.pages not in visible_numbers,
-                            
-                            'showLeftEllipsis': visible_numbers[0] > 2 if visible_numbers else False,
-                            
-                            'showRightEllipsis': (visible_numbers[-1] < paginatedPasswords.pages - 1) if visible_numbers else False
-                        }
-                    }
-            else:
+            if user is None:
                 return False, 'Invalid user'
-                
+
+            filters = {'query': query, 'sort': sort, 'sortOrder': sortOrder}
+
+            if user.role == 'super':
+                totalPasswords = self.session.query(Passwords).count()
+                return True, {
+                    'passwordCount': totalPasswords,
+                    'leakedCount': self.session.query(Passwords).filter(Passwords.status == True).count(),
+                    'repeatedCount': 0,
+                    'totalUsers': self.session.query(User).count(),
+                    'flags': [],
+                    'passwords': [],
+                    'pagination': buildPagination(1, perPage, 0),
+                    'filters': filters,
+                }
+
+            allPasswords = self.session.query(Passwords).filter(Passwords.userId == userId).all()
+            counts = Counter(p.password for p in allPasswords if p.password is not None)
+
+            visible = self._userPasswords(userId, query=query, sort=sort, sortOrder=sortOrder)
+            pageItems, pagination = _paginate(visible, page, perPage)
+
+            return True, {
+                'passwordCount': len(allPasswords),
+                'leakedCount': sum(1 for p in allPasswords if p.status),
+                'repeatedCount': sum(1 for c in counts.values() if c > 1),
+                'flags': self.session.query(Filters).filter(Filters.userId == userId).all(),
+                'passwords': pageItems,
+                'pagination': pagination,
+                'filters': filters,
+            }
         except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-            
-    
+            return -1, _errorMsg(e)
+
     def getUser(self, id: str) -> tuple[bool, User | str]:
         try:
             user = self.session.query(User).filter_by(id=id).first()
-            
             if user:
                 return True, user
-            else:
-                return False, 'Invalid user'
+            return False, 'Invalid user'
         except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-        
+            return -1, _errorMsg(e)
+
     def getStats(self, userId: str) -> tuple[bool, dict | str]:
-        """
-        Retorna estatísticas de segurança das senhas do usuário
-        
-        Args:
-            userId (str): ID do usuário
-            
-        Returns:
-            tuple[bool, dict | str]: (True, estatísticas) ou (False, mensagem_erro)
-        """
         try:
             user = self.session.query(User).filter_by(id=userId).first()
             if not user:
                 return False, 'Usuário não encontrado'
-            
-            # Busca todas as senhas do usuário
+
             passwords = self.session.query(Passwords).filter_by(userId=userId).all()
-            
-            # Contadores
+
             leakedPasswords = []
             weakPasswords = []
             reusedPasswordsDict = {}
-            
+
             for password in passwords:
-                # Senhas vazadas
+                entry = {'id': password.id, 'site': password.site, 'login': password.login}
                 if password.status:
-                    leakedPasswords.append({
-                        'id': password.id,
-                        'site': password.site,
-                        'login': password.login
-                    })
-                
-                # Senhas fracas (menos de 8 caracteres ou muito simples)
+                    leakedPasswords.append(entry)
+
                 decryptedPass = password.password
                 if decryptedPass and len(decryptedPass) < 8:
-                    weakPasswords.append({
-                        'id': password.id,
-                        'site': password.site,
-                        'login': password.login,
-                        'reason': 'Menos de 8 caracteres'
-                    })
-                
-                # Senhas reutilizadas
+                    weakPasswords.append({**entry, 'reason': 'Menos de 8 caracteres'})
                 if decryptedPass:
-                    if decryptedPass in reusedPasswordsDict:
-                        reusedPasswordsDict[decryptedPass].append({
-                            'id': password.id,
-                            'site': password.site,
-                            'login': password.login
-                        })
-                    else:
-                        reusedPasswordsDict[decryptedPass] = [{
-                            'id': password.id,
-                            'site': password.site,
-                            'login': password.login
-                        }]
-            
-            # Filtra apenas senhas que foram reusadas (aparecem mais de uma vez)
-            reusedPasswords = {
-                k: v for k, v in reusedPasswordsDict.items() 
-                if len(v) > 1
-            }
-            
-            stats = {
+                    reusedPasswordsDict.setdefault(decryptedPass, []).append(entry)
+
+            reusedPasswords = [v for v in reusedPasswordsDict.values() if len(v) > 1]
+
+            return True, {
                 'totalPasswords': len(passwords),
                 'leakedCount': len(leakedPasswords),
                 'weakCount': len(weakPasswords),
                 'reusedCount': len(reusedPasswords),
                 'leakedPasswords': leakedPasswords,
                 'weakPasswords': weakPasswords,
-                'reusedPasswords': [
-                    {
-                        'sites': [p['site'] for p in sites],
-                        'count': len(sites)
-                    }
-                    for sites in reusedPasswords.values()
-                ]
+                'reusedPasswords': [{'sites': [p['site'] for p in sites], 'count': len(sites)} for sites in reusedPasswords],
             }
-            
-            return True, stats
-            
         except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-    def getUsers(self, headers: list[dict[str, str]] = [], pagination: bool = False, query: str = None, page: int = 1, perPage: int = 10, sort: str = 'login', sortOrder: str = 'asc') -> tuple[bool, list[dict[User]]] | tuple[bool, str]:
+            return -1, _errorMsg(e)
+
+    def getUsers(self, query: str = '', page: int = 1, perPage: int = 50, sort: str = 'login', sortOrder: str = 'asc') -> tuple[bool, list[dict]] | tuple[int, str]:
         try:
-            sortOptions = {
-                'login': User._login_hash,
-                'enabled': User.enabled,
-                'passwordPwned': User.passwordPwned,
-            }
+            users = [u.toDict() for u in self.session.query(User).all()]
 
-            sortColumn = sortOptions.get(sort, User._login_hash)
+            query = (query or '').strip().lower()
+            if query:
+                users = [u for u in users if query in (u['login'] or '').lower()]
 
-            with Config.app.app_context():
-                base_query = self.session.query(User)
+            sortKey = sort if sort in ('login', 'role', 'enabled', 'passwordPwned') else 'login'
+            users.sort(key=lambda u: str(u[sortKey]).lower(), reverse=sortOrder == 'desc')
 
-                if query:
-                    base_query = base_query.filter(User.login.ilike(f'%{query}%'))
-                
-                # Aplicar ordenação
-                if sortOrder == 'desc':
-                    base_query = base_query.order_by(sortColumn.desc())
-                else:
-                    base_query = base_query.order_by(sortColumn.asc())
-                
-                if pagination:
-                    # Usar paginate diretamente na query
-                    paginated_result = base_query.paginate(
-                        page=page, 
-                        per_page=perPage, 
-                        error_out=False
-                    )
-                    o = base_query.all()
-                    
-                    if paginated_result.items:
-                        # Converter items para dicionário
-                        items_dict = [user.to_dict() for user in paginated_result.items]
-                        
-                        # Calcular informações de navegação
-                        current_page = paginated_result.page
-                        total_pages = paginated_result.pages
-                        
-                        # Páginas visíveis
-                        start_page = max(1, current_page - 5)
-                        end_page = min(total_pages, current_page + 5)
-                        visible_pages = list(range(start_page, end_page + 1))
-                        
-                        pag = {
-                            'items': items_dict,
-                            'headers': headers,
-                            'pagination': {
-                                'currentPage': current_page,
-                                'totalPages': total_pages,
-                                 'total': paginated_result.total,
-                                'perPage': paginated_result.per_page,
-                                'hasPrev': paginated_result.has_prev,
-                                'hasNext': paginated_result.has_next,
-                                'prevPage': current_page - 1 if paginated_result.has_prev else None,
-                                'nextPage': current_page + 1 if paginated_result.has_next else None,
-                                'visiblePages': visible_pages,
-                                'showFirst': 1 not in visible_pages,
-                                'showLast': total_pages not in visible_pages,
-                                'showLeftEllipsis': start_page > 2,
-                                'showRightEllipsis': end_page < total_pages - 1
-                            },
-                            'filters': {
-                                'query': query,
-                                'sort': sort,
-                                'sortOrder': sortOrder,
-                            }
-                        }
-                        return True, pag
-                    else:
-                        # Retornar estrutura vazia mas consistente
-                        return True, {
-                            'items': [],
-                            'headers': headers,
-                            'pagination': {
-                                'currentPage': 1,
-                                'totalPages': 0,
-                                'total': 0,
-                                'perPage': perPage,
-                                'hasPrev': False,
-                                'hasNext': False,
-                                'prevPage': None,
-                                'nextPage': None,
-                                'visiblePages': [],
-                                'showFirst': False,
-                                'showLast': False,
-                                'showLeftEllipsis': False,
-                                'showRightEllipsis': False
-                            },
-                            'filters': {
-                                'query': query,
-                                'sort': sort,
-                                'sortOrder': sortOrder,
-                            }
-                        }
-                else:
-                    # Sem paginação - retornar lista simples
-                    users = base_query.all()
-                    if users:
-                        return True, [user.to_dict() for user in users]
-                    else:
-                        return True, []
-        except Exception as e:
-            self.session.rollback()  # Garante que a transação não fique quebrada
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-
-
-    def validUser(self, login: str, password: str) -> tuple[bool, User | str]:
-        """
-        Valida as credenciais de um usuário.
-        Tenta múltiplas formas de busca para garantir compatibilidade.
-        
-        Args:
-            login (str): Nome de usuário
-            password (str): Senha em texto plano
-        
-        Returns:
-            tuple[bool, User | str]:
-                - (True, User): Credenciais válidas
-                - (False, str): Credenciais inválidas ou erro
-        """
-        try:
-            user = None
-            
-            # Método 1: Buscar pelo hash do login (mais rápido/indexado)
-            loginHash = hashlib.sha256(login.encode('utf-8')).hexdigest()
-            user = self.session.query(User).filter(
-                User._login_hash == loginHash
-            ).first()
-            
-            # Método 2: Se não encontrou, tentar pelo comparator do hybrid_property
-            if user is None:
-                user = self.session.query(User).filter(
-                    User.login == login
-                ).first()
-            
-            # Método 3: Se ainda não encontrou, buscar todos e comparar manualmente
-            if user is None:
-                allUsers = self.session.query(User).all()
-                for u in allUsers:
-                    try:
-                        if u.login == login:  # Usa o getter do property
-                            user = u
-                            break
-                    except Exception:
-                        continue
-            
-            # Se não encontrou de jeito nenhum
-            if user is None:
-                return False, 'Credenciais inválidas'
-            
-            # Verificar a senha usando Argon2
-            try:
-                success, msg = self.iscryptograph.isValidPass(user.password, password)
-                
-                if success:
-                    return True, user
-                else:
-                    return False, 'Credenciais inválidas'
-                    
-            except Exception as passErr:
-                # Erro na verificação da senha
-                print(f"ERRO ao verificar senha: {passErr}")
-                return False, 'Credenciais inválidas'
-                
-        except Exception as e:
-            errorMsg = f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-            print(f"ERRO em validUser: {errorMsg}")
-            return False, 'Erro ao validar credenciais'
-
-
-    def createUser(self, login: str, password: str) -> tuple[bool, User | str]:
-        """
-        Cria um novo usuário no sistema.
-        
-        Args:
-            login (str): Nome de usuário único
-            password (str): Senha em texto plano (será criptografada)
-        
-        Returns:
-            tuple[bool, User | str]: 
-                - (True, User): Usuário criado com sucesso
-                - (False, str): Usuário já existe
-                - (-1, str): Erro durante criação
-        """
-        try:
-            loginHash = hashlib.sha256(login.encode('utf-8')).hexdigest()
-            
-            existingUser = self.session.query(User).filter(
-                User._login_hash == loginHash
-            ).first()
-            
-            if existingUser is not None:
-                return False, 'Usuário já existe. Escolha outro nome de usuário.'
-            
-            newUser = User(
-                login=login,
-                password=self.iscryptograph.encryptPass(password)
-            )
-            
-            self.session.add(newUser)
-            self.session.commit()
-            
-            return True, newUser
-            
+            pageItems, _ = _paginate(users, int(page), int(perPage))
+            return True, pageItems
         except Exception as e:
             self.session.rollback()
-            
-            errorMsg = f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-            
-            return -1, errorMsg
-      
-        
+            return -1, _errorMsg(e)
+
+    def validUser(self, login: str, password: str) -> tuple[bool, User | str]:
+        try:
+            user = self.session.query(User).filter(User._login_hash == lookupHash(login)).first()
+
+            if user is None:
+                self.iscryptograph.burnVerify(password)
+                return False, 'Credenciais inválidas'
+
+            success, _ = self.iscryptograph.isValidPass(user.password, password)
+            if success is not True or not user.enabled:
+                return False, 'Credenciais inválidas'
+            return True, user
+        except Exception as e:
+            Config.app.logger.error(f'Erro em validUser: {_errorMsg(e)}')
+            return False, 'Erro ao validar credenciais'
+
+    def createUser(self, login: str, password: str, role: str = 'user') -> tuple[bool, User | str]:
+        try:
+            if self.session.query(User).filter(User._login_hash == lookupHash(login)).first() is not None:
+                return False, 'Usuário já existe. Escolha outro nome de usuário.'
+
+            newUser = User(login=login, password=self.iscryptograph.encryptPass(password), role=role)
+            self.session.add(newUser)
+            self.session.commit()
+            return True, newUser
+        except Exception as e:
+            self.session.rollback()
+            return -1, _errorMsg(e)
+
     def addFlag(self, id: str, name: str) -> tuple[bool, str]:
         try:
-            user = self.session.query(User).filter_by(id=id).first()
-            if user is None:
+            if self.session.query(User).filter_by(id=id).first() is None:
                 return False, 'Invalid user'
-            flag = Filters(userId=id, name=name)
-            self.session.add(flag)
+            if self.session.query(Filters).filter_by(userId=id, name=name).first() is not None:
+                return False, 'Flag já existe'
+            self.session.add(Filters(userId=id, name=name))
             self.session.commit()
-            
             return True, 'Flag added'
         except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-        
+            self.session.rollback()
+            return -1, _errorMsg(e)
+
     def deleteFlag(self, id: str, flagId: str) -> tuple[bool, str]:
         try:
             flag = self.session.query(Filters).filter_by(id=flagId, userId=id).first()
-            
-            if flag is not None:
-                self.session.delete(flag)
-                self.session.commit()
-                
-                return True, 'Flag deleted'
-            else:
+            if flag is None:
                 return False, 'Flag not found'
+            self.session.query(PasswordFlags).filter_by(flagId=flag.id).delete()
+            self.session.delete(flag)
+            self.session.commit()
+            return True, 'Flag deleted'
         except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-
+            self.session.rollback()
+            return -1, _errorMsg(e)
 
     def deleteUser(self, id: str) -> tuple[bool, str]:
         try:
             user = self.session.query(User).filter_by(id=id).first()
-            
-            if user is not None:
-                self.session.delete(user)
-                self.session.commit()
-                
-                return True, 'User deleted'
-            else:
+            if user is None:
                 return False, 'User not found'
+            passwordIds = [p.id for p in self.session.query(Passwords.id).filter_by(userId=id)]
+            if passwordIds:
+                self.session.query(PasswordFlags).filter(PasswordFlags.passwordId.in_(passwordIds)).delete(synchronize_session=False)
+                self.session.query(Logs).filter(Logs.passwordId.in_(passwordIds)).delete(synchronize_session=False)
+                self.session.query(Passwords).filter_by(userId=id).delete(synchronize_session=False)
+            self.session.query(Filters).filter_by(userId=id).delete(synchronize_session=False)
+            self.session.delete(user)
+            self.session.commit()
+            return True, 'User deleted'
         except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-        
-    def updateUser(self, id: str, login: str = None, password: str = None, role: str = None, profilePic: str = None) -> tuple[bool, str]:
+            self.session.rollback()
+            return -1, _errorMsg(e)
+
+    def updateUser(self, id: str, password: str = None, role: str = None, profilePic: str = None) -> tuple[bool, str]:
+        """O login não muda por aqui: ele é a chave de busca da conta."""
         try:
             user = self.session.query(User).filter_by(id=id).first()
-
             if user is None:
                 return False, 'Invalid id'
 
-            if login is None:
-                login = user.login
-            if password is None:
-                password = user.password
-            else:
-                password = self.iscryptograph.encryptPass(password)
-            if role is None:
-                role = user.role
-
-            user.login = login
-            user.password = password
-            user.role = role
+            if password:
+                user.password = self.iscryptograph.encryptPass(password)
+            if role:
+                user.role = role
             if profilePic is not None:
-                user.profilePic = profilePic
+                user.profilePic = profilePic or None
 
             self.session.commit()
             return True, 'User updated'
         except Exception as e:
             self.session.rollback()
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
+            return -1, _errorMsg(e)
+
     def addPassword(self, userId: str, site: str, login: str, password: str, flags: list[str]) -> tuple[bool, str]:
         try:
-            user = self.session.query(User).filter_by(id=userId).first()
-            if not user:
+            if not self.session.query(User).filter_by(id=userId).first():
                 return False, 'Usuário não encontrado'
-            
-            nova_senha = Passwords(
-                userId=userId, 
-                site=site, 
-                login=login, 
-                password=password, 
-                lastUse=datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+
+            ok, flagObjs = self._userFlags(userId, flags)
+            if not ok:
+                return False, flagObjs
+
+            leaked, _ = self.checkPasswordPwned(password)
+            newPassword = Passwords(
+                userId=userId,
+                site=site,
+                login=login,
+                password=password,
+                lastUse=datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+                status=leaked is True,
             )
-            
-            self.session.add(nova_senha)
+            self.session.add(newPassword)
             self.session.flush()
 
-            for flag_name in flags:
-                flag_obj = self.session.query(Filters).filter_by(userId=userId, name=flag_name).first()
-                
-                if flag_obj:
-                    nova_relacao = PasswordFlags(passwordId=nova_senha.id, flagId=flag_obj.id)
-                    self.session.add(nova_relacao)
-                else:
-                    self.session.rollback()
-                    return False, f'Flag "{flag_name}" não encontrada para este usuário.'
-
-            
-            leak, msg = self.checkPasswordPwned(password)
-            if leak == True:
-                nova_senha.status = True
-            else:
-                nova_senha.status = False
+            for flag in flagObjs:
+                self.session.add(PasswordFlags(passwordId=newPassword.id, flagId=flag.id))
 
             self.session.commit()
             return True, 'Senha e flags cadastradas com sucesso'
-            
         except Exception as e:
             self.session.rollback()
-            return -1, f'Erro ao adicionar senha: {str(e)}'
-        
-        
-    def updatePassword(self, passwordId: str, site: str, login: str, password: str, flags: list[str]) -> tuple[bool, str]:
+            return -1, _errorMsg(e)
+
+    def updatePassword(self, passwordId: str, userId: str, site: str, login: str, password: str, flags: list[str]) -> tuple[bool, str]:
         try:
-            Password = self.session.query(Passwords).filter_by(id=passwordId).first()
-            if not Password:
+            credential = self.session.query(Passwords).filter_by(id=passwordId, userId=userId).first()
+            if credential is None:
                 return False, 'Senha não encontrada'
-            
-            Password.site = site
-            Password.login = login
-            Password.password = password
-            
-            for flag_name in flags:
-                flag_obj = self.session.query(Filters).filter_by(userId=Password.userId, name=flag_name).first()
-                
-                if flag_obj:
-                    nova_relacao = PasswordFlags(passwordId=Password.id, flagId=flag_obj.id)
-                    self.session.add(nova_relacao)
-                else:
-                    self.session.rollback()
-                    return False, f'Flag "{flag_name}" não encontrada para este usuário.'
-            
-            
-            leak, msg = self.checkPasswordPwned(Password.password)
-            if leak == True:
-                Password.status = True
-            else:
-                Password.status = False
-                
+
+            ok, flagObjs = self._userFlags(userId, flags)
+            if not ok:
+                return False, flagObjs
+
+            passwordChanged = password != credential.password
+            credential.site = site
+            credential.login = login
+            credential.password = password
+            if passwordChanged:
+                leaked, _ = self.checkPasswordPwned(password)
+                credential.status = leaked is True
+
+            # As flags enviadas substituem as anteriores.
+            self.session.query(PasswordFlags).filter_by(passwordId=credential.id).delete()
+            for flag in flagObjs:
+                self.session.add(PasswordFlags(passwordId=credential.id, flagId=flag.id))
+
             self.session.commit()
             return True, 'Senha e flags atualizadas com sucesso'
-            
         except Exception as e:
             self.session.rollback()
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, _errorMsg(e)
 
-
-    def getPasswords(self, userId: str, headers: list[dict[str, str]] = [], pagination: bool = False, query: str = None, page: int = 1, perPage: int = 10, sort: str = 'site', sortOrder: str = 'asc') -> tuple[bool, list[dict[User]]] | tuple[bool, str]:
+    def getPasswords(self, userId: str, query: str = '', page: int = 1, perPage: int = 50, sort: str = 'site', sortOrder: str = 'asc') -> tuple[bool, dict] | tuple[int, str]:
+        """Lista paginada para a API. Não inclui a senha: ela sai só por /passwords/<id>/decrypt."""
         try:
-            sortOptions = {
-                'lastUse': Passwords._lastUse_encrypted,
-                'site': Passwords._site_hash,
-                'login': Passwords._login_hash,
-                'status': Passwords.status,
+            perPage = min(max(int(perPage), 1), 100)
+            passwords = self._userPasswords(userId, query=query, sort=sort, sortOrder=sortOrder)
+            pageItems, pagination = _paginate(passwords, int(page), perPage)
+            return True, {
+                'items': [p.toDict() for p in pageItems],
+                'pagination': pagination,
+                'filters': {'query': query, 'sort': sort, 'sortOrder': sortOrder},
             }
-
-            sortColumn = sortOptions.get(sort, Passwords._site_hash)
-
-            with Config.app.app_context():
-                base_query = self.session.query(Passwords).filter(Passwords.userId == userId)
-
-                if query:
-                    base_query = base_query.filter(Passwords._site_hash.ilike(f'%{query}%'))
-                
-                # Aplicar ordenação
-                if sortOrder == 'desc':
-                    base_query = base_query.order_by(sortColumn.desc())
-                else:
-                    base_query = base_query.order_by(sortColumn.asc())
-                
-                if pagination:
-                    # Usar paginate diretamente na query
-                    paginated_result = base_query.paginate(
-                        page=page, 
-                        per_page=perPage, 
-                        error_out=False
-                    )
-                    o = base_query.all()
-                    
-                    if paginated_result.items:
-                        # Converter items para dicionário
-                        items_dict = [password.to_dict() for password in paginated_result.items]
-                        
-                        # Calcular informações de navegação
-                        current_page = paginated_result.page
-                        total_pages = paginated_result.pages
-                        
-                        # Páginas visíveis
-                        start_page = max(1, current_page - 5)
-                        end_page = min(total_pages, current_page + 5)
-                        visible_pages = list(range(start_page, end_page + 1))
-                        
-                        pag = {
-                            'items': items_dict,
-                            'headers': headers,
-                            'pagination': {
-                                'currentPage': current_page,
-                                'totalPages': total_pages,
-                                 'total': paginated_result.total,
-                                'perPage': paginated_result.per_page,
-                                'hasPrev': paginated_result.has_prev,
-                                'hasNext': paginated_result.has_next,
-                                'prevPage': current_page - 1 if paginated_result.has_prev else None,
-                                'nextPage': current_page + 1 if paginated_result.has_next else None,
-                                'visiblePages': visible_pages,
-                                'showFirst': 1 not in visible_pages,
-                                'showLast': total_pages not in visible_pages,
-                                'showLeftEllipsis': start_page > 2,
-                                'showRightEllipsis': end_page < total_pages - 1
-                            },
-                            'filters': {
-                                'query': query,
-                                'sort': sort,
-                                'sortOrder': sortOrder,
-                                'userId': userId
-                            }
-                        }
-                        return True, pag
-                    else:
-                        # Retornar estrutura vazia mas consistente
-                        return True, {
-                            'items': [],
-                            'headers': headers,
-                            'pagination': {
-                                'currentPage': 1,
-                                'totalPages': 0,
-                                'total': 0,
-                                'perPage': perPage,
-                                'hasPrev': False,
-                                'hasNext': False,
-                                'prevPage': None,
-                                'nextPage': None,
-                                'visiblePages': [],
-                                'showFirst': False,
-                                'showLast': False,
-                                'showLeftEllipsis': False,
-                                'showRightEllipsis': False
-                            },
-                            'filters': {
-                                'query': query,
-                                'sort': sort,
-                                'sortOrder': sortOrder,
-                                'userId': userId
-                            }
-                        }
-                else:
-                    # Sem paginação - retornar lista simples
-                    users = base_query.all()
-                    if users:
-                        return True, [user.to_dict() for user in users]
-                    else:
-                        return True, []
         except Exception as e:
-            self.session.rollback()  # Garante que a transação não fique quebrada
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-    
+            self.session.rollback()
+            return -1, _errorMsg(e)
+
     def deletePassword(self, passwordId: str, userId: str) -> tuple[bool, str]:
         try:
-            password = self.session.query(Passwords).filter_by(id=passwordId).first()
-
+            password = self.session.query(Passwords).filter_by(id=passwordId, userId=userId).first()
             if password is None:
                 return False, 'Password not found'
-            if password.userId != userId:
-                return False, 'Password not found'
 
-            self.session.query(PasswordFlags).filter_by(passwordId=passwordId).delete()
-            self.session.query(Logs).filter_by(passwordId=passwordId).delete()
+            self.session.query(PasswordFlags).filter_by(passwordId=password.id).delete()
+            self.session.query(Logs).filter_by(passwordId=password.id).delete()
             self.session.delete(password)
             self.session.commit()
             return True, 'Password deleted'
         except Exception as e:
             self.session.rollback()
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-    
+            return -1, _errorMsg(e)
+
     def checkPasswordPwned(self, password: str) -> tuple[bool, str]:
+        """k-anonymity da HIBP: só os 5 primeiros caracteres do SHA-1 saem da máquina."""
         try:
-            sha1_hash = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()
-            prefix = sha1_hash[:5]
-            suffix = sha1_hash[5:]
-            
-            url = f"https://api.pwnedpasswords.com/range/{prefix}"
-            response = requests.get(url)
-            
+            sha1Hash = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()
+            prefix, suffix = sha1Hash[:5], sha1Hash[5:]
+
+            response = requests.get(f'https://api.pwnedpasswords.com/range/{prefix}', timeout=5, headers={'Add-Padding': 'true'})
             if response.status_code != 200:
-                return False, f"Erro ao acessar a API: {response.status_code}"
-            
-            hashes = (line.split(':') for line in response.text.splitlines())
-            for hash_suffix, count in hashes:
-                if hash_suffix == suffix:
-                    return True, count
-            
-            return False, "A senha não foi encontrada em violações conhecidas."
+                return False, f'Erro ao acessar a API: {response.status_code}'
+
+            for line in response.text.splitlines():
+                hashSuffix, _, count = line.partition(':')
+                if hashSuffix == suffix and count.strip() != '0':
+                    return True, count.strip()
+            return False, 'A senha não foi encontrada em violações conhecidas.'
         except Exception as e:
-            return False, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-    
-    def findUserLogin(self, login: str) -> tuple[bool, User | str]:
-        try:
-            login_hash = hashlib.sha256(login.encode('utf-8')).hexdigest()
-            user = self.session.query(User).filter(User._login_hash == login_hash).first()
-            
-            if user is not None:
-                return True, user
-            else:
-                return False, 'Invalid user'
-        except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
+            return False, f'{type(e).__name__}: {e}'
 
     def updatePasswordStatus(self, id: str) -> tuple[bool, str]:
         try:
-            credentials = self.session.query(Passwords).filter_by(userId=id, status=False).all()
-            for credential in credentials:
-                userPassword = credential.password
-                if not userPassword:
-                    continue
-                leaked, msg = self.checkPasswordPwned(userPassword)
-                credential.status = leaked == True
+            for credential in self.session.query(Passwords).filter_by(userId=id, status=False).all():
+                if credential.password:
+                    leaked, _ = self.checkPasswordPwned(credential.password)
+                    credential.status = leaked is True
             self.session.commit()
             return True, 'Passwords updated'
         except Exception as e:
             self.session.rollback()
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
+            return -1, _errorMsg(e)
 
-    def getPassword(self, credId: str) -> tuple[bool, Passwords] | tuple[bool, str]:
+    def getPassword(self, credId: str, userId: str) -> tuple[bool, Passwords] | tuple[bool, str]:
+        """Busca sempre restrita ao dono: uma credencial de outro usuário é 'não encontrada'."""
         try:
-            password = self.session.query(Passwords).filter_by(id=credId).first()
-            
+            password = self.session.query(Passwords).filter_by(id=credId, userId=userId).first()
             if password is not None:
                 return True, password
-            else:
-                return False, 'Invalid password'
+            return False, 'Invalid password'
         except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-    
-    def pwned(self, id: str) -> tuple[bool, str]:
-        try:
-            user = self.session.query(User).filter_by(id=id).first()
-            
-            if user is not None:
-                user.passwordPwned = True
-                self.session.commit()
-                
-                return True, 'Senha atualizada'
-            else:
-                return False, 'Invalid user'
-        except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-        
-    def getLeakedPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
-        try:
-            passwords = self.session.query(Passwords).filter_by(userId=id).filter(Passwords.status == True).all()
-            
-            if passwords is not None:
-                return True, passwords
-            else:
-                return False, 'Cant find any passwords'
-        except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-        
-    def getMostUsedPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
-        try:
-            passwords = self.session.query(Passwords).filter_by(userId=id).all()
+            return -1, _errorMsg(e)
 
-            if passwords is not None:
-                passwordList = [p.password for p in passwords if p.password is not None]
-                passwordCounter = Counter(passwordList)
-                mostUsedPasswords = passwordCounter.most_common(10)
-                return True, mostUsedPasswords
-            else:
-                return False, 'Cant find any passwords'
-        except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-    
-    def getPasswordLogs(self, passwordId: str, userId: str, itemType: str = 'password') -> tuple[bool, object | str]:
+    def getPasswordLogs(self, passwordId: str, userId: str) -> tuple[bool, object | str]:
         try:
             password = self.session.query(Passwords).filter_by(id=passwordId, userId=userId).first()
             if not password:
                 return False, 'Credencial não encontrada ou acesso negado'
 
-            logs = self.session.query(Logs).filter_by(passwordId=passwordId).order_by(Logs.lastUse.desc()).all()
-
-            flags_objs = self.session.query(Filters).join(
-                PasswordFlags, PasswordFlags.flagId == Filters.id
-            ).filter(PasswordFlags.passwordId == password.id).all()
-
-            result = SimpleNamespace(
+            logs = self.session.query(Logs).filter_by(passwordId=password.id).order_by(Logs.lastUse.desc()).all()
+            return True, SimpleNamespace(
                 id=password.id,
                 site=password.site,
                 login=password.login,
                 status=password.status,
-                flags=[f.name for f in flags_objs],
+                flags=password.flags,
                 logs=logs,
             )
-            return True, result
         except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, _errorMsg(e)
 
-
-    def deletePasswordLogs(self, logs: list, userId: str, itemType: str = 'password') -> tuple[bool, str]:
+    def deletePasswordLogs(self, logs: list, userId: str) -> tuple[bool, str]:
         try:
             deleted = 0
             for logId in logs:
-                if not logId:
-                    continue
                 log = self.session.query(Logs).filter_by(id=int(logId)).first()
                 if not log:
                     continue
-                password = self.session.query(Passwords).filter_by(id=log.passwordId, userId=userId).first()
-                if not password:
+                if not self.session.query(Passwords).filter_by(id=log.passwordId, userId=userId).first():
+                    self.session.rollback()
                     return False, 'Acesso negado'
                 self.session.delete(log)
                 deleted += 1
@@ -1605,49 +633,7 @@ class Database:
             return True, f'{deleted} log(s) excluído(s) com sucesso'
         except Exception as e:
             self.session.rollback()
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+            return -1, _errorMsg(e)
 
 
-    def getGoodPasswords(self, id: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
-        try:
-            passwords = self.session.query(Passwords).filter_by(userId=id).filter(Passwords.status == False).all()
-            
-            if passwords is not None:
-                return True, passwords
-            else:
-                return False, 'Cant find any passwords'
-        except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
-        
-        
-    def getInfoByIP(self, passwordID: str, ip: str) -> tuple[bool, list[Passwords]] | tuple[bool, str]:
-        try:
-            password = self.session.query(Passwords).filter_by(id=passwordID).first()
-            
-            if password is not None:
-                response = requests.get(f"https://ipapi.co/{ip}/json")
-                if response.status_code == 200:
-                    locationData = response.json()
-                    Location = {
-                    "city": locationData["city"],
-                    "country": locationData["country_name"],
-                    "lat": locationData["latitude"],
-                    "lon": locationData["longitude"],
-                    "region": locationData["region"],
-                    "postal": locationData["postal"],
-                    "timezone": locationData["timezone"],
-                    "languages": locationData["languages"],
-                    "asn": locationData["asn"],
-                    "org": locationData["org"]
-                }
-                    
-                    password.whereUsed = Location
-                    self.session.commit()
-                    return True, 'log added successfully'
-                else:
-                    return False, response.text
-            else:
-                return False, 'Invalid password'
-            
-        except Exception as e:
-            return -1, f'{type(e).__name__}: {e} in line {sys.exc_info()[-1].tb_lineno} in file {sys.exc_info()[-1].tb_frame.f_code.co_filename}'
+database = Database()

@@ -45,6 +45,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ url_for('addPassword') }}" method="POST" id="addPasswordForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="add">
                     
@@ -103,6 +104,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ url_for('editPassword') }}" method="POST" id="editPasswordForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="edit">
                     <input type="hidden" name="password_id" id="edit-password-id">
@@ -161,6 +163,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ url_for('deletePassword') }}" method="POST" id="deletePasswordForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="password_id" id="delete-password-id">
@@ -212,7 +215,8 @@
                             <button type="button" class="btn-close btn-close-sm ms-2" 
                                     style="font-size: 0.7rem;"
                                     aria-label="Remover" 
-                                    onclick="removeFlag('{{ flag.id }}', '{{ flag.name }}')">
+                                    data-flag-id="{{ flag.id }}" data-flag-name="{{ flag.name }}"
+                                    onclick="removeFlag(this.dataset.flagId, this.dataset.flagName)">
                             </button>
                         </span>
                         {% endfor %}
@@ -226,6 +230,7 @@
                 <!-- Formulário de Adicionar Flag -->
                 <h6 class="mb-3">Adicionar Nova Flag</h6>
                 <form action="{{ url_for('addFlag') }}" method="POST" id="addFlagForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="bi bi-tag"></i>
@@ -281,9 +286,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const flagsContainer = viewPasswordModal.querySelector('#view-flags-container');
             if (flagsStr.trim()) {
                 const flags = flagsStr.split(',').filter(f => f.trim());
-                flagsContainer.innerHTML = flags.map(flag => 
-                    `<span class="badge bg-flag me-1">${flag.trim()}</span>`
-                ).join('');
+                flagsContainer.replaceChildren(...flags.map(flag => {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-flag me-1';
+                    badge.textContent = flag.trim();
+                    return badge;
+                }));
             } else {
                 flagsContainer.innerHTML = '<span class="text-muted">Nenhuma flag</span>';
             }
