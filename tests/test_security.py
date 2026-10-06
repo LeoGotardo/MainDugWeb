@@ -146,3 +146,11 @@ class TestBootstrapAdmin:
             admin = Config.session.query(User).filter(User._login_hash == lookupHash('root')).one()
             assert admin.role == 'sysadmin'
             assert database.validUser('root', 'primeira-senha-forte')[0] is True
+
+
+class TestDatabaseUrl:
+    def test_postgresUrlsUsePsycopg3(self):
+        from settings import _normalizeDatabaseUrl
+        for url in ('postgres://u:p@h/db', 'postgresql://u:p@h/db', 'postgresql+psycopg2://u:p@h/db', 'postgresql+psycopg://u:p@h/db'):
+            assert _normalizeDatabaseUrl(url) == 'postgresql+psycopg://u:p@h/db'
+        assert _normalizeDatabaseUrl('sqlite://') == 'sqlite://'
