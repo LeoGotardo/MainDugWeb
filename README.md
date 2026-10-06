@@ -92,7 +92,7 @@ Load `src/extension/extension` (or `extention/` for the standalone prototype) as
 
 ## Deployment
 
-The repo is configured to deploy on Vercel: `api/wsgi.py` is the serverless entry point, and `vercel.json` routes all requests to it. See [`VERCEL_ATTEMPTS.md`](VERCEL_ATTEMPTS.md) for the history of issues hit while wiring this up (mainly the `api/index.py` naming clash between Vercel's convention and the internal API blueprint, now resolved by moving the blueprint to `src/apiRoutes.py`).
+The repo deploys on Vercel with zero config: Vercel detects Flask and serves `src/app.py`. Do not add a catch-all rewrite in `vercel.json` — Vercel now forwards the rewritten path to Flask, so every route would 404. See [`VERCEL_ATTEMPTS.md`](VERCEL_ATTEMPTS.md) for the history.
 
 ## Known issues
 

@@ -4,7 +4,7 @@ Guidance for Claude Code working in this repository.
 
 ## Project
 
-MainDug — password vault. Python · Flask · Flask-Login · SQLAlchemy · PostgreSQL (Neon) · Fernet + Argon2 · JWT for the browser-extension API. Deployed on Vercel (`api/wsgi.py` → `src/app.py`).
+MainDug — password vault. Python · Flask · Flask-Login · SQLAlchemy · PostgreSQL (Neon) · Fernet + Argon2 · JWT for the browser-extension API. Deployed on Vercel, which auto-detects Flask and serves `src/app.py` directly (no `vercel.json`: a catch-all rewrite would hand Flask the rewritten path and 404 every route).
 
 ## Commands
 
