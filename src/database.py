@@ -240,10 +240,24 @@ class Database:
         self.session = Config.session
         self.iscryptograph = Cryptograph()
         self.createTables()
+        self.bootstrapAdmin()
 
     def createTables(self) -> None:
         with Config.app.app_context():
             self.db.create_all()
+
+    def bootstrapAdmin(self) -> None:
+        """Cria o sysadmin de BOOTSTRAP_ADMIN_* se ele ainda não existir. Nunca altera uma conta existente."""
+        if not settings.BOOTSTRAP_ADMIN_LOGIN:
+            return
+        with Config.app.app_context():
+            if self.session.query(User).filter(User._login_hash == lookupHash(settings.BOOTSTRAP_ADMIN_LOGIN)).first():
+                return
+            success, result = self.createUser(settings.BOOTSTRAP_ADMIN_LOGIN, settings.BOOTSTRAP_ADMIN_PASSWORD, role='sysadmin')
+            if success is True:
+                Config.app.logger.warning(f'Admin "{settings.BOOTSTRAP_ADMIN_LOGIN}" criado a partir de BOOTSTRAP_ADMIN_*.')
+            else:
+                Config.app.logger.error(f'Falha ao criar admin inicial: {result}')
 
     def _userFlags(self, userId: str, names: list[str]) -> tuple[bool, list[Filters] | str]:
         flags = []

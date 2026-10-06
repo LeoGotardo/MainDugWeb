@@ -130,3 +130,19 @@ class TestApi:
             Config.session.commit()
         resp = client.get('/api/auth/verify', headers={'Authorization': f'Bearer {token}'})
         assert resp.status_code == 401
+
+
+class TestBootstrapAdmin:
+    def test_createsAdminOnceAndNeverOverwrites(self, monkeypatch):
+        import settings
+        monkeypatch.setattr(settings, 'BOOTSTRAP_ADMIN_LOGIN', 'root')
+        monkeypatch.setattr(settings, 'BOOTSTRAP_ADMIN_PASSWORD', 'primeira-senha-forte')
+        database.bootstrapAdmin()
+
+        monkeypatch.setattr(settings, 'BOOTSTRAP_ADMIN_PASSWORD', 'outra-senha-qualquer')
+        database.bootstrapAdmin()
+
+        with flaskApp.app_context():
+            admin = Config.session.query(User).filter(User._login_hash == lookupHash('root')).one()
+            assert admin.role == 'sysadmin'
+            assert database.validUser('root', 'primeira-senha-forte')[0] is True

@@ -52,6 +52,12 @@ TRUSTED_PROXY_HOPS = int(os.getenv('TRUSTED_PROXY_HOPS', '1' if os.getenv('VERCE
 
 RATE_LIMIT_STORAGE = os.getenv('RATE_LIMIT_STORAGE', 'memory://')
 
+# Primeiro admin. Com os dois definidos, o boot cria a conta se ela ainda não existir
+# (não altera uma conta existente). Remova as variáveis depois do primeiro deploy.
+BOOTSTRAP_ADMIN_LOGIN = os.getenv('BOOTSTRAP_ADMIN_LOGIN', '').strip()
+BOOTSTRAP_ADMIN_PASSWORD = os.getenv('BOOTSTRAP_ADMIN_PASSWORD', '')
+BOOTSTRAP_ADMIN_MIN_LENGTH = 12
+
 
 def _validate() -> None:
     missing = [name for name, value in (
@@ -69,6 +75,8 @@ def _validate() -> None:
         raise ConfigError('JWT_SECRET precisa ser diferente de SECRET_KEY e ENCRYPTION_KEY')
     if EXEC_MODE not in ('dev', 'prod'):
         raise ConfigError(f'EXEC_MODE inválido: {EXEC_MODE!r} (use dev ou prod)')
+    if BOOTSTRAP_ADMIN_LOGIN and len(BOOTSTRAP_ADMIN_PASSWORD) < BOOTSTRAP_ADMIN_MIN_LENGTH:
+        raise ConfigError(f'BOOTSTRAP_ADMIN_PASSWORD precisa de pelo menos {BOOTSTRAP_ADMIN_MIN_LENGTH} caracteres')
     if IS_PROD and DATABASE_URL.startswith('sqlite'):
         raise ConfigError('SQLite não é permitido em produção: os dados se perdem a cada instância')
 
