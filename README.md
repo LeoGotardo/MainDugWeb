@@ -38,19 +38,20 @@ See [`docs/tex/main.tex`](docs/tex/main.tex) (*Estratégias de segurança*) for 
 
 ```
 src/
-  app.py            # Flask app, routes, views
-  api/index.py       # JWT-protected API blueprint (used by the extension)
+  app.py            # Flask app, web routes (Vercel entry point)
+  apiRoutes.py       # JWT-protected API blueprint (used by the extension)
+  settings.py         # Environment config, validated at boot
   database.py         # SQLAlchemy models + Database access layer
   cryptograph.py       # Encryption helpers
   config.json          # Table/column config for the admin & password views
   templates/, static/   # Jinja templates, CSS, JS
   extension/            # Browser extension + its Node/Express backend
 extention/            # Standalone browser extension prototype (JS + Node backend)
-api/wsgi.py            # Vercel entry point, wraps src/app.py
+scripts/              # createAdmin.py, migrateLookupHashes.py
+tests/                # pytest suite
 docs/
   tex/                # TCC (thesis) LaTeX source, PDF, and screenshots
   classDiagram.mmd, mer.mmd  # Mermaid class/ER diagrams
-vercel.json
 requirements.txt
 ```
 
