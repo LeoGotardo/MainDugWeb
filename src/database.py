@@ -1,4 +1,4 @@
-import locale, sys, os, uuid, datetime, hashlib, math, requests
+import locale, sys, os, re, uuid, datetime, hashlib, math, requests
 from zoneinfo import ZoneInfo
 from types import SimpleNamespace
 
@@ -102,6 +102,41 @@ def _toIntId(value) -> int | None:
 
 def _now() -> str:
     return datetime.datetime.now(ZoneInfo(settings.TIMEZONE)).strftime('%d/%m/%Y %H:%M:%S')
+
+
+def _siteKey(site: str | None) -> str:
+    """Forma comparável de um site: host em minúsculas, sem esquema, caminho, porta nem `www.`."""
+    text = (site or '').strip().lower()
+    if '://' in text:
+        text = text.split('://', 1)[1]
+    host = text.split('/', 1)[0].split('?', 1)[0].split('#', 1)[0].split(':', 1)[0]
+    return host[4:] if host.startswith('www.') else host
+
+
+_UA_BROWSERS = (  # ordem importa: Edge e Opera também dizem "Chrome", e Chrome também diz "Safari"
+    ('Edge', r'Edg(?:e|A|iOS)?/([\d.]+)'),
+    ('Opera', r'OPR/([\d.]+)'),
+    ('Firefox', r'(?:Firefox|FxiOS)/([\d.]+)'),
+    ('Chrome', r'(?:Chrome|CriOS)/([\d.]+)'),
+    ('Safari', r'Version/([\d.]+).*Safari/'),
+)
+_UA_SYSTEMS = (
+    ('Android', 'Android'), ('iOS', 'iPhone'), ('iOS', 'iPad'),
+    ('Windows', 'Windows'), ('macOS', 'Mac OS X'), ('ChromeOS', 'CrOS'), ('Linux', 'Linux'),
+)
+
+
+def _parseUserAgent(userAgent: str | None) -> tuple[str | None, str | None, str | None]:
+    """(navegador, versão principal, sistema) a partir do User-Agent. Valores desconhecidos ficam None."""
+    ua = userAgent or ''
+    browser = version = None
+    for name, pattern in _UA_BROWSERS:
+        match = re.search(pattern, ua)
+        if match:
+            browser, version = name, match.group(1).split('.')[0]
+            break
+    osName = next((name for name, token in _UA_SYSTEMS if token in ua), None)
+    return browser, version, osName
 
 
 def _parseLastUse(value: str | None) -> datetime.datetime:
@@ -494,7 +529,8 @@ class Database:
             self.session.rollback()
             return -1, _errorMsg(e)
 
-    def addPassword(self, userId: str, site: str, login: str, password: str, flags: list[str]) -> tuple[bool, str]:
+    def addPassword(self, userId: str, site: str, login: str, password: str, flags: list[str]) -> tuple[bool, int | str]:
+        """Em caso de sucesso devolve o id da credencial criada."""
         try:
             if not self.session.query(User).filter_by(id=userId).first():
                 return False, 'Usuário não encontrado'
@@ -519,21 +555,23 @@ class Database:
                 self.session.add(PasswordFlags(passwordId=newPassword.id, flagId=flag.id))
 
             self.session.commit()
-            return True, 'Senha e flags cadastradas com sucesso'
+            return True, newPassword.id
         except Exception as e:
             self.session.rollback()
             return -1, _errorMsg(e)
 
-    def updatePassword(self, passwordId: str, userId: str, site: str, login: str, password: str | None, flags: list[str]) -> tuple[bool, str]:
-        """`password=None` mantém a senha atual."""
+    def updatePassword(self, passwordId: str, userId: str, site: str, login: str, password: str | None, flags: list[str] | None = None) -> tuple[bool, str]:
+        """`password=None` mantém a senha atual; `flags=None` mantém as flags atuais (a lista substitui)."""
         try:
             credential = self.session.query(Passwords).filter_by(id=_toIntId(passwordId), userId=userId).first()
             if credential is None:
                 return False, 'Senha não encontrada'
 
-            ok, flagObjs = self._userFlags(userId, flags)
-            if not ok:
-                return False, flagObjs
+            flagObjs = None
+            if flags is not None:
+                ok, flagObjs = self._userFlags(userId, flags)
+                if not ok:
+                    return False, flagObjs
 
             credential.site = site
             credential.login = login
@@ -542,13 +580,46 @@ class Database:
                 leaked, _ = self.checkPasswordPwned(password)
                 credential.status = leaked is True
 
-            # As flags enviadas substituem as anteriores.
-            self.session.query(PasswordFlags).filter_by(passwordId=credential.id).delete()
-            for flag in flagObjs:
-                self.session.add(PasswordFlags(passwordId=credential.id, flagId=flag.id))
+            if flagObjs is not None:
+                # As flags enviadas substituem as anteriores.
+                self.session.query(PasswordFlags).filter_by(passwordId=credential.id).delete()
+                for flag in flagObjs:
+                    self.session.add(PasswordFlags(passwordId=credential.id, flagId=flag.id))
 
             self.session.commit()
             return True, 'Senha e flags atualizadas com sucesso'
+        except Exception as e:
+            self.session.rollback()
+            return -1, _errorMsg(e)
+
+    def findCredential(self, userId: str, site: str, login: str) -> Passwords | None:
+        """Credencial do usuário com o mesmo site (comparado por host normalizado) e o mesmo login."""
+        siteKey, loginKey = _siteKey(site), (login or '').strip().casefold()
+        for credential in self.session.query(Passwords).filter(Passwords.userId == userId).all():
+            if _siteKey(credential.site) == siteKey and (credential.login or '').strip().casefold() == loginKey:
+                return credential
+        return None
+
+    def recordUsage(self, passwordId: str, userId: str, ip: str | None, userAgent: str | None) -> tuple[bool, int | str]:
+        """Registra um uso da credencial (preenchimento pela extensão) em `Logs` e atualiza o "Último uso"."""
+        try:
+            credential = self.session.query(Passwords).filter_by(id=_toIntId(passwordId), userId=userId).first()
+            if credential is None:
+                return False, 'Senha não encontrada'
+
+            browser, version, osName = _parseUserAgent(userAgent)
+            log = Logs(
+                passwordId=credential.id,
+                lastUse=datetime.datetime.now(ZoneInfo(settings.TIMEZONE)).replace(tzinfo=None),
+                ip=ip,
+                browser=browser,
+                version=version,
+                os=osName,
+            )
+            self.session.add(log)
+            credential.lastUse = _now()
+            self.session.commit()
+            return True, log.id
         except Exception as e:
             self.session.rollback()
             return -1, _errorMsg(e)

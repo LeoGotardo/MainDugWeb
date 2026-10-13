@@ -40,7 +40,7 @@
     </div>
 
     <!-- Histórico de Ações -->
-    <h2 class="h4 mb-3">Histórico de Ações</h2>
+    <h2 class="h4 mb-3">Histórico de Uso</h2>
     <div class="content-box p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
@@ -50,9 +50,9 @@
                             <input type="checkbox" id="checkAllLogs" class="form-check-input">
                         </th>
                         <th>Data</th>
-                        <th>Ação</th>
-                        <th>Usuário</th>
-                        <th>Detalhes</th>
+                        <th>Navegador</th>
+                        <th>Sistema</th>
+                        <th>IP</th>
                     </tr>
                 </thead>
                 <tbody id="logsTableBody">
@@ -67,19 +67,21 @@
                                 {{ log.lastUse.strftime('%d/%m/%Y %H:%M') if log.lastUse else 'N/A' }}
                             </td>
                             <td>
-                                <span class="badge bg-{{ log.severity_class if log.severity_class else 'secondary' }}">
-                                    {{ log.action or 'Ação desconhecida' }}
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-puzzle"></i>
+                                    {{ log.browser or 'Desconhecido' }}{{ ' ' ~ log.version if log.version }}
                                 </span>
                             </td>
-                            <td>{{ log.user.login if log.user else 'Sistema' }}</td>
-                            <td>{{ log.details or 'Sem detalhes' }}</td>
+                            <td>{{ log.os or 'Desconhecido' }}</td>
+                            <td class="text-nowrap">{{ log.ip or '—' }}</td>
                         </tr>
                         {% endfor %}
                     {% else %}
                     <tr>
                         <td colspan="5" class="text-center text-secondary py-4">
                             <i class="bi bi-clock-history fs-1 d-block mb-3"></i>
-                            <p class="mb-0">Nenhum log registrado para esta credencial.</p>
+                            <p class="mb-0">Nenhum uso registrado para esta credencial.</p>
+                            <p class="small mb-0">Os usos aparecem aqui quando a extensão MainDug preenche esta senha.</p>
                         </td>
                     </tr>
                     {% endif %}

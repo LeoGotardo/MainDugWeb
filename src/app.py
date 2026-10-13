@@ -30,6 +30,8 @@ loginManager.login_message_category = 'warning'
 current_user: User | None
 
 MIN_PASSWORD_LENGTH = 8
+# Campos de credencial são gravados cifrados em colunas de 500; 200 de texto cabem com folga.
+MAX_FIELD_LENGTH = 200
 PROFILE_PIC_PATTERN = re.compile(r'^(https://\S+|data:image/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+)$')
 
 
@@ -316,6 +318,9 @@ def addPassword():
     if not site or not loginValue or not password:
         flash('Todos os campos são obrigatórios!', 'danger')
         return redirect(url_for('index'))
+    if max(len(site), len(loginValue), len(password)) > MAX_FIELD_LENGTH:
+        flash(f'Site, usuário e senha podem ter no máximo {MAX_FIELD_LENGTH} caracteres', 'danger')
+        return redirect(url_for('index'))
 
     success, msg = database.addPassword(
         userId=current_user.id,
@@ -344,6 +349,9 @@ def editPassword():
     # Senha em branco = manter a atual (o formulário de edição diz isso ao usuário).
     if not passwordId or not site or not loginValue:
         flash('Site e usuário são obrigatórios!', 'danger')
+        return redirect(url_for('index'))
+    if max(len(site), len(loginValue), len(password)) > MAX_FIELD_LENGTH:
+        flash(f'Site, usuário e senha podem ter no máximo {MAX_FIELD_LENGTH} caracteres', 'danger')
         return redirect(url_for('index'))
 
     success, msg = database.updatePassword(

@@ -16,6 +16,8 @@ from extensions import limiter
 blueprint = Blueprint('blueprint', __name__)
 
 JWT_ALGORITHM = 'HS256'
+# Os campos são gravados cifrados em colunas de 500 caracteres; 200 de texto cabem com folga.
+MAX_FIELD_LENGTH = 200
 SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?'
 
 
@@ -183,6 +185,95 @@ def decryptPassword(userId, userLogin, passwordId):
     if success is not True:
         return jsonify({'error': 'Senha não encontrada'}), 404
     return jsonify({'password': password.password}), 200
+
+
+def _credentialFields(data: dict, required: tuple[str, ...]) -> tuple[dict | None, str | None]:
+    """Extrai site/login/password do JSON validando tipo e tamanho. Devolve (campos, erro)."""
+    fields = {}
+    for name in ('site', 'login', 'password'):
+        value = data.get(name)
+        if value is None:
+            if name in required:
+                return None, f'Campo obrigatório: {name}'
+            continue
+        if not isinstance(value, str) or not value.strip():
+            return None, f'Campo inválido: {name}'
+        value = value if name == 'password' else value.strip()
+        if len(value) > MAX_FIELD_LENGTH:
+            return None, f'{name} excede {MAX_FIELD_LENGTH} caracteres'
+        fields[name] = value
+    return fields, None
+
+
+@blueprint.route('/passwords', methods=['POST'])
+@limiter.limit('30/minute')
+@tokenRequired
+def createPassword(userId, userLogin):
+    """Cria uma credencial (usado pela extensão ao salvar após um login). 409 se site+login já existem."""
+    data = request.get_json(silent=True) or {}
+    fields, error = _credentialFields(data, required=('site', 'login', 'password'))
+    if error:
+        return jsonify({'error': error}), 400
+
+    existing = database.findCredential(userId, fields['site'], fields['login'])
+    if existing is not None:
+        return jsonify({'error': 'Credencial já existe', 'id': existing.id}), 409
+
+    flags = data.get('flags') or []
+    if not isinstance(flags, list) or not all(isinstance(f, str) for f in flags):
+        return jsonify({'error': 'Campo inválido: flags'}), 400
+
+    success, result = database.addPassword(userId=userId, flags=flags, **fields)
+    if success is True:
+        return jsonify({'id': result}), 201
+    if success is False:
+        return jsonify({'error': result}), 400
+    Config.app.logger.error(f'Erro ao criar credencial via API: {result}')
+    return jsonify({'error': 'Erro ao criar credencial'}), 500
+
+
+@blueprint.route('/passwords/<int:passwordId>', methods=['PUT'])
+@limiter.limit('30/minute')
+@tokenRequired
+def updatePassword(userId, userLogin, passwordId):
+    """Atualiza senha (e opcionalmente site/login). As flags da credencial são mantidas."""
+    data = request.get_json(silent=True) or {}
+    fields, error = _credentialFields(data, required=('password',))
+    if error:
+        return jsonify({'error': error}), 400
+
+    success, current = database.getPassword(str(passwordId), userId)
+    if success is not True:
+        return jsonify({'error': 'Senha não encontrada'}), 404
+
+    success, result = database.updatePassword(
+        passwordId=str(passwordId),
+        userId=userId,
+        site=fields.get('site', current.site),
+        login=fields.get('login', current.login),
+        password=fields['password'],
+        flags=None,
+    )
+    if success is True:
+        return jsonify({'id': passwordId}), 200
+    if success is False:
+        return jsonify({'error': result}), 404
+    Config.app.logger.error(f'Erro ao atualizar credencial via API: {result}')
+    return jsonify({'error': 'Erro ao atualizar credencial'}), 500
+
+
+@blueprint.route('/passwords/<int:passwordId>/use', methods=['POST'])
+@limiter.limit('60/minute')
+@tokenRequired
+def recordUsage(userId, userLogin, passwordId):
+    """Registra que a extensão preencheu esta credencial (alimenta "Ver Logs" no site)."""
+    success, result = database.recordUsage(str(passwordId), userId, request.remote_addr, request.headers.get('User-Agent'))
+    if success is True:
+        return jsonify({'logId': result}), 201
+    if success is False:
+        return jsonify({'error': 'Senha não encontrada'}), 404
+    Config.app.logger.error(f'Erro ao registrar uso: {result}')
+    return jsonify({'error': 'Erro ao registrar uso'}), 500
 
 
 # ==========================================

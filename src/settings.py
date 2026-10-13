@@ -39,7 +39,8 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY') or os.getenv('SecretKey')
 
 JWT_SECRET = os.getenv('JWT_SECRET')
-JWT_EXPIRE_HOURS = int(os.getenv('JWT_EXPIRE_HOURS', '24'))
+# O bloqueio automático da extensão é só no cliente: o token vale no servidor até expirar (sem revogação).
+JWT_EXPIRE_HOURS = int(os.getenv('JWT_EXPIRE_HOURS', '12'))
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 if not DATABASE_URL and IS_DEV:
