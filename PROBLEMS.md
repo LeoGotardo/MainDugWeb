@@ -20,9 +20,9 @@ pagination/search/flags, error-page tracebacks, request timeouts, …) are cover
 
 ## Browser extension
 
-The extension (`src/extension/extension/`) was rebuilt on 2026-10-13: API login, in-memory session with auto-lock, exact-domain fill, isolated page UI, save/update after login, usage logging. Covered by `tests/extension/` (unit + 8-scenario Chrome e2e). Open items:
+The extension (`src/extension/extension/`) was rebuilt on 2026-10-13: API login, in-memory session with auto-lock, exact-domain fill, isolated page UI, save/update after login, usage logging. Covered by `tests/extension/` (unit + 9-scenario Chrome e2e). Open items:
 
-9. **Not covered by the e2e test:** the popup's "Preencher" button (the test opens the popup as a tab, so there is no other active tab) and the context-menu / `Ctrl+Shift+G` actions. Check them by hand after changes.
+9. **Not covered by the e2e test** (check by hand after changes): the popup's "Preencher" button (the test opens the popup as a tab, so there is no other active tab), context-menu and `Ctrl+Shift+G` actions, the server-URL change with its permission prompt, auto-lock (`chrome.idle`), and the production `host_permissions` path (the test patches the manifest to allow 127.0.0.1).
 10. **Sites saved as names never autofill.** A credential whose site is "GitHub" instead of `github.com` is listed but never matched. A normalized origin column (needs migrations, #1) would let the website store and validate domains.
 11. **Top frame only** (`all_frames: false`): login forms inside iframes are not detected.
 12. **Firefox is not supported**: its MV3 has no `background.service_worker` (needs `background.scripts` and a separate manifest).

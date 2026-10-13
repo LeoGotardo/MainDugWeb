@@ -257,6 +257,29 @@ async function main() {
         const updated = await clickPromptButton(page, 'Atualizar') && await waitFor(async () =>
             (await api(`/passwords/${bank.id}/decrypt`, { token })).data.password === 'Banco-NOVA-654');
         check('senha diferente para login existente oferece "Atualizar" e troca a senha', !!updated);
+
+        // 7. No próprio site do MainDug: login e "Nova Credencial" não podem virar "Salvar?" nem sugestão.
+        const siteUrl = API.replace(/\/api$/, '');
+        const vault = await browser.newPage();
+        await vault.goto(`${siteUrl}/login/`);
+        await vault.type('input[name="login"]', 'e2e-user');
+        await vault.type('input[name="password"]', 'Senha-E2E-2026');
+        await Promise.all([vault.waitForNavigation(), vault.click('form button[type="submit"]')]);
+        await sleep(2500);
+        const promptAfterLogin = await hasPrompt(vault);
+        await vault.click('[data-bs-target="#addPasswordModal"]');
+        await vault.waitForSelector('#add-site', { visible: true });
+        await sleep(1000);
+        const promptInModal = await hasPrompt(vault);
+        await vault.type('#add-site', 'cofre-teste.com');
+        await vault.type('#addPasswordForm input[name="login"]', 'alguem');
+        await vault.type('#addPasswordForm input[name="password"]', 'Credencial-Nova-1');
+        await Promise.all([vault.waitForNavigation(), vault.click('#addPasswordForm button[type="submit"]')]);
+        await sleep(2500);
+        const promptAfterAdd = await hasPrompt(vault);
+        check('site do MainDug: sem "Salvar?" nem sugestão (login, modal, nova credencial)',
+            !promptAfterLogin && !promptInModal && !promptAfterAdd,
+            `após login: ${promptAfterLogin}, no modal: ${promptInModal}, após adicionar: ${promptAfterAdd}`);
     } finally {
         await browser?.close();
         site.close();

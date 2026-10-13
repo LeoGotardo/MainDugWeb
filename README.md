@@ -91,7 +91,7 @@ BOOTSTRAP_ADMIN_LOGIN=<login> BOOTSTRAP_ADMIN_PASSWORD=<12+ chars> python script
 1. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and pick `src/extension/extension`.
 2. Click the MainDug icon and sign in with your MainDug account. It talks to `https://maindug.leogotardo.com.br/api` by default; for a local server set **Config. → Servidor (avançado)** to `http://localhost:5000/api` (Chrome asks for permission).
 
-The vault locks when the browser closes and after 15 minutes idle. Credentials are suggested only on their exact domain or its subdomains, so save sites as domains (`github.com`).
+The vault locks when the browser closes, when the screen locks and after 15 minutes of system inactivity (Chrome `idle` API; using the computer without touching the vault does not lock it). Credentials are suggested only on their exact domain or its subdomains, so save sites as domains (`github.com`).
 
 Tests:
 

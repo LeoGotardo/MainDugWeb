@@ -7,7 +7,7 @@
 // O worker pode ser suspenso a qualquer momento: todo estado fica em chrome.storage.session.
 
 import { api, ApiError } from './lib/api.js';
-import { getSettings, DEFAULT_SETTINGS } from './lib/config.js';
+import { getSettings, siteUrl, DEFAULT_SETTINGS } from './lib/config.js';
 import { AUTO_LOCK_SECONDS, getSession, clearSession } from './lib/session.js';
 import { refreshIndex, getIndex, matchesForUrl } from './lib/vault.js';
 import { hostOfUrl } from './lib/domain.js';
@@ -73,10 +73,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
 });
 
+/**
+ * Página do próprio cofre (o site do MainDug)? Lá os formulários de credencial e o login com a
+ * senha mestra têm campo de senha: não sugerimos preenchimento nem oferecemos "Salvar?".
+ */
+function isVaultPage(url, settings) {
+    const pageHost = hostOfUrl(url);
+    return !!pageHost && pageHost === hostOfUrl(siteUrl(settings.apiBaseUrl));
+}
+
 /** Credenciais para a página do remetente: só id/site/login, nunca a senha. */
 async function handleGetMatches(message, sender) {
     const settings = await getSettings();
-    if (!settings.autoFill || !(await getSession())) return { matches: [] };
+    if (!settings.autoFill || isVaultPage(sender.url, settings) || !(await getSession())) return { matches: [] };
     const matches = await matchesForUrl(sender.url);
     return { matches: matches.map(({ id, site, login }) => ({ id, site, login })) };
 }
@@ -112,7 +121,8 @@ async function handleLoginSubmitted(message, sender) {
     const host = hostOfUrl(sender.url);
     const username = typeof message.username === 'string' ? message.username.trim() : '';
     const password = typeof message.password === 'string' ? message.password : '';
-    if (!settings.autoSave || !host || !username || !password || !(await getSession())) return { ok: false };
+    if (!settings.autoSave || !host || isVaultPage(sender.url, settings)) return { ok: false };
+    if (!username || !password || !(await getSession())) return { ok: false };
 
     await setPendingSave(sender.tab.id, { host, username, password, at: Date.now() });
     return { ok: true };

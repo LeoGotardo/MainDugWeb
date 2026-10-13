@@ -41,7 +41,8 @@ node --test tests/extension/                           # extension unit tests (e
 - **The service worker decides.** Domain matching uses `sender.url` of the content-script message (never data sent by the page), and a password leaves the worker only for a fill on a matching domain. Matching is exact host or dot-boundary subdomain (`lib/domain.js`); never go back to substring matching.
 - Token, credential index and pending saves live only in `chrome.storage.session` (memory, wiped on browser close and on idle/lock). Workers are suspended at any time: no state in module variables. Don't change the session storage access level (content scripts must not read it).
 - Page UI goes in the closed shadow root built with `textContent`; buttons act only on `event.isTrusted` clicks.
-- Auto-lock is client-side: a JWT stays valid on the server until `JWT_EXPIRE_HOURS`.
+- Auto-lock is client-side and based on system idle/screen lock (`chrome.idle`), not on vault usage; a JWT stays valid on the server until `JWT_EXPIRE_HOURS`.
+- No fill/save offers on the vault's own site (`isVaultPage` in `background.js`): its credential forms and the master-password login must never be captured.
 - Commands: `node --test tests/extension/` and `CHROME_PATH=… node tests/extension/e2e.mjs` (Chrome for Testing; branded Chrome ignores `--load-extension`).
 
 ## Encryption
