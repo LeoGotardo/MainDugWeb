@@ -1,0 +1,13 @@
+{
+  "name": "maindug-extension-tests",
+  "private": true,
+  "type": "module",
+  "description": "Testes da extensão MainDug: unitários (node --test) e e2e com Chrome for Testing.",
+  "scripts": {
+    "test:unit": "node --test .",
+    "test:e2e": "node e2e.mjs"
+  },
+  "devDependencies": {
+    "puppeteer-core": "25.13.0"
+  }
+}
