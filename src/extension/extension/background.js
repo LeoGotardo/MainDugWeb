@@ -1,457 +1,210 @@
-// background.js - Service Worker para a extensão SecurePass
+// Service worker do MainDug.
+//
+// Regra de ouro: o worker decide. O content script só exibe a UI e repassa cliques;
+// o domínio é sempre conferido pelo `sender.url` da mensagem (não por dados vindos da página),
+// e a senha só sai daqui quando o usuário pede para preencher.
+//
+// O worker pode ser suspenso a qualquer momento: todo estado fica em chrome.storage.session.
 
-async function getApiBaseUrl() {
-    const result = await chrome.storage.local.get(['apiBaseUrl']);
-    return result.apiBaseUrl || 'http://localhost:5000/api';
-}
+import { api, ApiError } from './lib/api.js';
+import { getSettings, DEFAULT_SETTINGS } from './lib/config.js';
+import { AUTO_LOCK_SECONDS, getSession, clearSession } from './lib/session.js';
+import { refreshIndex, getIndex, matchesForUrl } from './lib/vault.js';
+import { hostOfUrl } from './lib/domain.js';
+import { generatePassword } from './lib/passwordGenerator.js';
 
-// Listener para quando a extensão é instalada
-chrome.runtime.onInstalled.addListener(() => {
-    console.log('SecurePass Extension instalada');
+const PENDING_SAVE_TTL_MS = 2 * 60 * 1000;
+const LEGACY_LOCAL_KEYS = ['users', 'passwords', 'encryptionKey', 'currentUser', 'authToken', 'userEmail', 'userId', 'apiBaseUrl'];
 
-    chrome.storage.local.get(['settings'], (result) => {
-        if (!result.settings) {
-            chrome.storage.local.set({
-                settings: {
-                    autoSave: true,
-                    autoFill: true,
-                    notifications: true,
-                    darkMode: false
-                }
-            });
-        }
-    });
+// ==========================================
+// CICLO DE VIDA
+// ==========================================
 
-    createContextMenus();
+chrome.idle.setDetectionInterval(AUTO_LOCK_SECONDS);
 
-    // Schedule periodic token check using alarms (MV3-compatible)
-    chrome.alarms.create('checkToken', { periodInMinutes: 5 });
+chrome.idle.onStateChanged.addListener((state) => {
+    // 'idle' (sem uso por AUTO_LOCK_SECONDS) ou 'locked' (tela bloqueada): bloqueia o cofre.
+    if (state !== 'active') clearSession();
 });
 
-// Criar menus de contexto
-function createContextMenus() {
+chrome.runtime.onInstalled.addListener(async () => {
+    // Versões antigas guardavam contas e senhas locais e o token no disco: nada disso é mais usado.
+    await chrome.storage.local.remove(LEGACY_LOCAL_KEYS);
+    const { settings } = await chrome.storage.local.get('settings');
+    await chrome.storage.local.set({ settings: { ...DEFAULT_SETTINGS, ...(settings || {}) } });
+
     chrome.contextMenus.removeAll(() => {
-        chrome.contextMenus.create({
-            id: 'generatePassword',
-            title: 'Gerar senha segura',
-            contexts: ['editable']
-        });
-        
-        chrome.contextMenus.create({
-            id: 'savePassword',
-            title: 'Salvar senha com SecurePass',
-            contexts: ['password']
-        });
-        
-        chrome.contextMenus.create({
-            id: 'fillPassword',
-            title: 'Preencher senha salva',
-            contexts: ['password']
-        });
+        chrome.contextMenus.create({ id: 'generatePassword', title: 'Gerar senha segura', contexts: ['editable'] });
+        chrome.contextMenus.create({ id: 'fillLogin', title: 'Preencher login deste site', contexts: ['editable'] });
     });
-}
 
-// Handler para cliques no menu de contexto
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-    switch (info.menuItemId) {
-        case 'generatePassword':
-            handleGeneratePassword(tab);
-            break;
-        case 'savePassword':
-            handleSavePasswordContext(tab);
-            break;
-        case 'fillPassword':
-            handleFillPasswordContext(tab);
-            break;
-    }
+    chrome.alarms.create('refreshIndex', { periodInMinutes: 10 });
 });
 
-// Gerar senha segura
-async function handleGeneratePassword(tab) {
-    try {
-        // Verificar se o usuário está autenticado
-        const authData = await getAuthData();
-        
-        if (!authData.token) {
-            showNotification('Erro', 'Faça login no SecurePass primeiro');
-            return;
-        }
-        
-        // Gerar senha via API
-        const response = await fetch(`${await getApiBaseUrl()}/generate-password`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authData.token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                length: 16,
-                includeUppercase: true,
-                includeLowercase: true,
-                includeNumbers: true,
-                includeSymbols: true,
-                excludeSimilar: true
-            })
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            
-            // Enviar senha para a página
-            chrome.tabs.sendMessage(tab.id, {
-                type: 'insertPassword',
-                password: data.password
-            });
-            
-            showNotification('Senha Gerada', 'Senha segura inserida no campo');
-        } else {
-            // Fallback: gerar senha localmente
-            const password = generateSecurePasswordLocal();
-            chrome.tabs.sendMessage(tab.id, {
-                type: 'insertPassword',
-                password: password
-            });
-            
-            showNotification('Senha Gerada', 'Senha segura inserida no campo');
-        }
-    } catch (error) {
-        console.error('Erro ao gerar senha:', error);
-        
-        // Fallback: gerar senha localmente
-        const password = generateSecurePasswordLocal();
-        chrome.tabs.sendMessage(tab.id, {
-            type: 'insertPassword',
-            password: password
-        });
-        
-        showNotification('Senha Gerada', 'Senha segura inserida no campo');
-    }
-}
-
-// Gerar senha localmente (fallback) usando CSPRNG
-function generateSecurePasswordLocal(length = 16) {
-    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-    const numbers = '0123456789';
-    const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-    const allChars = uppercase + lowercase + numbers + symbols;
-
-    function randomIndex(max) {
-        const arr = new Uint32Array(1);
-        crypto.getRandomValues(arr);
-        return arr[0] % max;
-    }
-
-    let password = [
-        uppercase[randomIndex(uppercase.length)],
-        lowercase[randomIndex(lowercase.length)],
-        numbers[randomIndex(numbers.length)],
-        symbols[randomIndex(symbols.length)],
-    ];
-
-    for (let i = password.length; i < length; i++) {
-        password.push(allChars[randomIndex(allChars.length)]);
-    }
-
-    // Fisher-Yates shuffle using CSPRNG
-    for (let i = password.length - 1; i > 0; i--) {
-        const j = randomIndex(i + 1);
-        [password[i], password[j]] = [password[j], password[i]];
-    }
-
-    return password.join('');
-}
-
-// Salvar senha via menu de contexto
-function handleSavePasswordContext(tab) {
-    chrome.tabs.sendMessage(tab.id, {
-        type: 'detectForms'
-    }, (response) => {
-        if (response && response.passwordFields > 0) {
-            showNotification('SecurePass', 'Preencha o formulário e envie para salvar a senha automaticamente');
-        } else {
-            showNotification('Erro', 'Nenhum campo de senha encontrado nesta página');
-        }
-    });
-}
-
-// Preencher senha via menu de contexto
-async function handleFillPasswordContext(tab) {
-    try {
-        const authData = await getAuthData();
-        
-        if (!authData.token) {
-            showNotification('Erro', 'Faça login no SecurePass primeiro');
-            return;
-        }
-        
-        const url = new URL(tab.url);
-        const domain = url.hostname;
-        
-        // Buscar senhas para este domínio
-        const passwords = await getPasswordsForDomain(domain, authData.token);
-        
-        if (passwords.length > 0) {
-            // Se há apenas uma senha, preencher automaticamente
-            if (passwords.length === 1) {
-                const passwordData = await decryptPassword(passwords[0].id, authData.token);
-                chrome.tabs.sendMessage(tab.id, {
-                    type: 'fillPassword',
-                    data: {
-                        username: passwords[0].username,
-                        password: passwordData.password
-                    }
-                });
-                showNotification('Senha Preenchida', `Login preenchido para ${passwords[0].username}`);
-            } else {
-                // Múltiplas senhas - abrir popup para escolher
-                chrome.action.openPopup();
-            }
-        } else {
-            showNotification('Sem Senhas', 'Nenhuma senha salva encontrada para este site');
-        }
-    } catch (error) {
-        console.error('Erro ao preencher senha:', error);
-        showNotification('Erro', 'Erro ao buscar senhas salvas');
-    }
-}
-
-// Listener para mensagens
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    switch (message.type) {
-        case 'savePassword':
-            handleSavePassword(message.data, sendResponse);
-            return true;
-            
-        case 'requestPasswords':
-            handleRequestPasswords(message.domain, message.url, sendResponse);
-            return true;
-            
-        case 'pageLoaded':
-            handlePageLoaded(message.data, sender.tab);
-            sendResponse({ success: true });
-            break;
-            
-        case 'notification':
-            showNotification(message.title, message.message);
-            sendResponse({ success: true });
-            break;
-            
-        default:
-            sendResponse({ error: 'Tipo de mensagem não reconhecido' });
-    }
-});
-
-// Salvar senha
-async function handleSavePassword(passwordData, sendResponse) {
-    try {
-        const authData = await getAuthData();
-        
-        if (!authData.token) {
-            sendResponse({ success: false, error: 'Usuário não autenticado' });
-            return;
-        }
-        
-        const response = await fetch(`${await getApiBaseUrl()}/passwords`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authData.token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                site: passwordData.site,
-                url: passwordData.url,
-                username: passwordData.username,
-                password: passwordData.password
-            })
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            showNotification('Senha Salva', `Credenciais salvas para ${passwordData.site}`);
-            sendResponse({ success: true, passwordId: result.passwordId });
-        } else {
-            const error = await response.json();
-            sendResponse({ success: false, error: error.error || 'Erro ao salvar senha' });
-        }
-    } catch (error) {
-        console.error('Erro ao salvar senha:', error);
-        sendResponse({ success: false, error: 'Erro de conexão com o servidor' });
-    }
-}
-
-// Solicitar senhas para um domínio
-async function handleRequestPasswords(domain, url, sendResponse) {
-    try {
-        const authData = await getAuthData();
-        
-        if (!authData.token) {
-            sendResponse({ passwords: [] });
-            return;
-        }
-        
-        const passwords = await getPasswordsForDomain(domain, authData.token);
-        sendResponse({ passwords });
-    } catch (error) {
-        console.error('Erro ao buscar senhas:', error);
-        sendResponse({ passwords: [] });
-    }
-}
-
-// Buscar senhas para um domínio específico
-async function getPasswordsForDomain(domain, token) {
-    try {
-        const response = await fetch(`${await getApiBaseUrl()}/passwords?search=${encodeURIComponent(domain)}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        
-        if (response.ok) {
-            const passwords = await response.json();
-            // Filtrar por domínio
-            return passwords.filter(pwd => 
-                pwd.url?.includes(domain) || 
-                pwd.site?.toLowerCase().includes(domain.toLowerCase())
-            );
-        }
-        
-        return [];
-    } catch (error) {
-        console.error('Erro ao buscar senhas por domínio:', error);
-        return [];
-    }
-}
-
-// Descriptografar senha
-async function decryptPassword(passwordId, token) {
-    const response = await fetch(`${await getApiBaseUrl()}/passwords/${passwordId}/decrypt`, {
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }
-    });
-    
-    if (!response.ok) {
-        throw new Error('Erro ao descriptografar senha');
-    }
-    
-    return await response.json();
-}
-
-// Obter dados de autenticação
-function getAuthData() {
-    return new Promise((resolve) => {
-        chrome.storage.local.get(['authToken', 'userEmail', 'userId'], (result) => {
-            resolve({
-                token: result.authToken,
-                email: result.userEmail,
-                userId: result.userId
-            });
-        });
-    });
-}
-
-// Tratar carregamento de página
-async function handlePageLoaded(pageData, tab) {
-    // Verificar configurações de preenchimento automático
-    chrome.storage.local.get(['settings'], async (result) => {
-        if (result.settings?.autoFill) {
-            const authData = await getAuthData();
-            
-            if (authData.token) {
-                const domain = new URL(pageData.url).hostname;
-                const passwords = await getPasswordsForDomain(domain, authData.token);
-                
-                if (passwords.length > 0) {
-                    // Aguardar um pouco para a página carregar completamente
-                    setTimeout(() => {
-                        chrome.tabs.sendMessage(tab.id, {
-                            type: 'pageLoaded',
-                            autoFill: true
-                        });
-                    }, 2000);
-                }
-            }
-        }
-    });
-}
-
-// Mostrar notificação
-function showNotification(title, message, iconUrl = 'icon128.png') {
-    chrome.notifications.create({
-        type: 'basic',
-        iconUrl: iconUrl,
-        title: title,
-        message: message,
-        priority: 1
-    });
-}
-
-// Listener para quando uma aba é atualizada
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status === 'complete' && tab.url) {
-        // Enviar sinal para content script detectar formulários
-        chrome.tabs.sendMessage(tabId, {
-            type: 'pageLoaded',
-            url: tab.url
-        }).catch(() => {
-            // Content script pode não estar pronto ainda
-        });
-    }
-});
-
-// Handle alarms (MV3-compatible periodic tasks)
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-    if (alarm.name === 'checkToken') {
-        const authData = await getAuthData();
-        if (authData.token) {
-            try {
-                const apiBase = await getApiBaseUrl();
-                const response = await fetch(`${apiBase}/auth/verify`, {
-                    headers: { 'Authorization': `Bearer ${authData.token}` }
-                });
-                if (!response.ok) {
-                    chrome.storage.local.remove(['authToken', 'userEmail', 'userId']);
-                    showNotification('Sessão Expirada', 'Por favor, faça login novamente no SecurePass');
-                }
-            } catch (error) {
-                console.error('Erro ao verificar token:', error);
-            }
-        }
+    if (alarm.name === 'refreshIndex' && (await getSession())) {
+        refreshIndex().catch(() => {});
     }
 });
 
-// Sync com servidor quando online
-chrome.runtime.onStartup.addListener(() => {
-    checkServerConnection();
+// ==========================================
+// MENSAGENS
+// ==========================================
+
+const contentHandlers = {
+    getMatches: handleGetMatches,
+    fillRequest: handleFillRequest,
+    loginSubmitted: handleLoginSubmitted,
+    getPendingSave: handleGetPendingSave,
+    confirmSave: handleConfirmSave,
+    dismissSave: handleDismissSave,
+};
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (sender.id !== chrome.runtime.id) return false;
+
+    // Mensagens de content script chegam com `sender.tab`; o popup e outras páginas da extensão, sem.
+    const handler = sender.tab ? contentHandlers[message?.type] : null;
+    if (!handler) return false;
+
+    handler(message, sender)
+        .then(sendResponse)
+        .catch((error) => sendResponse({ error: error instanceof ApiError ? error.message : 'Erro inesperado' }));
+    return true;
 });
 
-// Verificar conexão com servidor
-async function checkServerConnection() {
-    try {
-        const response = await fetch(`${await getApiBaseUrl()}/health`);
-        if (response.ok) {
-            console.log('Conexão com servidor estabelecida');
+/** Credenciais para a página do remetente: só id/site/login, nunca a senha. */
+async function handleGetMatches(message, sender) {
+    const settings = await getSettings();
+    if (!settings.autoFill || !(await getSession())) return { matches: [] };
+    const matches = await matchesForUrl(sender.url);
+    return { matches: matches.map(({ id, site, login }) => ({ id, site, login })) };
+}
+
+/** Senha de uma credencial, só se ela casar com o domínio de quem pede. */
+async function handleFillRequest(message, sender) {
+    const matches = await matchesForUrl(sender.url);
+    const credential = matches.find((entry) => entry.id === message.id);
+    if (!credential) return { error: 'Credencial não pertence a este site' };
+
+    const { password } = await api.decrypt(credential.id);
+    api.recordUse(credential.id).catch(() => {});
+    return { username: credential.login, password };
+}
+
+// ---------- salvar depois do login ----------
+
+async function getPendingSaves() {
+    const { pendingSaves } = await chrome.storage.session.get('pendingSaves');
+    const now = Date.now();
+    return Object.fromEntries(Object.entries(pendingSaves || {}).filter(([, item]) => now - item.at < PENDING_SAVE_TTL_MS));
+}
+
+async function setPendingSave(tabId, value) {
+    const pending = await getPendingSaves();
+    if (value) pending[tabId] = value;
+    else delete pending[tabId];
+    await chrome.storage.session.set({ pendingSaves: pending });
+}
+
+async function handleLoginSubmitted(message, sender) {
+    const settings = await getSettings();
+    const host = hostOfUrl(sender.url);
+    const username = typeof message.username === 'string' ? message.username.trim() : '';
+    const password = typeof message.password === 'string' ? message.password : '';
+    if (!settings.autoSave || !host || !username || !password || !(await getSession())) return { ok: false };
+
+    await setPendingSave(sender.tab.id, { host, username, password, at: Date.now() });
+    return { ok: true };
+}
+
+/** Existe um "Salvar senha?" pendente para esta aba e este site? Responde sem a senha. */
+async function handleGetPendingSave(message, sender) {
+    const pending = (await getPendingSaves())[sender.tab.id];
+    if (!pending || pending.host !== hostOfUrl(sender.url) || !(await getSession())) return { pending: null };
+
+    const existing = (await getIndex()).find(
+        (entry) => entry.host === pending.host && (entry.login || '').toLowerCase() === pending.username.toLowerCase(),
+    );
+    if (existing) {
+        const { password } = await api.decrypt(existing.id);
+        if (password === pending.password) {
+            // Já salva com esta mesma senha: nada a perguntar.
+            await setPendingSave(sender.tab.id, null);
+            return { pending: null };
         }
+    }
+    return { pending: { site: pending.host, username: pending.username, mode: existing ? 'update' : 'create' } };
+}
+
+async function handleConfirmSave(message, sender) {
+    const pending = (await getPendingSaves())[sender.tab.id];
+    if (!pending || pending.host !== hostOfUrl(sender.url)) return { error: 'Nada para salvar' };
+
+    try {
+        await api.create({ site: pending.host, login: pending.username, password: pending.password });
     } catch (error) {
-        console.warn('Servidor não disponível:', error);
+        if (!(error instanceof ApiError) || error.status !== 409) throw error;
+        await api.update(error.body.id, { password: pending.password });
+    }
+    await setPendingSave(sender.tab.id, null);
+    await refreshIndex();
+    notify('Senha salva', `Credencial de ${pending.username} em ${pending.host} salva no MainDug.`);
+    return { ok: true };
+}
+
+async function handleDismissSave(message, sender) {
+    await setPendingSave(sender.tab.id, null);
+    return { ok: true };
+}
+
+// ==========================================
+// MENU DE CONTEXTO E ATALHOS
+// ==========================================
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId === 'generatePassword') insertGeneratedPassword(tab);
+    if (info.menuItemId === 'fillLogin') fillFromMenu(tab);
+});
+
+chrome.commands.onCommand.addListener(async (command, tab) => {
+    if (command !== 'generate-password') return;
+    const target = tab || (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+    if (target) insertGeneratedPassword(target);
+});
+
+async function insertGeneratedPassword(tab) {
+    let password = generatePassword(16);
+    if (await getSession()) {
+        try {
+            ({ password } = await api.generate({ length: 16, excludeSimilar: true }));
+        } catch {
+            // sem servidor: fica a senha gerada localmente
+        }
+    }
+    chrome.tabs.sendMessage(tab.id, { type: 'insertPassword', password }).catch(() => {});
+}
+
+async function fillFromMenu(tab) {
+    if (!(await getSession())) {
+        notify('MainDug bloqueado', 'Abra a extensão e faça login para preencher.');
+        return;
+    }
+    // activeTab concede tab.url aqui, porque o usuário clicou no menu.
+    const matches = await matchesForUrl(tab.url);
+    if (matches.length === 0) {
+        notify('Nenhuma credencial', 'Não há credenciais salvas para este site.');
+    } else if (matches.length > 1) {
+        chrome.action.openPopup().catch(() => notify('Várias credenciais', 'Abra a extensão para escolher qual preencher.'));
+    } else {
+        const [credential] = matches;
+        const { password } = await api.decrypt(credential.id);
+        await chrome.tabs.sendMessage(tab.id, { type: 'fill', username: credential.login, password });
+        api.recordUse(credential.id).catch(() => {});
     }
 }
 
-// Manipular comandos de teclado (se configurados no manifest)
-chrome.commands?.onCommand.addListener((command) => {
-    switch (command) {
-        case 'generate-password':
-            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-                if (tabs[0]) {
-                    handleGeneratePassword(tabs[0]);
-                }
-            });
-            break;
-        case 'open-popup':
-            chrome.action.openPopup();
-            break;
-    }
-});
-
-console.log('SecurePass Background Script carregado');
+async function notify(title, message) {
+    if (!(await getSettings()).notifications) return;
+    chrome.notifications.create({ type: 'basic', iconUrl: 'icons/128.png', title, message, priority: 1 });
+}

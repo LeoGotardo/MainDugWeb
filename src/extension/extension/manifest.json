@@ -1,35 +1,42 @@
 {
   "manifest_version": 3,
-  "name": "MainDug - Gerenciador de Senhas",
-  "version": "1.0.0",
-  "description": "Gerencie suas senhas de forma segura com criptografia AES-256",
+  "name": "MainDug",
+  "version": "2.0.0",
+  "description": "Preenche e salva suas senhas do cofre MainDug.",
   "permissions": [
     "storage",
     "activeTab",
-    "tabs",
-    "notifications",
     "contextMenus",
     "alarms",
-    "downloads"
+    "notifications",
+    "idle"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "https://maindug.leogotardo.com.br/*"
+  ],
+  "optional_host_permissions": [
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
   "action": {
     "default_popup": "popup.html",
+    "default_title": "MainDug",
     "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
+      "16": "icons/16.png",
+      "32": "icons/32.png",
+      "48": "icons/48.png",
+      "128": "icons/128.png"
     }
   },
   "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
@@ -40,7 +47,7 @@
     }
   ],
   "commands": {
-    "open-popup": {
+    "_execute_action": {
       "suggested_key": {
         "default": "Ctrl+Shift+L",
         "mac": "Command+Shift+L"
@@ -52,7 +59,7 @@
         "default": "Ctrl+Shift+G",
         "mac": "Command+Shift+G"
       },
-      "description": "Gerar senha forte"
+      "description": "Gerar senha forte no campo selecionado"
     }
   },
   "content_security_policy": {

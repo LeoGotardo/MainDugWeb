@@ -1,592 +1,277 @@
-// ==========================================
-// POPUP.JS - MainDug Extension
-// ==========================================
+// Popup do MainDug: login na API, lista de credenciais, preencher/copiar e configurações.
 
-// Estado global
-let currentUser = null;
-let allPasswords = [];
-let settings = {
-    autoFill: true,
-    autoSave: true,
-    notifications: true,
-    darkMode: false
-};
+import { api, ApiError } from './lib/api.js';
+import { getSettings, saveSettings, siteUrl, hostPermissionFor, DEFAULT_API_BASE } from './lib/config.js';
+import { getSession, setSession, clearSession } from './lib/session.js';
+import { refreshIndex, getIndex } from './lib/vault.js';
+import { hostOfUrl, matchesHost } from './lib/domain.js';
+
+const $ = (id) => document.getElementById(id);
+
+let index = [];
+let activeTab = null;
+let pageHost = null;
 
 // ==========================================
 // INICIALIZAÇÃO
 // ==========================================
 
-document.addEventListener('DOMContentLoaded', async function() {
-    await loadSettings();
-    await checkAuth();
-    setupEventListeners();
-    applyTheme();
+document.addEventListener('DOMContentLoaded', async () => {
+    const settings = await getSettings();
+    applySettingsToForm(settings);
+    setupListeners();
+
+    [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    // activeTab concede a URL da aba ativa enquanto o popup está aberto.
+    pageHost = activeTab?.url ? hostOfUrl(activeTab.url) : null;
+
+    const session = await getSession();
+    if (session) {
+        showMain(session);
+        await loadCredentials();
+    } else {
+        showLogin();
+    }
 });
 
-// ==========================================
-// AUTENTICAÇÃO
-// ==========================================
+function setupListeners() {
+    $('loginForm').addEventListener('submit', handleLogin);
+    $('signupBtn').addEventListener('click', openSite('/signup/'));
+    $('openSiteBtn').addEventListener('click', openSite('/'));
+    $('logoutBtn').addEventListener('click', handleLogout);
+    $('logoutAccountBtn').addEventListener('click', handleLogout);
+    $('searchPasswords').addEventListener('input', () => render());
 
-async function checkAuth() {
-    const stored = await chrome.storage.local.get(['currentUser']);
-    
-    if (stored.currentUser) {
-        currentUser = stored.currentUser;
-        showMainInterface();
-        await loadPasswords();
-    } else {
-        showLoginInterface();
+    document.querySelectorAll('.tab').forEach((tab) => {
+        tab.addEventListener('click', () => showTab(tab.dataset.tab));
+    });
+
+    for (const key of ['autoFill', 'autoSave', 'notifications', 'darkMode']) {
+        $(key).addEventListener('change', async (event) => {
+            const settings = await saveSettings({ [key]: event.target.checked });
+            applyTheme(settings);
+        });
     }
+
+    $('saveServerBtn').addEventListener('click', () => changeServer($('apiBaseUrl').value.trim()));
+    $('resetServerBtn').addEventListener('click', () => changeServer(DEFAULT_API_BASE));
 }
+
+// ==========================================
+// SESSÃO
+// ==========================================
 
 async function handleLogin(event) {
     event.preventDefault();
-    
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    
-    if (!email || !password) {
-        showStatus('loginStatus', 'Por favor, preencha todos os campos.', 'error');
-        return;
-    }
-    
+    const login = $('loginInput').value.trim();
+    const password = $('passwordInput').value;
+    if (!login || !password) return;
+
+    $('loginBtn').disabled = true;
     try {
-        // Buscar usuários salvos
-        const stored = await chrome.storage.local.get(['users']);
-        const users = stored.users || [];
-        
-        // Verificar credenciais
-        const user = users.find(u => u.email === email);
-        
-        if (user && await verifyPassword(password, user.passwordHash)) {
-            currentUser = {
-                email: user.email,
-                name: user.name || email.split('@')[0]
-            };
-            
-            await chrome.storage.local.set({ currentUser });
-            
-            showMainInterface();
-            await loadPasswords();
-            showToast('Login realizado com sucesso!');
-        } else {
-            showStatus('loginStatus', 'Email ou senha incorretos.', 'error');
-        }
+        const data = await api.login(login, password);
+        const session = { token: data.token, login: data.user.login, userId: data.userId };
+        await setSession(session);
+        $('passwordInput').value = '';
+        showMain(session);
+        await loadCredentials();
     } catch (error) {
-        console.error('Erro no login:', error);
-        showStatus('loginStatus', 'Erro ao fazer login.', 'error');
+        showStatus(loginErrorMessage(error));
+    } finally {
+        $('loginBtn').disabled = false;
     }
 }
 
-async function handleRegister() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    
-    if (!email || !password) {
-        showStatus('loginStatus', 'Por favor, preencha todos os campos.', 'error');
-        return;
-    }
-    
-    if (password.length < 6) {
-        showStatus('loginStatus', 'A senha deve ter pelo menos 6 caracteres.', 'error');
-        return;
-    }
-    
-    try {
-        const stored = await chrome.storage.local.get(['users']);
-        const users = stored.users || [];
-        
-        // Verificar se usuário já existe
-        if (users.find(u => u.email === email)) {
-            showStatus('loginStatus', 'Este email já está cadastrado.', 'error');
-            return;
-        }
-        
-        // Criar novo usuário
-        const newUser = {
-            email,
-            name: email.split('@')[0],
-            passwordHash: await hashPassword(password),
-            createdAt: new Date().toISOString()
-        };
-        
-        users.push(newUser);
-        await chrome.storage.local.set({ users });
-        
-        // Fazer login automático
-        currentUser = {
-            email: newUser.email,
-            name: newUser.name
-        };
-        
-        await chrome.storage.local.set({ currentUser });
-        
-        showMainInterface();
-        showToast('Conta criada com sucesso!');
-    } catch (error) {
-        console.error('Erro no registro:', error);
-        showStatus('loginStatus', 'Erro ao criar conta.', 'error');
-    }
+function loginErrorMessage(error) {
+    if (!(error instanceof ApiError)) return 'Erro inesperado ao entrar.';
+    if (error.status === 0) return 'Sem conexão com o servidor MainDug.';
+    if (error.status === 401) return 'Login ou senha incorretos.';
+    if (error.status === 429) return 'Muitas tentativas. Aguarde um minuto.';
+    return error.message;
 }
 
 async function handleLogout() {
-    await chrome.storage.local.remove('currentUser');
-    currentUser = null;
-    allPasswords = [];
-    showLoginInterface();
-    showToast('Você saiu da sua conta.');
+    await clearSession();
+    index = [];
+    showLogin();
+    toast('Cofre bloqueado.');
 }
 
 // ==========================================
-// GERENCIAMENTO DE SENHAS
+// CREDENCIAIS
 // ==========================================
 
-async function loadPasswords() {
-    if (!currentUser) return;
-    
-    const loader = document.getElementById('passwordLoader');
-    const emptyState = document.getElementById('emptyState');
-    
-    loader.style.display = 'block';
-    
+async function loadCredentials() {
+    $('passwordLoader').hidden = false;
     try {
-        const stored = await chrome.storage.local.get(['passwords']);
-        const allStoredPasswords = stored.passwords || [];
-        
-        // Filtrar senhas do usuário atual
-        allPasswords = allStoredPasswords.filter(p => p.userEmail === currentUser.email);
-        
-        renderPasswords(allPasswords);
-        
-        if (allPasswords.length === 0) {
-            emptyState.style.display = 'block';
-        } else {
-            emptyState.style.display = 'none';
-        }
+        index = await refreshIndex();
     } catch (error) {
-        console.error('Erro ao carregar senhas:', error);
-        showToast('Erro ao carregar senhas.');
+        if (error instanceof ApiError && error.status === 401) {
+            showLogin();
+            showStatus('Sessão expirada. Entre novamente.');
+            return;
+        }
+        index = await getIndex().catch(() => []);
+        toast('Não foi possível atualizar a lista.');
     } finally {
-        loader.style.display = 'none';
+        $('passwordLoader').hidden = true;
     }
+    render();
 }
 
-function renderPasswords(passwords) {
-    const passwordList = document.getElementById('passwordList');
-    passwordList.innerHTML = '';
-    
-    passwords.forEach((pwd, index) => {
-        const item = document.createElement('div');
-        item.className = 'password-item';
-        item.innerHTML = `
-            <div class="password-info">
-                <span class="site-name">${escapeHtml(pwd.site)}</span>
-                <span class="username">${escapeHtml(pwd.username)}</span>
-            </div>
-            <button class="copy-btn" title="Copiar senha" data-index="${index}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-            </button>
-        `;
-        
-        item.querySelector('.copy-btn').addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await copyPassword(index);
-        });
-        
-        item.addEventListener('click', () => fillPassword(index));
-        
-        passwordList.appendChild(item);
-    });
+function render() {
+    const term = $('searchPasswords').value.trim().toLowerCase();
+    const visible = index
+        .filter((entry) => !term || (entry.site || '').toLowerCase().includes(term) || (entry.login || '').toLowerCase().includes(term))
+        .sort((a, b) => (a.site || '').localeCompare(b.site || ''));
+    const forSite = visible.filter((entry) => matchesHost(pageHost, entry.host));
+
+    fillList($('siteList'), forSite, true);
+    $('siteSection').hidden = forSite.length === 0;
+
+    fillList($('allList'), visible, false);
+    $('allTitle').textContent = `Todas (${visible.length})`;
+    $('emptyState').hidden = index.length > 0;
 }
 
-async function savePassword(site, username, password) {
-    if (!currentUser) return;
-    
-    try {
-        const stored = await chrome.storage.local.get(['passwords']);
-        const passwords = stored.passwords || [];
-        
-        // Verificar se já existe
-        const existingIndex = passwords.findIndex(p => 
-            p.userEmail === currentUser.email && 
-            p.site === site && 
-            p.username === username
-        );
-        
-        const encryptedPassword = await encryptPassword(password);
-        
-        const passwordData = {
-            userEmail: currentUser.email,
-            site,
-            username,
-            password: encryptedPassword,
-            createdAt: new Date().toISOString()
-        };
-        
-        if (existingIndex >= 0) {
-            passwords[existingIndex] = passwordData;
-        } else {
-            passwords.push(passwordData);
-        }
-        
-        await chrome.storage.local.set({ passwords });
-        await loadPasswords();
-        
-        showToast('Senha salva com sucesso!');
-    } catch (error) {
-        console.error('Erro ao salvar senha:', error);
-        showToast('Erro ao salvar senha.');
+function fillList(container, entries, canFill) {
+    const template = $('credentialTemplate');
+    container.replaceChildren(...entries.map((entry) => {
+        const item = template.content.firstElementChild.cloneNode(true);
+        item.querySelector('.site-name').textContent = entry.site;
+        item.querySelector('.username').textContent = entry.login;
+
+        const fillBtn = item.querySelector('.fill-btn');
+        if (canFill) fillBtn.addEventListener('click', () => fillCredential(entry));
+        else fillBtn.remove();
+
+        item.querySelector('.copy-btn').addEventListener('click', () => copyPassword(entry));
+        return item;
+    }));
+}
+
+async function fillCredential(entry) {
+    // Revalida: só preenche se a credencial casa com o domínio da aba ativa.
+    if (!activeTab || !matchesHost(pageHost, entry.host)) {
+        toast('Esta credencial não é deste site.');
+        return;
     }
-}
-
-async function copyPassword(index) {
-    if (!allPasswords[index]) return;
-    
     try {
-        const decryptedPassword = await decryptPassword(allPasswords[index].password);
-        await navigator.clipboard.writeText(decryptedPassword);
-        showToast('Senha copiada!');
-    } catch (error) {
-        console.error('Erro ao copiar senha:', error);
-        showToast('Erro ao copiar senha.');
-    }
-}
-
-async function fillPassword(index) {
-    if (!allPasswords[index]) return;
-    
-    try {
-        const password = allPasswords[index];
-        const decryptedPassword = await decryptPassword(password.password);
-        
-        // Enviar mensagem para content script
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        
-        await chrome.tabs.sendMessage(tab.id, {
-            type: 'fillPassword',
-            data: {
-                username: password.username,
-                password: decryptedPassword
-            }
-        });
-        
-        showToast('Formulário preenchido!');
+        const { password } = await api.decrypt(entry.id);
+        await chrome.tabs.sendMessage(activeTab.id, { type: 'fill', username: entry.login, password });
+        api.recordUse(entry.id).catch(() => {});
         window.close();
     } catch (error) {
-        console.error('Erro ao preencher:', error);
-        showToast('Erro ao preencher formulário.');
+        toast(error instanceof ApiError ? error.message : 'Não foi possível preencher esta página.');
     }
 }
 
-// ==========================================
-// BUSCA
-// ==========================================
-
-function setupSearch() {
-    const searchInput = document.getElementById('searchPasswords');
-    
-    searchInput.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        
-        const filtered = allPasswords.filter(pwd => 
-            pwd.site.toLowerCase().includes(searchTerm) || 
-            pwd.username.toLowerCase().includes(searchTerm)
-        );
-        
-        renderPasswords(filtered);
-    });
+async function copyPassword(entry) {
+    try {
+        const { password } = await api.decrypt(entry.id);
+        await navigator.clipboard.writeText(password);
+        toast('Senha copiada.');
+    } catch (error) {
+        toast(error instanceof ApiError ? error.message : 'Não foi possível copiar.');
+    }
 }
 
 // ==========================================
 // CONFIGURAÇÕES
 // ==========================================
 
-async function loadSettings() {
-    const stored = await chrome.storage.local.get(['settings']);
-    if (stored.settings) {
-        settings = { ...settings, ...stored.settings };
-    }
-
-    const setChecked = (id, value) => {
-        const el = document.getElementById(id);
-        if (el) el.checked = value;
-    };
-    setChecked('autoFill', settings.autoFill);
-    setChecked('autoSave', settings.autoSave);
-    setChecked('notifications', settings.notifications);
-    setChecked('darkMode', settings.darkMode);
+function applySettingsToForm(settings) {
+    for (const key of ['autoFill', 'autoSave', 'notifications', 'darkMode']) $(key).checked = settings[key];
+    $('apiBaseUrl').value = settings.apiBaseUrl;
+    $('loginServer').textContent = new URL(settings.apiBaseUrl).host;
+    applyTheme(settings);
 }
 
-async function saveSettings() {
-    await chrome.storage.local.set({ settings });
+function applyTheme(settings) {
+    document.body.classList.toggle('dark-mode', settings.darkMode);
 }
 
-function setupSettings() {
-    // Auto Fill
-    document.getElementById('autoFill').addEventListener('change', async (e) => {
-        settings.autoFill = e.target.checked;
-        await saveSettings();
-        showToast(e.target.checked ? 'Preenchimento automático ativado' : 'Preenchimento automático desativado');
-    });
-    
-    // Auto Save
-    document.getElementById('autoSave').addEventListener('change', async (e) => {
-        settings.autoSave = e.target.checked;
-        await saveSettings();
-        showToast(e.target.checked ? 'Salvamento automático ativado' : 'Salvamento automático desativado');
-    });
-    
-    // Notifications
-    document.getElementById('notifications').addEventListener('change', async (e) => {
-        settings.notifications = e.target.checked;
-        await saveSettings();
-        showToast(e.target.checked ? 'Notificações ativadas' : 'Notificações desativadas');
-    });
-    
-    // Dark Mode
-    document.getElementById('darkMode').addEventListener('change', async (e) => {
-        settings.darkMode = e.target.checked;
-        await saveSettings();
-        applyTheme();
-        showToast(e.target.checked ? 'Modo escuro ativado' : 'Modo claro ativado');
-    });
-}
-
-function applyTheme() {
-    if (settings.darkMode) {
-        document.body.classList.add('dark-mode');
-    } else {
-        document.body.classList.remove('dark-mode');
-    }
-}
-
-// ==========================================
-// EXPORTAR DADOS
-// ==========================================
-
-async function exportData() {
-    if (!currentUser) return;
-    
+function validateServerUrl(value) {
+    let url;
     try {
-        let csv = 'Site,Usuário,Senha\n';
-        
-        for (const pwd of allPasswords) {
-            const decryptedPassword = await decryptPassword(pwd.password);
-            csv += `"${pwd.site}","${pwd.username}","${decryptedPassword}"\n`;
-        }
-        
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        
-        await chrome.downloads.download({
-            url: url,
-            filename: 'maindug-passwords.csv',
-            saveAs: true
-        });
-        
-        showToast('Dados exportados com sucesso!');
-    } catch (error) {
-        console.error('Erro ao exportar:', error);
-        showToast('Erro ao exportar dados.');
+        url = new URL(value);
+    } catch {
+        return null;
     }
+    const isDefault = url.origin === new URL(DEFAULT_API_BASE).origin;
+    const isLocal = ['localhost', '127.0.0.1'].includes(url.hostname);
+    return isDefault || isLocal ? url.href.replace(/\/$/, '') : null;
 }
 
-// ==========================================
-// NAVEGAÇÃO DE ABAS
-// ==========================================
+async function changeServer(value) {
+    const apiBaseUrl = validateServerUrl(value);
+    if (!apiBaseUrl) {
+        toast('Use o servidor oficial ou localhost/127.0.0.1.');
+        return;
+    }
+    // Precisa vir direto do clique: permissions.request exige gesto do usuário.
+    if (new URL(apiBaseUrl).origin !== new URL(DEFAULT_API_BASE).origin) {
+        const granted = await chrome.permissions.request({ origins: [hostPermissionFor(apiBaseUrl)] });
+        if (!granted) {
+            toast('Permissão para acessar o servidor negada.');
+            return;
+        }
+    }
 
-function setupTabs() {
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            const targetTab = tab.dataset.tab;
-            
-            // Remove active de todas
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
-            // Adiciona active na clicada
-            tab.classList.add('active');
-            document.getElementById(targetTab).classList.add('active');
-        });
-    });
+    const current = await getSettings();
+    if (current.apiBaseUrl !== apiBaseUrl) {
+        await clearSession();
+        index = [];
+    }
+    const settings = await saveSettings({ apiBaseUrl });
+    applySettingsToForm(settings);
+    toast('Servidor atualizado.');
+    if (!(await getSession())) showLogin();
 }
 
 // ==========================================
 // UI
 // ==========================================
 
-function showLoginInterface() {
-    document.getElementById('mainHeader').style.display = 'none';
-    document.getElementById('mainNav').style.display = 'none';
-    
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.getElementById('login').classList.add('active');
+function showLogin() {
+    $('mainHeader').hidden = true;
+    $('mainNav').hidden = true;
+    showTab('login');
 }
 
-function showMainInterface() {
-    document.getElementById('mainHeader').style.display = 'flex';
-    document.getElementById('mainNav').style.display = 'flex';
-    document.getElementById('userEmail').textContent = currentUser.email;
-    document.getElementById('accountEmail').textContent = currentUser.email;
-    
-    // Atualizar foto de perfil
-    const name = currentUser.name || currentUser.email.split('@')[0];
-    document.getElementById('profilePic').src = 
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=667eea&color=fff&size=160`;
-    
-    // Mudar para aba de senhas
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    
-    document.querySelector('[data-tab="passwords"]').classList.add('active');
-    document.getElementById('passwords').classList.add('active');
+function showMain(session) {
+    $('mainHeader').hidden = false;
+    $('mainNav').hidden = false;
+    $('userLogin').textContent = session.login;
+    $('accountLogin').textContent = session.login;
+    $('avatar').textContent = (session.login || '?').slice(0, 2).toUpperCase();
+    showTab('passwords');
 }
 
-function showToast(message) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.add('show');
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
+function showTab(name) {
+    document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === name));
+    document.querySelectorAll('.tab-content').forEach((content) => content.classList.toggle('active', content.id === name));
 }
 
-function showStatus(elementId, message, type) {
-    const statusEl = document.getElementById(elementId);
-    statusEl.textContent = message;
-    statusEl.className = `status-message ${type}`;
-    statusEl.style.display = 'block';
-    
-    setTimeout(() => {
-        statusEl.style.display = 'none';
-    }, 5000);
+function openSite(path) {
+    return async () => {
+        const { apiBaseUrl } = await getSettings();
+        chrome.tabs.create({ url: siteUrl(apiBaseUrl) + path });
+    };
 }
 
-// ==========================================
-// LISTENERS
-// ==========================================
-
-function setupEventListeners() {
-    // Login
-    document.getElementById('loginForm').addEventListener('submit', handleLogin);
-    document.getElementById('registerBtn').addEventListener('click', handleRegister);
-    
-    // Logout
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-    document.getElementById('logoutAccountBtn').addEventListener('click', handleLogout);
-    
-    // Busca
-    setupSearch();
-    
-    // Abas
-    setupTabs();
-    
-    // Configurações
-    setupSettings();
-    
-    // Exportar
-    document.getElementById('exportData').addEventListener('click', exportData);
+function showStatus(message) {
+    const status = $('loginStatus');
+    status.textContent = message;
+    status.className = 'status-message error';
+    status.hidden = false;
 }
 
-// ==========================================
-// UTILITÁRIOS DE SEGURANÇA
-// ==========================================
-
-async function getOrCreateEncryptionKey() {
-    const stored = await chrome.storage.local.get(['encryptionKey']);
-    if (stored.encryptionKey) {
-        return crypto.subtle.importKey(
-            'jwk', stored.encryptionKey,
-            { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']
-        );
-    }
-    const key = await crypto.subtle.generateKey(
-        { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']
-    );
-    const exported = await crypto.subtle.exportKey('jwk', key);
-    await chrome.storage.local.set({ encryptionKey: exported });
-    return key;
+let toastTimer;
+function toast(message) {
+    const element = $('toast');
+    element.textContent = message;
+    element.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => element.classList.remove('show'), 3000);
 }
-
-async function encryptPassword(password) {
-    const key = await getOrCreateEncryptionKey();
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const encoded = new TextEncoder().encode(password);
-    const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
-    const combined = new Uint8Array(iv.length + encrypted.byteLength);
-    combined.set(iv);
-    combined.set(new Uint8Array(encrypted), iv.length);
-    return btoa(String.fromCharCode(...combined));
-}
-
-async function decryptPassword(encryptedData) {
-    try {
-        const key = await getOrCreateEncryptionKey();
-        const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
-        const iv = combined.slice(0, 12);
-        const ciphertext = combined.slice(12);
-        const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
-        return new TextDecoder().decode(decrypted);
-    } catch {
-        // Legacy fallback for old btoa-encoded data
-        try { return atob(encryptedData); } catch { return ''; }
-    }
-}
-
-async function hashPassword(password) {
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const keyMaterial = await crypto.subtle.importKey(
-        'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
-    );
-    const bits = await crypto.subtle.deriveBits(
-        { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, keyMaterial, 256
-    );
-    const hashArr = new Uint8Array(bits);
-    const toHex = arr => Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
-    return `${toHex(salt)}:${toHex(hashArr)}`;
-}
-
-async function verifyPassword(password, storedHash) {
-    if (!storedHash.includes(':')) {
-        // Legacy unsalted SHA-256 — still verify but format changed on next login
-        const data = new TextEncoder().encode(password);
-        const hash = await crypto.subtle.digest('SHA-256', data);
-        const hex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-        return hex === storedHash;
-    }
-    const [saltHex, expectedHex] = storedHash.split(':');
-    const salt = Uint8Array.from(saltHex.match(/.{2}/g).map(b => parseInt(b, 16)));
-    const keyMaterial = await crypto.subtle.importKey(
-        'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
-    );
-    const bits = await crypto.subtle.deriveBits(
-        { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, keyMaterial, 256
-    );
-    const hex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
-    return hex === expectedHex;
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// ==========================================
-// MENSAGENS DO BACKGROUND
-// ==========================================
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'passwordDetected') {
-        if (settings.autoSave && currentUser) {
-            savePassword(message.site, message.username, message.password);
-        }
-    }
-    
-    sendResponse({ success: true });
-    return true;
-});

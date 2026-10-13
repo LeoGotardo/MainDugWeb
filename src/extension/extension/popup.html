@@ -2,170 +2,155 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./popup.css">
     <title>MainDug</title>
 </head>
 <body>
     <div class="container">
-        <!-- Cabeçalho (oculto inicialmente) -->
-        <header class="header" id="mainHeader" style="display: none;">
+        <header class="header" id="mainHeader" hidden>
             <div class="logo">
-                <img src="./images/logo.svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                <img src="./images/logo.svg" width="32" height="32" alt="">
                 <h1>MainDug</h1>
             </div>
-            <div id="userInfo" style="display: none;">
-                <span id="userEmail"></span>
-                <button id="logoutBtn" class="icon-btn" title="Sair">
+            <div id="userInfo">
+                <span id="userLogin"></span>
+                <button id="logoutBtn" class="icon-btn" title="Bloquear (sair)">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                        <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                     </svg>
                 </button>
             </div>
         </header>
 
-        <!-- Navegação por abas (oculta inicialmente) -->
-        <nav class="tabs" id="mainNav" style="display: none;">
-            <button class="tab active" data-tab="passwords">
-                <svg width="16" height="16" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2m-6 9c-1.1 0-2-.9-2-2s.9-2 2-2s2 .9 2 2s-.9 2-2 2M9 8V6c0-1.66 1.34-3 3-3s3 1.34 3 3v2z"/>
-                </svg>
-                Senhas
-            </button>
-            <button class="tab" data-tab="settings">
-                <svg width="16" height="16" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5s3.5 1.57 3.5 3.5s-1.57 3.5-3.5 3.5"/>
-                </svg>
-                Config.
-            </button>
-            <button class="tab" data-tab="account">
-                <svg width="16" height="16" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M12 4a4 4 0 1 1 0 8a4 4 0 0 1 0-8m0 10c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4"/>
-                </svg>
-                Conta
-            </button>
+        <nav class="tabs" id="mainNav" hidden>
+            <button class="tab active" data-tab="passwords">Senhas</button>
+            <button class="tab" data-tab="settings">Config.</button>
+            <button class="tab" data-tab="account">Conta</button>
         </nav>
 
-        <!-- Conteúdo das abas -->
         <main class="tab-content-container">
-            <!-- Aba: Login -->
+            <!-- Login -->
             <div id="login" class="tab-content active">
                 <div class="login-container">
                     <div class="login-header">
-                        <div class="logo">
-                            <img src="./images/logo.svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                        </div>
-                        <h2 style="margin: 0 0 8px 0; color: var(--primary-color);">MainDug</h2>
-                        <p>Gerencie suas senhas com segurança</p>
+                        <div class="logo"><img src="./images/logo.svg" width="48" height="48" alt=""></div>
+                        <h2>MainDug</h2>
+                        <p>Entre com a sua conta do MainDug</p>
                     </div>
-                    
+
                     <form id="loginForm" autocomplete="off">
                         <div class="form-group">
-                            <label for="loginEmail">Email ou Login</label>
-                            <input type="text" id="loginEmail" placeholder="seu@email.com" required>
+                            <label for="loginInput">Login</label>
+                            <input type="text" id="loginInput" autocomplete="username" required>
                         </div>
                         <div class="form-group">
-                            <label for="loginPassword">Senha Mestra</label>
-                            <input type="password" id="loginPassword" placeholder="Sua senha mestra" required>
+                            <label for="passwordInput">Senha mestra</label>
+                            <input type="password" id="passwordInput" autocomplete="current-password" required>
                         </div>
-                        <div id="loginStatus" class="status-message"></div>
+                        <div id="loginStatus" class="status-message" hidden></div>
                         <div class="form-actions">
-                            <button type="submit" class="btn primary">Entrar</button>
-                            <button type="button" id="registerBtn" class="btn secondary">Registrar</button>
+                            <button type="submit" id="loginBtn" class="btn primary">Entrar</button>
+                            <button type="button" id="signupBtn" class="btn secondary">Criar conta</button>
                         </div>
                     </form>
+                    <p class="hint">O cofre bloqueia ao fechar o navegador e após 15 min sem uso.</p>
+                    <p class="hint">Servidor: <span id="loginServer"></span></p>
                 </div>
             </div>
 
-            <!-- Aba: Senhas -->
+            <!-- Senhas -->
             <div id="passwords" class="tab-content">
                 <div class="search-bar">
-                    <input type="search" id="searchPasswords" placeholder="Buscar senhas...">
+                    <input type="search" id="searchPasswords" placeholder="Buscar por site ou usuário...">
                 </div>
-                <div id="passwordLoader" style="display: none;">
-                    <div class="spinner"></div>
-                </div>
-                <div id="passwordList"></div>
-                <div class="empty-state" id="emptyState" style="display: none;">
-                    Nenhuma senha encontrada.
+                <div id="passwordLoader" hidden><div class="spinner"></div></div>
+
+                <section id="siteSection" hidden>
+                    <h3 class="section-title">Neste site</h3>
+                    <div id="siteList" class="credential-list"></div>
+                </section>
+
+                <section>
+                    <h3 class="section-title" id="allTitle">Todas</h3>
+                    <div id="allList" class="credential-list"></div>
+                </section>
+
+                <div class="empty-state" id="emptyState" hidden>
+                    Nenhuma credencial. Cadastre pelo site ou faça login em uma página com a extensão ativa.
                 </div>
             </div>
 
-            <!-- Aba: Configurações -->
+            <!-- Configurações -->
             <div id="settings" class="tab-content">
                 <ul class="settings-list">
                     <li>
-                        <label for="autoFill">Preenchimento automático</label>
-                        <div class="switch">
-                            <input type="checkbox" id="autoFill" checked>
-                            <span class="slider"></span>
-                        </div>
+                        <label for="autoFill">Sugerir preenchimento</label>
+                        <div class="switch"><input type="checkbox" id="autoFill"><span class="slider"></span></div>
                     </li>
                     <li>
-                        <label for="autoSave">Salvar senhas automaticamente</label>
-                        <div class="switch">
-                            <input type="checkbox" id="autoSave" checked>
-                            <span class="slider"></span>
-                        </div>
+                        <label for="autoSave">Oferecer para salvar senhas</label>
+                        <div class="switch"><input type="checkbox" id="autoSave"><span class="slider"></span></div>
                     </li>
                     <li>
                         <label for="notifications">Mostrar notificações</label>
-                        <div class="switch">
-                            <input type="checkbox" id="notifications">
-                            <span class="slider"></span>
-                        </div>
+                        <div class="switch"><input type="checkbox" id="notifications"><span class="slider"></span></div>
                     </li>
                     <li>
                         <label for="darkMode">Modo escuro</label>
-                        <div class="switch">
-                            <input type="checkbox" id="darkMode">
-                            <span class="slider"></span>
-                        </div>
+                        <div class="switch"><input type="checkbox" id="darkMode"><span class="slider"></span></div>
                     </li>
                 </ul>
-                <div class="settings-actions">
-                    <button id="exportData" class="btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        Exportar Dados (.csv)
-                    </button>
-                </div>
+
+                <details class="server-settings">
+                    <summary>Servidor (avançado)</summary>
+                    <div class="form-group">
+                        <label for="apiBaseUrl">URL da API</label>
+                        <input type="url" id="apiBaseUrl" placeholder="https://maindug.leogotardo.com.br/api">
+                    </div>
+                    <p class="hint">Além do servidor oficial, só são aceitos <code>localhost</code> e <code>127.0.0.1</code> (desenvolvimento). Trocar o servidor encerra a sessão.</p>
+                    <div class="form-actions">
+                        <button type="button" id="saveServerBtn" class="btn primary">Salvar</button>
+                        <button type="button" id="resetServerBtn" class="btn secondary">Padrão</button>
+                    </div>
+                </details>
             </div>
 
-            <!-- Aba: Conta -->
+            <!-- Conta -->
             <div id="account" class="tab-content">
                 <div class="account-info">
-                    <img src="https://ui-avatars.com/api/?name=Maria+Silva&background=667eea&color=fff&size=160" alt="Foto de perfil" class="profile-pic" id="profilePic">
-                    <span class="account-email" id="accountEmail">maria.silva@email.com</span>
+                    <div class="avatar" id="avatar" aria-hidden="true"></div>
+                    <span class="account-email" id="accountLogin"></span>
                 </div>
                 <div class="account-actions">
-                    <button id="editAccountBtn" class="btn primary">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                        Editar Conta
-                    </button>
-                    <button id="logoutAccountBtn" class="btn secondary">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <polyline points="16 17 21 12 16 7"></polyline>
-                            <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                        Sair da Conta
-                    </button>
+                    <button id="openSiteBtn" class="btn primary">Abrir MainDug</button>
+                    <button id="logoutAccountBtn" class="btn secondary">Sair</button>
                 </div>
             </div>
         </main>
 
-        <!-- Toast para notificações -->
-        <div id="toast"></div>
+        <div id="toast" role="status"></div>
     </div>
-    <script src="./popup.js"></script>
+
+    <template id="credentialTemplate">
+        <div class="password-item">
+            <div class="password-info">
+                <span class="site-name"></span>
+                <span class="username"></span>
+            </div>
+            <div class="item-actions">
+                <button class="item-btn fill-btn" title="Preencher nesta página">Preencher</button>
+                <button class="copy-btn" title="Copiar senha">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <script type="module" src="./popup.js"></script>
 </body>
 </html>
