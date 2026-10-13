@@ -32,7 +32,7 @@ See [`docs/tex/main.tex`](docs/tex/main.tex) (*Estratégias de segurança*) for 
 - **Backend:** Python, Flask, Flask-Login, Flask-SQLAlchemy, Flask-Admin
 - **Database:** PostgreSQL (SQLite fallback for local dev)
 - **Crypto:** `cryptography`, `argon2-cffi`, JWT (for the API)
-- **Extension:** JavaScript (Manifest V3), with an optional Node/Express backend
+- **Extension:** JavaScript (Manifest V3, Chrome), talking to the Flask `/api`
 
 ## Project structure
 
@@ -45,10 +45,9 @@ src/
   cryptograph.py       # Encryption helpers
   config.json          # Table/column config for the admin & password views
   templates/, static/   # Jinja templates, CSS, JS
-  extension/            # Browser extension + its Node/Express backend
-extention/            # Standalone browser extension prototype (JS + Node backend)
+  extension/extension/  # Browser extension (Manifest V3)
 scripts/              # createAdmin.py, migrateLookupHashes.py
-tests/                # pytest suite
+tests/                # pytest suite; tests/extension/ = extension unit + e2e tests
 docs/
   tex/                # TCC (thesis) LaTeX source, PDF, and screenshots
   classDiagram.mmd, mer.mmd  # Mermaid class/ER diagrams
@@ -89,7 +88,19 @@ BOOTSTRAP_ADMIN_LOGIN=<login> BOOTSTRAP_ADMIN_PASSWORD=<12+ chars> python script
 
 ### Browser extension
 
-Load `src/extension/extension` (or `extention/` for the standalone prototype) as an unpacked extension in Chrome/Firefox. Both ship a Manifest V3 extension and an optional Node/Express backend under their respective `backend/`/root folders — see `src/extension/backend/server.js` for its API surface.
+1. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and pick `src/extension/extension`.
+2. Click the MainDug icon and sign in with your MainDug account. It talks to `https://maindug.leogotardo.com.br/api` by default; for a local server set **Config. → Servidor (avançado)** to `http://localhost:5000/api` (Chrome asks for permission).
+
+The vault locks when the browser closes and after 15 minutes idle. Credentials are suggested only on their exact domain or its subdomains, so save sites as domains (`github.com`).
+
+Tests:
+
+```bash
+node --test tests/extension/                         # domain matching (no dependencies)
+npx @puppeteer/browsers install chrome@stable        # Chrome for Testing, once
+cd tests/extension && npm install && cd -            # puppeteer-core, once
+CHROME_PATH=<path printed above> node tests/extension/e2e.mjs
+```
 
 ## Deployment
 

@@ -17,6 +17,7 @@ docker run -d --rm --name maindug-test-pg -e POSTGRES_PASSWORD=test -e POSTGRES_
 TEST_DATABASE_URL=postgresql://postgres:test@127.0.0.1:55432/maindug_test ./venv/bin/python -m pytest
 ./venv/bin/python scripts/createAdmin.py               # first sysadmin (BOOTSTRAP_ADMIN_*)
 ./venv/bin/python scripts/migrateLookupHashes.py       # one-off, see "Lookup hashes"
+node --test tests/extension/                           # extension unit tests (e2e: see README)
 ```
 
 ## Layout
@@ -25,7 +26,7 @@ TEST_DATABASE_URL=postgresql://postgres:test@127.0.0.1:55432/maindug_test ./venv
 - `src/database.py` — Flask app + SQLAlchemy models + the `Database` class, exposed as the singleton `database`. Do not instantiate `Database()` again (it runs `create_all`).
 - `src/app.py` — web routes (session auth, CSRF-protected). `src/apiRoutes.py` — JSON API for the extension (JWT, CSRF-exempt), mounted at `/api`.
 - `src/extensions.py` — shared `csrf` and `limiter`.
-- `extention/` (prototype) and `src/extension/` — two copies of the browser extension; they are not wired to the Flask API yet (see PROBLEMS.md).
+- `src/extension/extension/` — Chrome MV3 extension (load unpacked). `lib/` holds ES modules shared by the service worker and the popup; `content.js` is a classic script and must stay self-contained.
 
 ## Conventions
 
@@ -34,6 +35,14 @@ TEST_DATABASE_URL=postgresql://postgres:test@127.0.0.1:55432/maindug_test ./venv
 - IDs from forms/URLs are strings: pass them through `_toIntId()` before filtering an integer column. psycopg 3 sends typed parameters and Postgres rejects `integer = varchar` (SQLite silently accepts it).
 - Every query for a credential, flag or log filters by the owner (`userId=current_user.id`). A record owned by someone else is "not found", never "forbidden".
 - Every POST form carries `{{ csrf_token() }}`; `static/scripts/csrf.js` adds `X-CSRFToken` to same-origin `fetch` calls.
+
+## Extension rules
+
+- **The service worker decides.** Domain matching uses `sender.url` of the content-script message (never data sent by the page), and a password leaves the worker only for a fill on a matching domain. Matching is exact host or dot-boundary subdomain (`lib/domain.js`); never go back to substring matching.
+- Token, credential index and pending saves live only in `chrome.storage.session` (memory, wiped on browser close and on idle/lock). Workers are suspended at any time: no state in module variables. Don't change the session storage access level (content scripts must not read it).
+- Page UI goes in the closed shadow root built with `textContent`; buttons act only on `event.isTrusted` clicks.
+- Auto-lock is client-side: a JWT stays valid on the server until `JWT_EXPIRE_HOURS`.
+- Commands: `node --test tests/extension/` and `CHROME_PATH=… node tests/extension/e2e.mjs` (Chrome for Testing; branded Chrome ignores `--load-extension`).
 
 ## Encryption
 
