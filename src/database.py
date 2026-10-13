@@ -524,7 +524,8 @@ class Database:
             self.session.rollback()
             return -1, _errorMsg(e)
 
-    def updatePassword(self, passwordId: str, userId: str, site: str, login: str, password: str, flags: list[str]) -> tuple[bool, str]:
+    def updatePassword(self, passwordId: str, userId: str, site: str, login: str, password: str | None, flags: list[str]) -> tuple[bool, str]:
+        """`password=None` mantém a senha atual."""
         try:
             credential = self.session.query(Passwords).filter_by(id=_toIntId(passwordId), userId=userId).first()
             if credential is None:
@@ -534,11 +535,10 @@ class Database:
             if not ok:
                 return False, flagObjs
 
-            passwordChanged = password != credential.password
             credential.site = site
             credential.login = login
-            credential.password = password
-            if passwordChanged:
+            if password and password != credential.password:
+                credential.password = password
                 leaked, _ = self.checkPasswordPwned(password)
                 credential.status = leaked is True
 

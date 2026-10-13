@@ -341,8 +341,9 @@ def editPassword():
     loginValue = request.form.get('login', '').strip()
     password = request.form.get('password', '')
 
-    if not passwordId or not site or not loginValue or not password:
-        flash('Todos os campos são obrigatórios!', 'danger')
+    # Senha em branco = manter a atual (o formulário de edição diz isso ao usuário).
+    if not passwordId or not site or not loginValue:
+        flash('Site e usuário são obrigatórios!', 'danger')
         return redirect(url_for('index'))
 
     success, msg = database.updatePassword(
@@ -350,7 +351,7 @@ def editPassword():
         userId=current_user.id,
         site=site,
         login=loginValue,
-        password=password,
+        password=password or None,
         flags=request.form.getlist('flags'),
     )
     if success is True:

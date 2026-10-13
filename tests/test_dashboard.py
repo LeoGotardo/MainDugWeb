@@ -79,6 +79,14 @@ class TestOwnerActions:
             credential = Config.session.get(Passwords, credId)
             assert (credential.site, credential.login, credential.password) == ('b.com', 'me2', 'new-secret-2')
 
+    def test_editWithoutPasswordKeepsIt(self, client):
+        _, credId = self.setupCredential()
+        loginAs(client)
+        client.post('/editPassword', data={'password_id': str(credId), 'site': 'b.com', 'login': 'me', 'password': ''})
+        with flaskApp.app_context():
+            credential = Config.session.get(Passwords, credId)
+            assert (credential.site, credential.password) == ('b.com', 'old-secret-1')
+
     def test_deleteOwn(self, client):
         _, credId = self.setupCredential()
         loginAs(client)
