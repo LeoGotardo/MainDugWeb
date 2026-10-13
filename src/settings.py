@@ -6,6 +6,8 @@ em vez de cair em defaults inseguros. Ver `.env.example` na raiz.
 """
 import os
 
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 from dotenv import load_dotenv
 
 _srcDir = os.path.dirname(os.path.abspath(__file__))
@@ -58,6 +60,9 @@ DATABASE_URL = _normalizeDatabaseUrl(DATABASE_URL)
 
 SITE_URL = os.getenv('SITE_URL', 'https://maindug.leogotardo.com.br')
 
+# Fuso dos horários exibidos ("Último uso"). O servidor do Vercel roda em UTC.
+TIMEZONE = os.getenv('TIMEZONE', 'America/Sao_Paulo')
+
 # Proxies na frente da app que reescrevem X-Forwarded-For. No Vercel é 1.
 TRUSTED_PROXY_HOPS = int(os.getenv('TRUSTED_PROXY_HOPS', '1' if os.getenv('VERCEL') else '0'))
 
@@ -88,6 +93,10 @@ def _validate() -> None:
         raise ConfigError(f'EXEC_MODE inválido: {EXEC_MODE!r} (use dev ou prod)')
     if BOOTSTRAP_ADMIN_LOGIN and len(BOOTSTRAP_ADMIN_PASSWORD) < BOOTSTRAP_ADMIN_MIN_LENGTH:
         raise ConfigError(f'BOOTSTRAP_ADMIN_PASSWORD precisa de pelo menos {BOOTSTRAP_ADMIN_MIN_LENGTH} caracteres')
+    try:
+        ZoneInfo(TIMEZONE)
+    except (ZoneInfoNotFoundError, ValueError):
+        raise ConfigError(f'TIMEZONE inválido: {TIMEZONE!r}')
     if IS_PROD and DATABASE_URL.startswith('sqlite'):
         raise ConfigError('SQLite não é permitido em produção: os dados se perdem a cada instância')
 

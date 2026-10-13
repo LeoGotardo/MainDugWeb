@@ -12,6 +12,9 @@ MainDug — password vault. Python · Flask · Flask-Login · SQLAlchemy · Post
 cp .env.example .env                                   # fill in the three secrets
 ./venv/bin/python src/app.py                           # serve on :5000 (EXEC_MODE=dev uses SQLite in instance/)
 ./venv/bin/python -m pytest                            # in-memory SQLite, no network
+# Same suite against real Postgres (stricter types than SQLite; run before deploying DB changes):
+docker run -d --rm --name maindug-test-pg -e POSTGRES_PASSWORD=test -e POSTGRES_DB=maindug_test -p 127.0.0.1:55432:5432 postgres:16-alpine
+TEST_DATABASE_URL=postgresql://postgres:test@127.0.0.1:55432/maindug_test ./venv/bin/python -m pytest
 ./venv/bin/python scripts/createAdmin.py               # first sysadmin (BOOTSTRAP_ADMIN_*)
 ./venv/bin/python scripts/migrateLookupHashes.py       # one-off, see "Lookup hashes"
 ```
@@ -28,6 +31,7 @@ cp .env.example .env                                   # fill in the three secre
 
 - `camelCase` for variables, functions and file names; `PascalCase` for classes.
 - `Database` methods return `(True, value)`, `(False, userMessage)` or `(-1, internalError)`. `-1` is truthy: always check with `is True` / `is False`, never `if success:` / `if not success:`.
+- IDs from forms/URLs are strings: pass them through `_toIntId()` before filtering an integer column. psycopg 3 sends typed parameters and Postgres rejects `integer = varchar` (SQLite silently accepts it).
 - Every query for a credential, flag or log filters by the owner (`userId=current_user.id`). A record owned by someone else is "not found", never "forbidden".
 - Every POST form carries `{{ csrf_token() }}`; `static/scripts/csrf.js` adds `X-CSRFToken` to same-origin `fetch` calls.
 

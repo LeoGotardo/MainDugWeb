@@ -1,13 +1,15 @@
 import os, sys
 
 # Ambiente de teste definido antes de qualquer import da app: settings.py valida no import.
+# Por padrão SQLite em memória; TEST_DATABASE_URL roda a suíte contra um Postgres real,
+# que é mais estrito com tipos (o SQLite aceita '1' onde a coluna é inteira).
 os.environ.update({
     'EXEC_MODE': 'dev',
     'DEBUG': 'false',
     'SECRET_KEY': 'test-session-secret',
     'ENCRYPTION_KEY': 'test-encryption-key',
     'JWT_SECRET': 'test-jwt-secret-with-at-least-32-bytes',
-    'DATABASE_URL': 'sqlite://',
+    'DATABASE_URL': os.getenv('TEST_DATABASE_URL', 'sqlite://'),
     'RATE_LIMIT_STORAGE': 'memory://',
 })
 os.environ.pop('SecretKey', None)

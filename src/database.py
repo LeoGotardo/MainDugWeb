@@ -1,4 +1,5 @@
 import locale, sys, os, uuid, datetime, hashlib, math, requests
+from zoneinfo import ZoneInfo
 from types import SimpleNamespace
 
 from flask_sqlalchemy import SQLAlchemy
@@ -91,6 +92,16 @@ def _paginate(items: list, page: int, perPage: int) -> tuple[list, dict]:
     pagination = buildPagination(page, perPage, len(items))
     offset = (pagination['currentPage'] - 1) * perPage
     return items[offset:offset + perPage], pagination
+
+
+def _toIntId(value) -> int | None:
+    """IDs de formulário/URL chegam como texto. O Postgres (psycopg 3) não compara texto com coluna inteira."""
+    text = str(value).strip() if value is not None else ''
+    return int(text) if text.isdigit() and len(text) <= 18 else None
+
+
+def _now() -> str:
+    return datetime.datetime.now(ZoneInfo(settings.TIMEZONE)).strftime('%d/%m/%Y %H:%M:%S')
 
 
 def _parseLastUse(value: str | None) -> datetime.datetime:
@@ -434,7 +445,7 @@ class Database:
 
     def deleteFlag(self, id: str, flagId: str) -> tuple[bool, str]:
         try:
-            flag = self.session.query(Filters).filter_by(id=flagId, userId=id).first()
+            flag = self.session.query(Filters).filter_by(id=_toIntId(flagId), userId=id).first()
             if flag is None:
                 return False, 'Flag not found'
             self.session.query(PasswordFlags).filter_by(flagId=flag.id).delete()
@@ -498,7 +509,7 @@ class Database:
                 site=site,
                 login=login,
                 password=password,
-                lastUse=datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+                lastUse=_now(),
                 status=leaked is True,
             )
             self.session.add(newPassword)
@@ -515,7 +526,7 @@ class Database:
 
     def updatePassword(self, passwordId: str, userId: str, site: str, login: str, password: str, flags: list[str]) -> tuple[bool, str]:
         try:
-            credential = self.session.query(Passwords).filter_by(id=passwordId, userId=userId).first()
+            credential = self.session.query(Passwords).filter_by(id=_toIntId(passwordId), userId=userId).first()
             if credential is None:
                 return False, 'Senha não encontrada'
 
@@ -559,7 +570,7 @@ class Database:
 
     def deletePassword(self, passwordId: str, userId: str) -> tuple[bool, str]:
         try:
-            password = self.session.query(Passwords).filter_by(id=passwordId, userId=userId).first()
+            password = self.session.query(Passwords).filter_by(id=_toIntId(passwordId), userId=userId).first()
             if password is None:
                 return False, 'Password not found'
 
@@ -605,7 +616,7 @@ class Database:
     def getPassword(self, credId: str, userId: str) -> tuple[bool, Passwords] | tuple[bool, str]:
         """Busca sempre restrita ao dono: uma credencial de outro usuário é 'não encontrada'."""
         try:
-            password = self.session.query(Passwords).filter_by(id=credId, userId=userId).first()
+            password = self.session.query(Passwords).filter_by(id=_toIntId(credId), userId=userId).first()
             if password is not None:
                 return True, password
             return False, 'Invalid password'
@@ -614,7 +625,7 @@ class Database:
 
     def getPasswordLogs(self, passwordId: str, userId: str) -> tuple[bool, object | str]:
         try:
-            password = self.session.query(Passwords).filter_by(id=passwordId, userId=userId).first()
+            password = self.session.query(Passwords).filter_by(id=_toIntId(passwordId), userId=userId).first()
             if not password:
                 return False, 'Credencial não encontrada ou acesso negado'
 
@@ -634,7 +645,10 @@ class Database:
         try:
             deleted = 0
             for logId in logs:
-                log = self.session.query(Logs).filter_by(id=int(logId)).first()
+                logIdInt = _toIntId(logId)
+                if logIdInt is None:
+                    continue
+                log = self.session.query(Logs).filter_by(id=logIdInt).first()
                 if not log:
                     continue
                 if not self.session.query(Passwords).filter_by(id=log.passwordId, userId=userId).first():

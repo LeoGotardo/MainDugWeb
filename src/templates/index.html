@@ -112,6 +112,7 @@
                                         data-id="{{ password.id }}"
                                         data-site="{{ password.site }}"
                                         data-user="{{ password.login }}"
+                                        data-flags="{{ ','.join(password.flags) if password.flags else '' }}"
                                         title="Visualizar">
                                         <i class="bi bi-eye-fill"></i>
                                     </button>

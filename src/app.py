@@ -273,18 +273,21 @@ def moreInfo():
 @app.route('/flags/add', methods=['POST'])
 @login_required
 def addFlag():
+    # Chamado pelo submit normal do form no modal "Gerenciar Flags": responde com redirect, não JSON.
     flagName = request.form.get('flagName', '').strip().lower()
     if not 2 <= len(flagName) <= 50:
-        return jsonify({'success': False, 'error': 'Nome da flag deve ter entre 2 e 50 caracteres'}), 400
+        flash('Nome da flag deve ter entre 2 e 50 caracteres', 'danger')
+        return redirect(url_for('index'))
 
     success, msg = database.addFlag(id=current_user.id, name=flagName)
     if success is True:
         flash('Flag adicionada com sucesso!', 'success')
-        return jsonify({'success': True, 'message': 'Flag adicionada com sucesso'}), 200
-    if success is False:
-        return jsonify({'success': False, 'error': msg}), 400
-    app.logger.error(f'Erro ao adicionar flag: {msg}')
-    return jsonify({'success': False, 'error': 'Erro interno ao adicionar flag'}), 500
+    elif success is False:
+        flash(msg, 'danger')
+    else:
+        app.logger.error(f'Erro ao adicionar flag: {msg}')
+        flash('Erro interno ao adicionar flag', 'danger')
+    return redirect(url_for('index'))
 
 
 @app.route('/flags/delete', methods=['POST'])
