@@ -29,7 +29,3 @@ The extension (`src/extension/maindug/`) was rebuilt on 2026-10-13: API login, i
 13. **Not published**: no Chrome Web Store listing; users load it unpacked.
 14. Copied passwords stay in the clipboard (no automatic clearing).
 15. On `http://` pages the fill is offered with a warning rather than blocked.
-
-## Cleanup
-
-16. `prototype.html` (1883 lines) at the repo root and `src/static/scripts/dropdown.js` (unused, contains Jinja syntax that is never rendered).
