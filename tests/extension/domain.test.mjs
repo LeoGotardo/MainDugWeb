@@ -1,8 +1,8 @@
-// Casamento de domínio da extensão (src/extension/extension/lib/domain.js).
+// Casamento de domínio da extensão (src/extension/maindug/lib/domain.js).
 // Rodar: node --test tests/extension/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeHost, hostOfUrl, matchesHost } from '../../src/extension/extension/lib/domain.js';
+import { normalizeHost, hostOfUrl, matchesHost } from '../../src/extension/maindug/lib/domain.js';
 
 test('normalizeHost aceita domínio, URL e variações', () => {
     assert.equal(normalizeHost('github.com'), 'github.com');

@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const EXTENSION_SRC = path.join(ROOT, 'src/extension/extension');
+const EXTENSION_SRC = path.join(ROOT, 'src/extension/maindug');
 const PYTHON = path.join(ROOT, 'venv/bin/python');
 const CHROME_PATH = process.env.CHROME_PATH;
 const API_PORT = 5077;

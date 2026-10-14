@@ -26,7 +26,7 @@ node --test tests/extension/                           # extension unit tests (e
 - `src/database.py` — Flask app + SQLAlchemy models + the `Database` class, exposed as the singleton `database`. Do not instantiate `Database()` again (it runs `create_all`).
 - `src/app.py` — web routes (session auth, CSRF-protected). `src/apiRoutes.py` — JSON API for the extension (JWT, CSRF-exempt), mounted at `/api`.
 - `src/extensions.py` — shared `csrf` and `limiter`.
-- `src/extension/extension/` — Chrome MV3 extension (load unpacked). `lib/` holds ES modules shared by the service worker and the popup; `content.js` is a classic script and must stay self-contained.
+- `src/extension/maindug/` — Chrome MV3 extension (load unpacked). `lib/` holds ES modules shared by the service worker and the popup; `content.js` is a classic script and must stay self-contained.
 
 ## Conventions
 
