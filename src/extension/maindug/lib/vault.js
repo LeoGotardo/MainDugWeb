@@ -5,7 +5,7 @@
 
 import { api } from './api.js';
 import { getSession } from './session.js';
-import { normalizeHost, hostOfUrl, matchesHost } from './domain.js';
+import { credentialHost, hostOfUrl, matchesHost } from './domain.js';
 
 export async function refreshIndex() {
     const items = await api.listAll();
@@ -13,7 +13,7 @@ export async function refreshIndex() {
         id: item.id,
         site: item.site,
         login: item.login,
-        host: normalizeHost(item.site),
+        host: credentialHost(item),
     }));
     await chrome.storage.session.set({ vaultIndex: index });
     return index;

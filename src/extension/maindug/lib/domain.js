@@ -31,6 +31,14 @@ export function normalizeHost(site) {
     return host;
 }
 
+/**
+ * Host de uma credencial do cofre: o domínio informado nela ou, sem domínio (credenciais
+ * anteriores ao campo), o próprio site quando ele é um endereço.
+ */
+export function credentialHost(item) {
+    return normalizeHost(item?.domain) || normalizeHost(item?.site);
+}
+
 /** Host de uma página (só http/https). */
 export function hostOfUrl(url) {
     try {

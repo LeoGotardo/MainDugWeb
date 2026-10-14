@@ -152,7 +152,7 @@ async function handleConfirmSave(message, sender) {
     if (!pending || pending.host !== hostOfUrl(sender.url)) return { error: 'Nada para salvar' };
 
     try {
-        await api.create({ site: pending.host, login: pending.username, password: pending.password });
+        await api.create({ site: pending.host, domain: pending.host, login: pending.username, password: pending.password });
     } catch (error) {
         if (!(error instanceof ApiError) || error.status !== 409) throw error;
         await api.update(error.body.id, { password: pending.password });

@@ -10,7 +10,7 @@ import jwt
 from flask import Blueprint, request, jsonify
 
 import settings
-from database import database, Filters, Config
+from database import database, Filters, Config, normalizeDomain, INVALID_DOMAIN_MESSAGE
 from extensions import limiter
 
 blueprint = Blueprint('blueprint', __name__)
@@ -188,19 +188,24 @@ def decryptPassword(userId, userLogin, passwordId):
 
 
 def _credentialFields(data: dict, required: tuple[str, ...]) -> tuple[dict | None, str | None]:
-    """Extrai site/login/password do JSON validando tipo e tamanho. Devolve (campos, erro)."""
+    """
+    Extrai site/domain/login/password do JSON validando tipo e tamanho. Devolve (campos, erro).
+    `domain` é opcional e pode vir vazio (= deduzir do site).
+    """
     fields = {}
-    for name in ('site', 'login', 'password'):
+    for name in ('site', 'domain', 'login', 'password'):
         value = data.get(name)
         if value is None:
             if name in required:
                 return None, f'Campo obrigatório: {name}'
             continue
-        if not isinstance(value, str) or not value.strip():
+        if not isinstance(value, str) or (name != 'domain' and not value.strip()):
             return None, f'Campo inválido: {name}'
         value = value if name == 'password' else value.strip()
         if len(value) > MAX_FIELD_LENGTH:
             return None, f'{name} excede {MAX_FIELD_LENGTH} caracteres'
+        if name == 'domain' and value and normalizeDomain(value) is None:
+            return None, INVALID_DOMAIN_MESSAGE
         fields[name] = value
     return fields, None
 
@@ -215,7 +220,7 @@ def createPassword(userId, userLogin):
     if error:
         return jsonify({'error': error}), 400
 
-    existing = database.findCredential(userId, fields['site'], fields['login'])
+    existing = database.findCredential(userId, fields['site'], fields['login'], fields.get('domain'))
     if existing is not None:
         return jsonify({'error': 'Credencial já existe', 'id': existing.id}), 409
 
@@ -236,7 +241,7 @@ def createPassword(userId, userLogin):
 @limiter.limit('30/minute')
 @tokenRequired
 def updatePassword(userId, userLogin, passwordId):
-    """Atualiza senha (e opcionalmente site/login). As flags da credencial são mantidas."""
+    """Atualiza senha (e opcionalmente site/domain/login). As flags e, sem `domain`, o domínio são mantidos."""
     data = request.get_json(silent=True) or {}
     fields, error = _credentialFields(data, required=('password',))
     if error:
@@ -250,6 +255,7 @@ def updatePassword(userId, userLogin, passwordId):
         passwordId=str(passwordId),
         userId=userId,
         site=fields.get('site', current.site),
+        domain=fields.get('domain'),
         login=fields.get('login', current.login),
         password=fields['password'],
         flags=None,

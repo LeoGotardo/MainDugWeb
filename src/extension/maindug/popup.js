@@ -122,7 +122,7 @@ async function loadCredentials() {
 function render() {
     const term = $('searchPasswords').value.trim().toLowerCase();
     const visible = index
-        .filter((entry) => !term || (entry.site || '').toLowerCase().includes(term) || (entry.login || '').toLowerCase().includes(term))
+        .filter((entry) => !term || [entry.site, entry.host, entry.login].some((value) => (value || '').toLowerCase().includes(term)))
         .sort((a, b) => (a.site || '').localeCompare(b.site || ''));
     const forSite = visible.filter((entry) => matchesHost(pageHost, entry.host));
 

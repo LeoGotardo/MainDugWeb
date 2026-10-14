@@ -42,7 +42,7 @@
                     
                     <div class="input-group">
                         <input type="search" class="form-control" name="query" 
-                               placeholder="Pesquisar por site ou usuário..." 
+                               placeholder="Pesquisar por site, domínio ou usuário..." 
                                value="{{ filters.query if filters else '' }}"
                                onchange="document.getElementById('searchForm').submit();">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -94,7 +94,12 @@
                         {% if deashboardInfo and deashboardInfo.passwords %}
                             {% for password in deashboardInfo.passwords %}
                             <tr data-flags="{{ ','.join(password.flags) if password.flags else '' }}">
-                                <td class="text-break">{{ password.site }}</td>
+                                <td class="text-break">
+                                    {{ password.site }}
+                                    {% if password.domain and password.domain != password.site %}
+                                    <br><small class="text-muted">{{ password.domain }}</small>
+                                    {% endif %}
+                                </td>
                                 <td class="text-break">{{ password.login }}</td>
                                 <td>
                                     {% if password.status %}
@@ -122,6 +127,7 @@
                                         data-bs-target="#editPasswordModal" 
                                         data-id="{{ password.id }}"
                                         data-site="{{ password.site }}" 
+                                        data-domain="{{ password.domain or '' }}"
                                         data-user="{{ password.login }}" 
                                         data-flags="{{ ','.join(password.flags) if password.flags else '' }}" 
                                         title="Editar">

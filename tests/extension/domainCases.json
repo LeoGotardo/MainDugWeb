@@ -1,0 +1,24 @@
+{
+    "_comment": "Casos de normalização de domínio usados pelos dois lados: normalizeHost (extensão, domain.test.mjs) e normalizeDomain (servidor, test_credential_domain.py). Os dois precisam concordar.",
+    "normalize": [
+        ["github.com", "github.com"],
+        ["https://www.GitHub.com/login?next=/", "github.com"],
+        ["www.github.com:443/path", "github.com"],
+        ["  MyBank.com.br  ", "mybank.com.br"],
+        ["http://mybank.test:8080/", "mybank.test"],
+        ["https://user:secret@login.mybank.com/entrar", "login.mybank.com"],
+        ["github.com#frag", "github.com"],
+        ["127.0.0.1", "127.0.0.1"],
+        ["GitHub", null],
+        ["Wi-Fi de casa", null],
+        ["localhost", null],
+        ["", null],
+        ["   ", null],
+        ["a..b.com", null],
+        [".github.com", null],
+        ["github.com.", null],
+        ["git hub.com", null],
+        ["user@github.com", null],
+        ["https://exa mple.com", null]
+    ]
+}

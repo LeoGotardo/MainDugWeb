@@ -1,4 +1,5 @@
 import locale, sys, os, re, uuid, datetime, hashlib, math, requests
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 from types import SimpleNamespace
 
@@ -40,6 +41,7 @@ class Config:
 
 
 ADMIN_ASSIGNABLE_ROLES = ('user', 'sysadmin')
+INVALID_DOMAIN_MESSAGE = 'Domínio inválido: use só o endereço do site, ex.: github.com'
 
 
 def _errorMsg(e: Exception) -> str:
@@ -108,13 +110,48 @@ def _now() -> str:
     return datetime.datetime.now(ZoneInfo(settings.TIMEZONE)).strftime('%d/%m/%Y %H:%M:%S')
 
 
-def _siteKey(site: str | None) -> str:
-    """Forma comparável de um site: host em minúsculas, sem esquema, caminho, porta nem `www.`."""
-    text = (site or '').strip().lower()
-    if '://' in text:
-        text = text.split('://', 1)[1]
-    host = text.split('/', 1)[0].split('?', 1)[0].split('#', 1)[0].split(':', 1)[0]
-    return host[4:] if host.startswith('www.') else host
+_SCHEME = re.compile(r'^[a-z][a-z0-9+.-]*://')
+_HOST_CHARS = re.compile(r'^[a-z0-9.-]+$')
+
+
+def normalizeDomain(value: str | None) -> str | None:
+    """
+    Domínio de um site ou URL, com as mesmas regras de `normalizeHost` da extensão (lib/domain.js):
+    minúsculas, sem esquema, porta, caminho nem `www.`. None quando não é um domínio ("GitHub").
+    """
+    if not isinstance(value, str):
+        return None
+    text = value.strip().lower()
+    if not text:
+        return None
+    if _SCHEME.match(text):
+        try:
+            host = urlsplit(text).hostname or ''
+        except ValueError:
+            return None
+    else:
+        host = re.split(r'[/?#]', text, maxsplit=1)[0].split(':', 1)[0]
+
+    if host.startswith('www.'):
+        host = host[4:]
+    if '.' not in host or not _HOST_CHARS.match(host):
+        return None
+    if host.startswith('.') or host.endswith('.') or '..' in host:
+        return None
+    return host
+
+
+def _resolveDomain(site: str, domain: str | None) -> tuple[bool, str | None]:
+    """Domínio a gravar: o informado (validado) ou, em branco, o deduzido do site (pode ser None)."""
+    if domain and domain.strip():
+        normalized = normalizeDomain(domain)
+        return (True, normalized) if normalized else (False, None)
+    return True, normalizeDomain(site)
+
+
+def _siteKey(site: str | None, domain: str | None = None) -> str:
+    """Chave de comparação de uma credencial: o domínio (gravado ou deduzido do site) ou o site em minúsculas."""
+    return normalizeDomain(domain) or normalizeDomain(site) or (site or '').strip().casefold()
 
 
 _UA_BROWSERS = (  # ordem importa: Edge e Opera também dizem "Chrome", e Chrome também diz "Safari"
@@ -193,12 +230,15 @@ class Passwords(Config.db.Model):
     status = Config.db.Column('col_b5', Config.db.Boolean, nullable=False, default=False)
     _lastUse_encrypted = Config.db.Column('col_b6', Config.db.String(500), nullable=True, default=None)
     _whereUsed_encrypted = Config.db.Column('col_b7', Config.db.String(500), nullable=True, default=None)
+    # Domínio para o preenchimento automático (ex.: github.com); o site pode ser um nome ("GitHub").
+    _domain_encrypted = Config.db.Column('col_b8', Config.db.String(500), nullable=True, default=None)
 
     login = encryptedProperty('_login_encrypted', '_login_hash')
     password = encryptedProperty('_password_encrypted')
     site = encryptedProperty('_site_encrypted', '_site_hash')
     lastUse = encryptedProperty('_lastUse_encrypted')
     whereUsed = encryptedProperty('_whereUsed_encrypted')
+    domain = encryptedProperty('_domain_encrypted')
 
     @property
     def flags(self) -> list[str]:
@@ -209,6 +249,7 @@ class Passwords(Config.db.Model):
             'id': self.id,
             'user_id': self.userId,
             'site': self.site,
+            'domain': self.domain,
             'login': self.login,
             'status': self.status,
             'lastUse': self.lastUse,
@@ -320,7 +361,7 @@ class Database:
 
         query = (query or '').strip().lower()
         if query:
-            passwords = [p for p in passwords if query in (p.site or '').lower() or query in (p.login or '').lower()]
+            passwords = [p for p in passwords if any(query in (value or '').lower() for value in (p.site, p.domain, p.login))]
 
         sortKeys = {
             'site': lambda p: (p.site or '').lower(),
@@ -395,7 +436,7 @@ class Database:
             reusedPasswordsDict = {}
 
             for password in passwords:
-                entry = {'id': password.id, 'site': password.site, 'login': password.login}
+                entry = {'id': password.id, 'site': password.site, 'domain': password.domain, 'login': password.login, 'flags': password.flags}
                 if password.status:
                     leakedPasswords.append(entry)
 
@@ -415,6 +456,8 @@ class Database:
                 'leakedPasswords': leakedPasswords,
                 'weakPasswords': weakPasswords,
                 'reusedPasswords': [{'sites': [p['site'] for p in sites], 'count': len(sites)} for sites in reusedPasswords],
+                # Opções do modal de edição (sem elas, salvar a edição por esta página apagaria as flags).
+                'flags': self.session.query(Filters).filter(Filters.userId == userId).all(),
             }
         except Exception as e:
             return -1, _errorMsg(e)
@@ -566,11 +609,15 @@ class Database:
             self.session.rollback()
             return -1, _errorMsg(e)
 
-    def addPassword(self, userId: str, site: str, login: str, password: str, flags: list[str]) -> tuple[bool, int | str]:
-        """Em caso de sucesso devolve o id da credencial criada."""
+    def addPassword(self, userId: str, site: str, login: str, password: str, flags: list[str], domain: str | None = None) -> tuple[bool, int | str]:
+        """Em caso de sucesso devolve o id da credencial criada. `domain` em branco = deduzido do site."""
         try:
             if not self.session.query(User).filter_by(id=userId).first():
                 return False, 'Usuário não encontrado'
+
+            validDomain, domain = _resolveDomain(site, domain)
+            if not validDomain:
+                return False, INVALID_DOMAIN_MESSAGE
 
             ok, flagObjs = self._userFlags(userId, flags)
             if not ok:
@@ -580,6 +627,7 @@ class Database:
             newPassword = Passwords(
                 userId=userId,
                 site=site,
+                domain=domain,
                 login=login,
                 password=password,
                 lastUse=_now(),
@@ -597,12 +645,21 @@ class Database:
             self.session.rollback()
             return -1, _errorMsg(e)
 
-    def updatePassword(self, passwordId: str, userId: str, site: str, login: str, password: str | None, flags: list[str] | None = None) -> tuple[bool, str]:
-        """`password=None` mantém a senha atual; `flags=None` mantém as flags atuais (a lista substitui)."""
+    def updatePassword(self, passwordId: str, userId: str, site: str, login: str, password: str | None, flags: list[str] | None = None, domain: str | None = None) -> tuple[bool, str]:
+        """
+        `password=None` mantém a senha atual; `flags=None` mantém as flags atuais (a lista substitui);
+        `domain=None` mantém o domínio atual, `''` o deduz do site.
+        """
         try:
             credential = self.session.query(Passwords).filter_by(id=_toIntId(passwordId), userId=userId).first()
             if credential is None:
                 return False, 'Senha não encontrada'
+
+            keepDomain = domain is None
+            if not keepDomain:
+                validDomain, domain = _resolveDomain(site, domain)
+                if not validDomain:
+                    return False, INVALID_DOMAIN_MESSAGE
 
             flagObjs = None
             if flags is not None:
@@ -612,6 +669,8 @@ class Database:
 
             credential.site = site
             credential.login = login
+            if not keepDomain:
+                credential.domain = domain
             if password and password != credential.password:
                 credential.password = password
                 leaked, _ = self.checkPasswordPwned(password)
@@ -629,11 +688,11 @@ class Database:
             self.session.rollback()
             return -1, _errorMsg(e)
 
-    def findCredential(self, userId: str, site: str, login: str) -> Passwords | None:
-        """Credencial do usuário com o mesmo site (comparado por host normalizado) e o mesmo login."""
-        siteKey, loginKey = _siteKey(site), (login or '').strip().casefold()
+    def findCredential(self, userId: str, site: str, login: str, domain: str | None = None) -> Passwords | None:
+        """Credencial do usuário com o mesmo domínio (ou, sem domínio, o mesmo site) e o mesmo login."""
+        siteKey, loginKey = _siteKey(site, domain), (login or '').strip().casefold()
         for credential in self.session.query(Passwords).filter(Passwords.userId == userId).all():
-            if _siteKey(credential.site) == siteKey and (credential.login or '').strip().casefold() == loginKey:
+            if _siteKey(credential.site, credential.domain) == siteKey and (credential.login or '').strip().casefold() == loginKey:
                 return credential
         return None
 

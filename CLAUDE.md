@@ -46,6 +46,7 @@ node --test tests/extension/*.test.mjs                 # extension unit tests (e
 - Page UI goes in the closed shadow root built with `textContent`; buttons act only on `event.isTrusted` clicks.
 - Auto-lock is client-side and based on system idle/screen lock (`chrome.idle`), not on vault usage; a JWT stays valid on the server until `JWT_EXPIRE_HOURS`.
 - No fill/save offers on the vault's own site (`isVaultPage` in `background.js`): its credential forms and the master-password login must never be captured.
+- A credential's match host is `credentialHost(item)`: its `domain` (optional, encrypted column) or, when null, its `site` if that is an address. The server's `normalizeDomain` (`database.py`) must agree with `normalizeHost` (`lib/domain.js`); both are tested against `tests/extension/domainCases.json`.
 - Firefox gives extension pages framed inside a website only content-script APIs (no `storage.session`, no `tabs`); never embed extension pages in sites. The real popup is top-level and has everything.
 - Code uses `chrome.*` with promises; Firefox supports that in MV3 (checked by `e2e-firefox.mjs`). No `browser.*` polyfill needed.
 - Commands (from `tests/extension/`): `npm run test:unit`, `CHROME_PATH=… npm run test:e2e` (Chrome for Testing; branded Chrome ignores `--load-extension`), `FIREFOX_PATH=… npm run test:e2e:firefox` (Firefox outside snap), `npm run lint:firefox`. Shared scenarios live in `harness.mjs`; browser-specific test patches go only into the temporary copy of the extension.

@@ -312,19 +312,21 @@ def deleteFlag():
 @login_required
 def addPassword():
     site = request.form.get('site', '').strip()
+    domain = request.form.get('domain', '').strip()
     loginValue = request.form.get('login', '').strip()
     password = request.form.get('password', '')
 
     if not site or not loginValue or not password:
         flash('Todos os campos são obrigatórios!', 'danger')
         return redirect(url_for('index'))
-    if max(len(site), len(loginValue), len(password)) > MAX_FIELD_LENGTH:
-        flash(f'Site, usuário e senha podem ter no máximo {MAX_FIELD_LENGTH} caracteres', 'danger')
+    if max(len(site), len(domain), len(loginValue), len(password)) > MAX_FIELD_LENGTH:
+        flash(f'Site, domínio, usuário e senha podem ter no máximo {MAX_FIELD_LENGTH} caracteres', 'danger')
         return redirect(url_for('index'))
 
     success, msg = database.addPassword(
         userId=current_user.id,
         site=site,
+        domain=domain,
         login=loginValue,
         password=password,
         flags=request.form.getlist('flags'),
@@ -343,6 +345,9 @@ def addPassword():
 def editPassword():
     passwordId = request.form.get('password_id', '').strip()
     site = request.form.get('site', '').strip()
+    # Sem o campo (formulário antigo) = manter o domínio; em branco = deduzir do site.
+    domain = request.form.get('domain')
+    domain = domain.strip() if domain is not None else None
     loginValue = request.form.get('login', '').strip()
     password = request.form.get('password', '')
 
@@ -350,14 +355,15 @@ def editPassword():
     if not passwordId or not site or not loginValue:
         flash('Site e usuário são obrigatórios!', 'danger')
         return redirect(url_for('index'))
-    if max(len(site), len(loginValue), len(password)) > MAX_FIELD_LENGTH:
-        flash(f'Site, usuário e senha podem ter no máximo {MAX_FIELD_LENGTH} caracteres', 'danger')
+    if max(len(site), len(domain or ''), len(loginValue), len(password)) > MAX_FIELD_LENGTH:
+        flash(f'Site, domínio, usuário e senha podem ter no máximo {MAX_FIELD_LENGTH} caracteres', 'danger')
         return redirect(url_for('index'))
 
     success, msg = database.updatePassword(
         passwordId=passwordId,
         userId=current_user.id,
         site=site,
+        domain=domain,
         login=loginValue,
         password=password or None,
         flags=request.form.getlist('flags'),

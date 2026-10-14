@@ -2,7 +2,27 @@
 // Rodar: node --test tests/extension/*.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeHost, hostOfUrl, matchesHost } from '../../src/extension/maindug/lib/domain.js';
+import { readFileSync } from 'node:fs';
+import { normalizeHost, credentialHost, hostOfUrl, matchesHost } from '../../src/extension/maindug/lib/domain.js';
+
+// Os mesmos casos valem para normalizeDomain no servidor (tests/test_credential_domain.py).
+const SHARED_CASES = JSON.parse(readFileSync(new URL('./domainCases.json', import.meta.url), 'utf8'));
+
+test('normalizeHost concorda com o servidor (domainCases.json)', () => {
+    for (const [input, expected] of SHARED_CASES.normalize) {
+        assert.equal(normalizeHost(input), expected, JSON.stringify(input));
+    }
+});
+
+test('credentialHost usa o domínio e, sem ele, o site', () => {
+    assert.equal(credentialHost({ site: 'GitHub', domain: 'github.com' }), 'github.com');
+    assert.equal(credentialHost({ site: 'gitlab.com', domain: 'https://www.github.com/' }), 'github.com');
+    // credenciais anteriores ao campo (domain null) e servidores sem o campo (undefined)
+    assert.equal(credentialHost({ site: 'github.com', domain: null }), 'github.com');
+    assert.equal(credentialHost({ site: 'https://github.com/login' }), 'github.com');
+    assert.equal(credentialHost({ site: 'GitHub', domain: null }), null);
+    assert.equal(credentialHost(null), null);
+});
 
 test('normalizeHost aceita domínio, URL e variações', () => {
     assert.equal(normalizeHost('github.com'), 'github.com');

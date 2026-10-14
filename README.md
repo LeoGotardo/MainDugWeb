@@ -107,7 +107,7 @@ The same folder works in Chrome/Brave/Edge and in Firefox (one manifest: `backgr
 
 Then click the MainDug icon and sign in with your MainDug account. It talks to `https://maindug.leogotardo.com.br/api` by default; for a local server set **Config. → Servidor (avançado)** to `http://localhost:5000/api` (the browser asks for permission).
 
-The vault locks when the browser closes, when the screen locks and after 15 minutes of system inactivity (`idle` API; using the computer without touching the vault does not lock it). Credentials are suggested only on their exact domain or its subdomains, so save sites as domains (`github.com`).
+The vault locks when the browser closes, when the screen locks and after 15 minutes of system inactivity (`idle` API; using the computer without touching the vault does not lock it). Credentials are suggested only on their exact domain or its subdomains. The site can be any name ("GitHub"); the **Domínio** field (`github.com`) is what the extension matches. Left blank, it is taken from the site when the site is an address.
 
 Tests and packaging (from `tests/extension/`, after `npm install`):
 

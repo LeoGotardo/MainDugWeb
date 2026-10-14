@@ -1,3 +1,5 @@
+{# Incluído pelo dashboard (deashboardInfo) e pelas estatísticas (stats); as duas páginas abrem o modal de edição. #}
+{% set flagOptions = deashboardInfo.flags if deashboardInfo and deashboardInfo.flags else (stats.flags if stats and stats.flags else []) %}
 <!-- Modal: Visualizar Senha -->
 <div class="modal fade" id="viewPasswordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -52,8 +54,14 @@
                     <div class="mb-3">
                         <label for="add-site" class="form-label">Site/Serviço *</label>
                         <input type="text" class="form-control" id="add-site" name="site" 
-                               placeholder="Ex: github.com" maxlength="200" required>
-                        <div class="form-text">Use o domínio (ex.: github.com) para a extensão preencher automaticamente.</div>
+                               placeholder="Ex: GitHub ou github.com" maxlength="200" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="add-domain" class="form-label">Domínio</label>
+                        <input type="text" class="form-control" id="add-domain" name="domain"
+                               placeholder="Ex: github.com" maxlength="200" autocapitalize="off" spellcheck="false">
+                        <div class="form-text">Endereço onde a extensão preenche este login (vale também para subdomínios). Em branco, usa o site quando ele é um endereço.</div>
                     </div>
                     
                     <div class="mb-3">
@@ -76,11 +84,9 @@
                     <div class="mb-3">
                         <label for="add-flags" class="form-label">Flags</label>
                         <select class="form-select" id="add-flags" name="flags" multiple>
-                            {% if deashboardInfo and deashboardInfo.flags %}
-                                {% for flag in deashboardInfo.flags %}
-                                <option value="{{ flag.name }}">{{ flag.name }}</option>
-                                {% endfor %}
-                            {% endif %}
+                            {% for flag in flagOptions %}
+                            <option value="{{ flag.name }}">{{ flag.name }}</option>
+                            {% endfor %}
                         </select>
                         <div class="form-text">Segure Ctrl (ou Cmd) para selecionar múltiplas flags</div>
                     </div>
@@ -113,7 +119,13 @@
                     <div class="mb-3">
                         <label for="edit-site" class="form-label">Site/Serviço *</label>
                         <input type="text" class="form-control" id="edit-site" name="site" maxlength="200" required>
-                        <div class="form-text">Use o domínio (ex.: github.com) para a extensão preencher automaticamente.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit-domain" class="form-label">Domínio</label>
+                        <input type="text" class="form-control" id="edit-domain" name="domain"
+                               placeholder="Ex: github.com" maxlength="200" autocapitalize="off" spellcheck="false">
+                        <div class="form-text">Endereço onde a extensão preenche este login (vale também para subdomínios). Em branco, usa o site quando ele é um endereço.</div>
                     </div>
                     
                     <div class="mb-3">
@@ -136,11 +148,9 @@
                     <div class="mb-3">
                         <label for="edit-flags" class="form-label">Flags</label>
                         <select class="form-select" id="edit-flags" name="flags" multiple>
-                            {% if deashboardInfo and deashboardInfo.flags %}
-                                {% for flag in deashboardInfo.flags %}
-                                <option value="{{ flag.name }}">{{ flag.name }}</option>
-                                {% endfor %}
-                            {% endif %}
+                            {% for flag in flagOptions %}
+                            <option value="{{ flag.name }}">{{ flag.name }}</option>
+                            {% endfor %}
                         </select>
                         <div class="form-text">Segure Ctrl (ou Cmd) para selecionar múltiplas flags</div>
                     </div>
@@ -309,6 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const button = event.relatedTarget;
             const id = button.getAttribute('data-id');
             const site = button.getAttribute('data-site');
+            const domain = button.getAttribute('data-domain') || '';
             const user = button.getAttribute('data-user');
             const flagsStr = button.getAttribute('data-flags') || '';
             
@@ -316,6 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
             editPasswordModal.querySelector('#edit-site-name').textContent = site;
             editPasswordModal.querySelector('#edit-password-id').value = id;
             editPasswordModal.querySelector('#edit-site').value = site;
+            editPasswordModal.querySelector('#edit-domain').value = domain;
             editPasswordModal.querySelector('#edit-username').value = user;
 
             // Limpar senha (opcional na edição)

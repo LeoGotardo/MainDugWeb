@@ -118,7 +118,7 @@ function prepareExtension(workDir, patchManifest) {
 }
 
 /**
- * Sobe API + site de teste, cria o usuário e a credencial de mybank.test, roda `body(ctx)`,
+ * Sobe API + site de teste, cria o usuário e a credencial "Meu Banco" (domínio mybank.test), roda `body(ctx)`,
  * imprime o resultado e encerra o processo com código 0/1.
  */
 export async function runSuite(body, { patchManifest } = {}) {
@@ -153,7 +153,8 @@ export async function runSuite(body, { patchManifest } = {}) {
         await createUser(USER);
         const { data: auth } = await api('/auth/login', { method: 'POST', body: USER });
         const { data: bank } = await api('/passwords', {
-            method: 'POST', token: auth.token, body: { site: 'mybank.test', login: 'leo', password: 'Banco-123456' },
+            // Site com nome (não endereço) + domínio: o preenchimento casa pelo domínio.
+            method: 'POST', token: auth.token, body: { site: 'Meu Banco', domain: 'mybank.test', login: 'leo', password: 'Banco-123456' },
         });
 
         const countUsageLogs = (credentialId) => {
@@ -203,7 +204,7 @@ export async function scenarioPopupLogin(ctx, openPopup) {
     await popup.type('#passwordInput', ctx.user.password);
     await popup.click('#loginBtn');
     const listed = await waitFor(() => popup.evaluate(() =>
-        !document.getElementById('mainHeader').hidden && document.getElementById('allList').textContent.includes('mybank.test')));
+        !document.getElementById('mainHeader').hidden && document.getElementById('allList').textContent.includes('Meu Banco')));
     const status = await popup.evaluate(() => document.getElementById('loginStatus').textContent).catch(() => '');
     ctx.check('login pelo popup e lista vinda da API', !!listed, listed ? '' : `lista não carregou; status: "${status}"`);
     return !!listed;
@@ -214,7 +215,7 @@ export async function scenarioFill(ctx, page, clickPromptButton) {
     const clicked = await clickPromptButton(page, 'leo');
     const filled = clicked && await waitFor(() => page.evaluate(() =>
         document.getElementById('username').value === 'leo' && document.getElementById('password').value === 'Banco-123456'));
-    ctx.check('mybank.test: sugestão + clique real preenchem usuário e senha', !!filled, clicked ? '' : 'caixa não apareceu');
+    ctx.check('mybank.test: "Meu Banco" (casada pelo domínio) sugerida; clique real preenche usuário e senha', !!filled, clicked ? '' : 'caixa não apareceu');
     ctx.check('preenchimento registra o uso ("Ver Logs")', !!(await waitFor(async () => ctx.countUsageLogs(ctx.bank.id) === 1)));
     ctx.check('sender.url chega sem a permissão "tabs" (casamento feito no worker)', !!filled);
 }
@@ -233,10 +234,10 @@ export async function scenarioSave(ctx, page, clickPromptButton) {
     const saved = await clickPromptButton(page, 'Salvar');
     const created = saved && await waitFor(async () => {
         const { data: list } = await api('/passwords', { token: ctx.token });
-        const entry = list.find((item) => item.site === 'other.test' && item.login === 'novo@other.test');
+        const entry = list.find((item) => item.site === 'other.test' && item.domain === 'other.test' && item.login === 'novo@other.test');
         return entry && (await api(`/passwords/${entry.id}/decrypt`, { token: ctx.token })).data.password === 'Outra-Senha-987';
     });
-    ctx.check('other.test: "Salvar?" após o login cria a credencial com site = domínio', !!created, saved ? '' : 'caixa não apareceu');
+    ctx.check('other.test: "Salvar?" após o login cria a credencial com site e domínio = other.test', !!created, saved ? '' : 'caixa não apareceu');
 }
 
 export async function scenarioUpdate(ctx, page, clickPromptButton) {
@@ -248,7 +249,7 @@ export async function scenarioUpdate(ctx, page, clickPromptButton) {
     await Promise.all([page.waitForNavigation(), page.click('#submit')]);
     const updated = await clickPromptButton(page, 'Atualizar') && await waitFor(async () =>
         (await api(`/passwords/${ctx.bank.id}/decrypt`, { token: ctx.token })).data.password === 'Banco-NOVA-654');
-    ctx.check('senha diferente para login existente oferece "Atualizar" e troca a senha', !!updated);
+    ctx.check('senha diferente para login existente ("Meu Banco") oferece "Atualizar" e troca a senha', !!updated);
 }
 
 /** No próprio site do MainDug: login e "Nova Credencial" não podem virar "Salvar?" nem sugestão. */

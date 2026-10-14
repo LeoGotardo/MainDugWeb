@@ -3,8 +3,10 @@ import os
 import sys
 
 import pytest
+from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import MetaData, create_engine, inspect, pool, text
 
 from database import Config
@@ -26,6 +28,15 @@ def schemaDiff(url):
     with engine.connect() as connection:
         context = MigrationContext.configure(connection, opts={'compare_type': True})
         return compare_metadata(context, Config.db.metadata)
+
+
+def legacyDatabase(url):
+    """Banco como a produção era antes do Alembic: o schema da migração inicial, sem `alembic_version`."""
+    engine = create_engine(url)
+    with engine.begin() as connection:
+        command.upgrade(migrateScript.alembicConfig(connection), migrateScript.BASELINE_REVISION)
+        connection.execute(text('DROP TABLE alembic_version'))
+    return engine
 
 
 @pytest.fixture
@@ -59,21 +70,22 @@ def test_migrateIsIdempotent(sqliteUrl):
 
 
 def test_legacyDatabaseIsStampedNotRecreated(sqliteUrl):
-    engine = create_engine(sqliteUrl)
-    Config.db.metadata.create_all(engine)  # como o boot fazia antes do Alembic
+    # É o caminho da produção no primeiro deploy: carimba na inicial e aplica as seguintes.
+    engine = legacyDatabase(sqliteUrl)
     with engine.begin() as connection:
         connection.execute(text("INSERT INTO tbl_3 (col_d0, col_d1, col_d2) VALUES (1, 'work', 'someone')"))
 
     assert migrateScript.migrate(sqliteUrl) == 'stamped'
+    head = ScriptDirectory.from_config(migrateScript.alembicConfig()).get_current_head()
     with engine.connect() as connection:
-        assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar() == migrateScript.BASELINE_REVISION
+        assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar() == head
         assert connection.execute(text('SELECT col_d1 FROM tbl_3')).scalar() == 'work'  # dados preservados
+    assert schemaDiff(sqliteUrl) == []
     assert migrateScript.migrate(sqliteUrl) == 'upgraded'
 
 
 def test_divergentLegacySchemaIsRefusedAndLeftUntouched(sqliteUrl):
-    engine = create_engine(sqliteUrl)
-    Config.db.metadata.create_all(engine)
+    engine = legacyDatabase(sqliteUrl)
     with engine.begin() as connection:
         connection.execute(text('ALTER TABLE tbl_1 DROP COLUMN col_b7'))
 
