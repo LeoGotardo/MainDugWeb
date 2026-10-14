@@ -88,18 +88,33 @@ BOOTSTRAP_ADMIN_LOGIN=<login> BOOTSTRAP_ADMIN_PASSWORD=<12+ chars> python script
 
 ### Browser extension
 
-1. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked** and pick `src/extension/maindug`.
-2. Click the MainDug icon and sign in with your MainDug account. It talks to `https://maindug.leogotardo.com.br/api` by default; for a local server set **Config. → Servidor (avançado)** to `http://localhost:5000/api` (Chrome asks for permission).
+The same folder works in Chrome/Brave/Edge and in Firefox (one manifest: `background.service_worker` for Chrome, `background.scripts` for Firefox).
 
-The vault locks when the browser closes, when the screen locks and after 15 minutes of system inactivity (Chrome `idle` API; using the computer without touching the vault does not lock it). Credentials are suggested only on their exact domain or its subdomains, so save sites as domains (`github.com`).
+**Chrome, Brave, Edge**: open `chrome://extensions` (or `brave://extensions`), enable **Developer mode**, click **Load unpacked** and pick `src/extension/maindug`.
 
-Tests:
+**Firefox** (142+):
+- Quick test: `about:debugging` → **This Firefox** → **Load Temporary Add-on…** → pick `src/extension/maindug/manifest.json`. It is removed when Firefox closes.
+- Permanent install: Firefox only installs signed add-ons. Sign it (unlisted, for your own use) with your addons.mozilla.org API keys, then open the generated `.xpi` in Firefox:
+  ```bash
+  cd tests/extension && npm install
+  WEB_EXT_API_KEY=<jwt issuer> WEB_EXT_API_SECRET=<jwt secret> npm run sign:firefox   # keys: addons.mozilla.org/developers/addon/api/key/
+  # -> dist/extension/*.xpi
+  ```
+
+Then click the MainDug icon and sign in with your MainDug account. It talks to `https://maindug.leogotardo.com.br/api` by default; for a local server set **Config. → Servidor (avançado)** to `http://localhost:5000/api` (the browser asks for permission).
+
+The vault locks when the browser closes, when the screen locks and after 15 minutes of system inactivity (`idle` API; using the computer without touching the vault does not lock it). Credentials are suggested only on their exact domain or its subdomains, so save sites as domains (`github.com`).
+
+Tests and packaging (from `tests/extension/`, after `npm install`):
 
 ```bash
-node --test tests/extension/                         # domain matching (no dependencies)
+npm run test:unit                                    # domain matching (no browser)
 npx @puppeteer/browsers install chrome@stable        # Chrome for Testing, once
-cd tests/extension && npm install && cd -            # puppeteer-core, once
-CHROME_PATH=<path printed above> node tests/extension/e2e.mjs
+CHROME_PATH=<path> npm run test:e2e
+npx @puppeteer/browsers install firefox@stable       # Firefox outside snap, once
+FIREFOX_PATH=<path> npm run test:e2e:firefox
+npm run lint:firefox                                 # Mozilla's add-on linter
+npm run build                                        # dist/extension/*.zip (Chrome Web Store / Firefox)
 ```
 
 ## Deployment

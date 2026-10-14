@@ -2,12 +2,17 @@
   "name": "maindug-extension-tests",
   "private": true,
   "type": "module",
-  "description": "Testes da extensão MainDug: unitários (node --test) e e2e com Chrome for Testing.",
+  "description": "Testes e empacotamento da extensão MainDug: unitários (node --test), e2e com Chrome for Testing e Firefox, build/assinatura com web-ext.",
   "scripts": {
     "test:unit": "node --test .",
-    "test:e2e": "node e2e.mjs"
+    "test:e2e": "node e2e.mjs",
+    "test:e2e:firefox": "node e2e-firefox.mjs",
+    "lint:firefox": "web-ext lint --source-dir ../../src/extension/maindug",
+    "build": "web-ext build --source-dir ../../src/extension/maindug --artifacts-dir ../../dist/extension --overwrite-dest",
+    "sign:firefox": "web-ext sign --source-dir ../../src/extension/maindug --artifacts-dir ../../dist/extension --channel unlisted"
   },
   "devDependencies": {
-    "puppeteer-core": "25.13.0"
+    "puppeteer-core": "25.13.0",
+    "web-ext": "10.7.0"
   }
 }
