@@ -229,51 +229,52 @@
     <!-- Dashboard de Administrador -->
     <div id="dashboard-admin">
         <h1 class="mb-4">Dashboard do Administrador</h1>
-        
-        <!-- Cards de Estatísticas Admin -->
+
         <div class="row g-4 mb-5">
             <div class="col-md-6 col-lg-4">
                 <div class="stat-card text-center">
-                    <h5>Usuários Totais</h5>
-                    <div class="stat-value">{{ deashboardInfo.userCount or '0' }}</div>
+                    <h5>Usuários</h5>
+                    <div class="stat-value">{{ deashboardInfo.userCount or 0 }}</div>
                 </div>
             </div>
             <div class="col-md-6 col-lg-4">
                 <div class="stat-card text-center">
-                    <h5>Senhas Gerenciadas</h5>
-                    <div class="stat-value">{{ deashboardInfo.passwordCount or '0' }}</div>
+                    <h5>Credenciais no sistema</h5>
+                    <div class="stat-value">{{ deashboardInfo.passwordCount or 0 }}</div>
                 </div>
             </div>
             <div class="col-md-6 col-lg-4">
                 <div class="stat-card text-center">
-                    <h5 class="text-danger">Ações Críticas</h5>
-                    <div class="stat-value text-danger">{{ deashboardInfo.criticalLogs or '0' }}</div>
+                    <h5 class="text-danger">Senhas vazadas</h5>
+                    <div class="stat-value text-danger">{{ deashboardInfo.leakedCount or 0 }}</div>
                 </div>
             </div>
         </div>
-        
+
         <h2 class="h4 mb-3">Gerenciamento de Usuários</h2>
         <div class="stat-card p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
+                <table class="table table-hover mb-0" id="usersTable">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Login</th>
-                            <th>Role</th>
+                            <th>Papel</th>
                             <th>Status</th>
+                            <th>Credenciais</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% if users %}
                             {% for user in users %}
+                            {% set isSelf = user.id == current_user.id %}
                             <tr>
-                                <td>{{ user.id[:8] }}...</td>
-                                <td>{{ user.login }}</td>
+                                <td><code>{{ user.id[:8] }}</code></td>
+                                <td class="text-break">{{ user.login }}{% if isSelf %} <span class="text-secondary small">(você)</span>{% endif %}</td>
                                 <td>
                                     <span class="badge {% if user.role == 'sysadmin' %}bg-primary{% else %}bg-secondary{% endif %}">
-                                        {{ user.role }}
+                                        {{ 'admin' if user.role == 'sysadmin' else 'usuário' }}
                                     </span>
                                 </td>
                                 <td>
@@ -281,25 +282,93 @@
                                         {% if user.enabled %}Ativo{% else %}Inativo{% endif %}
                                     </span>
                                 </td>
+                                <td>{{ user.passwordCount }}</td>
                                 <td class="text-nowrap">
-                                    <button class="btn btn-sm btn-outline-warning" title="Editar">
+                                    {% if isSelf %}
+                                    <span class="text-secondary small">—</span>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-outline-warning" title="Editar"
+                                            data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                            data-user-id="{{ user.id }}" data-user-login="{{ user.login }}"
+                                            data-user-role="{{ user.role }}" data-user-enabled="{{ 'true' if user.enabled else 'false' }}">
                                         <i class="bi bi-pencil-fill"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-outline-danger" title="Excluir">
+                                    <button class="btn btn-sm btn-outline-danger" title="Excluir"
+                                            data-bs-toggle="modal" data-bs-target="#deleteUserModal"
+                                            data-user-id="{{ user.id }}" data-user-login="{{ user.login }}"
+                                            data-user-count="{{ user.passwordCount }}">
                                         <i class="bi bi-trash-fill"></i>
                                     </button>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
                         {% else %}
                         <tr>
-                            <td colspan="5" class="text-center text-secondary py-4">
+                            <td colspan="6" class="text-center text-secondary py-4">
                                 Nenhum usuário encontrado.
                             </td>
                         </tr>
                         {% endif %}
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Editar usuário -->
+    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="POST" id="editUserForm" data-action-template="{{ url_for('adminUpdateUser', userId='__ID__') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editUserTitle">Editar usuário</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="edit-user-role" class="form-label">Papel</label>
+                            <select class="form-select" id="edit-user-role" name="role">
+                                <option value="user">Usuário</option>
+                                <option value="sysadmin">Administrador</option>
+                            </select>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="edit-user-enabled" name="enabled">
+                            <label class="form-check-label" for="edit-user-enabled">Conta ativa</label>
+                        </div>
+                        <div class="form-text">Uma conta desativada perde o acesso na hora, no site e na extensão.</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excluir usuário -->
+    <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="POST" id="deleteUserForm" data-action-template="{{ url_for('adminDeleteUser', userId='__ID__') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteUserTitle">Excluir usuário</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Excluir permanentemente <strong id="delete-user-login"></strong> e
+                           <strong id="delete-user-count"></strong> credencial(is)?</p>
+                        <p class="text-danger small mb-0">Esta ação não pode ser desfeita.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Excluir</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -313,6 +382,29 @@
 
 {% block extra_scripts %}
 <script>
+// Modais do painel admin: a URL do form leva o id do usuário clicado.
+function bindAdminModal(modalId, onShow) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.addEventListener('show.bs.modal', (event) => {
+        const button = event.relatedTarget;
+        const form = modal.querySelector('form');
+        form.action = form.dataset.actionTemplate.replace('__ID__', encodeURIComponent(button.dataset.userId));
+        onShow(modal, button.dataset);
+    });
+}
+
+bindAdminModal('editUserModal', (modal, data) => {
+    modal.querySelector('.modal-title').textContent = `Editar ${data.userLogin}`;
+    modal.querySelector('#edit-user-role').value = data.userRole === 'sysadmin' ? 'sysadmin' : 'user';
+    modal.querySelector('#edit-user-enabled').checked = data.userEnabled === 'true';
+});
+
+bindAdminModal('deleteUserModal', (modal, data) => {
+    modal.querySelector('#delete-user-login').textContent = data.userLogin;
+    modal.querySelector('#delete-user-count').textContent = data.userCount;
+});
+
 // Função para ordenar tabela
 function sortTable(column, element) {
     const icon = element.querySelector('i');

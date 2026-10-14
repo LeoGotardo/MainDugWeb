@@ -391,6 +391,39 @@ def deletePassword():
     return redirect(url_for('index'))
 
 
+@app.route('/admin/users/<userId>/update', methods=['POST'])
+@onlySys
+def adminUpdateUser(userId):
+    success, msg = database.adminUpdateUser(
+        adminId=current_user.id,
+        targetId=userId[:36],
+        role=request.form.get('role', ''),
+        enabled=request.form.get('enabled') == 'on',
+    )
+    if success is True:
+        flash('Usuário atualizado.', 'success')
+    elif success is False:
+        flash(msg, 'danger')
+    else:
+        app.logger.error(f'Erro ao atualizar usuário: {msg}')
+        flash('Erro interno ao atualizar usuário', 'danger')
+    return redirect(url_for('index'))
+
+
+@app.route('/admin/users/<userId>/delete', methods=['POST'])
+@onlySys
+def adminDeleteUser(userId):
+    success, msg = database.adminDeleteUser(adminId=current_user.id, targetId=userId[:36])
+    if success is True:
+        flash('Usuário e todas as credenciais dele foram excluídos.', 'success')
+    elif success is False:
+        flash(msg, 'danger')
+    else:
+        app.logger.error(f'Erro ao excluir usuário: {msg}')
+        flash('Erro interno ao excluir usuário', 'danger')
+    return redirect(url_for('index'))
+
+
 @app.route('/password/view', methods=['POST'])
 @login_required
 @limiter.limit('60/minute')

@@ -3,6 +3,7 @@ from zoneinfo import ZoneInfo
 from types import SimpleNamespace
 
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 from flask_login import UserMixin
 from collections import Counter
 from flask import Flask
@@ -36,6 +37,9 @@ class Config:
     )
     db = SQLAlchemy(app)
     session = db.session
+
+
+ADMIN_ASSIGNABLE_ROLES = ('user', 'sysadmin')
 
 
 def _errorMsg(e: Exception) -> str:
@@ -342,13 +346,13 @@ class Database:
 
             filters = {'query': query, 'sort': sort, 'sortOrder': sortOrder}
 
-            if user.role == 'super':
-                totalPasswords = self.session.query(Passwords).count()
+            if user.role in ('sysadmin', 'super'):
+                # Painel do administrador: números de todo o sistema (sem decifrar nenhuma credencial).
                 return True, {
-                    'passwordCount': totalPasswords,
+                    'userCount': self.session.query(User).count(),
+                    'passwordCount': self.session.query(Passwords).count(),
                     'leakedCount': self.session.query(Passwords).filter(Passwords.status == True).count(),
                     'repeatedCount': 0,
-                    'totalUsers': self.session.query(User).count(),
                     'flags': [],
                     'passwords': [],
                     'pagination': buildPagination(1, perPage, 0),
@@ -421,7 +425,10 @@ class Database:
 
     def getUsers(self, query: str = '', page: int = 1, perPage: int = 50, sort: str = 'login', sortOrder: str = 'asc') -> tuple[bool, list[dict]] | tuple[int, str]:
         try:
-            users = [u.toDict() for u in self.session.query(User).all()]
+            credentialCounts = dict(
+                self.session.query(Passwords.userId, func.count(Passwords.id)).group_by(Passwords.userId).all()
+            )
+            users = [{**u.toDict(), 'passwordCount': credentialCounts.get(u.id, 0)} for u in self.session.query(User).all()]
 
             query = (query or '').strip().lower()
             if query:
@@ -508,6 +515,40 @@ class Database:
         except Exception as e:
             self.session.rollback()
             return -1, _errorMsg(e)
+
+    def _enabledAdminIds(self) -> set[str]:
+        return {u.id for u in self.session.query(User).filter(User.enabled == True).all() if u.role == 'sysadmin'}
+
+    def adminUpdateUser(self, adminId: str, targetId: str, role: str, enabled: bool) -> tuple[bool, str]:
+        """Admin altera papel e status de uma conta. Nunca deixa o sistema sem um admin ativo."""
+        try:
+            if role not in ADMIN_ASSIGNABLE_ROLES:
+                return False, 'Papel inválido'
+            target = self.session.query(User).filter_by(id=targetId).first()
+            if target is None:
+                return False, 'Usuário não encontrado'
+            if target.id == adminId and (role != 'sysadmin' or not enabled):
+                return False, 'Você não pode desativar nem rebaixar a própria conta'
+
+            remainingAdmins = self._enabledAdminIds() - {target.id}
+            if not remainingAdmins and (role != 'sysadmin' or not enabled):
+                return False, 'É preciso manter pelo menos um administrador ativo'
+
+            target.role = role
+            target.enabled = enabled
+            self.session.commit()
+            return True, 'Usuário atualizado'
+        except Exception as e:
+            self.session.rollback()
+            return -1, _errorMsg(e)
+
+    def adminDeleteUser(self, adminId: str, targetId: str) -> tuple[bool, str]:
+        """Admin exclui uma conta e todas as credenciais, flags e logs dela."""
+        if targetId == adminId:
+            return False, 'Você não pode excluir a própria conta'
+        if not self._enabledAdminIds() - {targetId}:
+            return False, 'É preciso manter pelo menos um administrador ativo'
+        return self.deleteUser(targetId)
 
     def updateUser(self, id: str, password: str = None, role: str = None, profilePic: str = None) -> tuple[bool, str]:
         """O login não muda por aqui: ele é a chave de busca da conta."""
