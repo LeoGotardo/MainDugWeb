@@ -11,6 +11,7 @@
     const PROMPT_TAG = 'maindug-prompt';
     const SCAN_DEBOUNCE_MS = 500;
     const SPA_SAVE_CHECK_MS = 2500;
+    const PENDING_SAVE_CHECKS_MS = [0, 700, 1500, 3000, 6000];
     const MAX_SUGGESTIONS = 5;
 
     let suggestionRequested = false;  // já perguntamos ao worker por credenciais nesta página
@@ -286,8 +287,8 @@
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
 
-    checkPendingSave();
-    // O worker pode ainda estar gravando o login enviado pela página anterior: confere de novo.
-    setTimeout(checkPendingSave, 1500);
+    // O login enviado pela página anterior pode chegar ao worker depois que esta página já carregou
+    // (o worker pode estar suspenso e demorar a acordar): consulta algumas vezes nos primeiros segundos.
+    for (const delay of PENDING_SAVE_CHECKS_MS) setTimeout(checkPendingSave, delay);
     offerFill();
 })();

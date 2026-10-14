@@ -280,6 +280,9 @@ async function main() {
         check('site do MainDug: sem "Salvar?" nem sugestão (login, modal, nova credencial)',
             !promptAfterLogin && !promptInModal && !promptAfterAdd,
             `após login: ${promptAfterLogin}, no modal: ${promptInModal}, após adicionar: ${promptAfterAdd}`);
+        if (results.some((result) => !result.ok)) {
+            console.log('\n--- chamadas /api e erros da API ---\n' + apiProc.logs().split('\n').filter((line) => /\/api\/|Traceback|Error/.test(line)).slice(-40).join('\n'));
+        }
     } finally {
         await browser?.close();
         site.close();
