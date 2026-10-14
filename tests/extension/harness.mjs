@@ -42,6 +42,8 @@ export const hasPrompt = (page) => page.evaluate(() => !!document.querySelector(
 // ==========================================
 
 function startApi(apiEnv) {
+    // A app não cria tabelas: o schema vem das migrações, como em produção.
+    execFileSync(PYTHON, [path.join(ROOT, 'scripts/migrate.py')], { cwd: ROOT, env: apiEnv, stdio: 'ignore' });
     const proc = spawn(PYTHON, [path.join(ROOT, 'src/app.py')], { env: apiEnv, stdio: ['ignore', 'ignore', 'pipe'] });
     let stderr = '';
     proc.stderr.on('data', (chunk) => { stderr += chunk; });
@@ -126,6 +128,7 @@ export async function runSuite(body, { patchManifest } = {}) {
         JWT_SECRET: 'e2e-jwt-secret-with-at-least-32-bytes!',
         DATABASE_URL: `sqlite:///${path.join(workDir, 'e2e.db')}`,
         RATE_LIMIT_STORAGE: 'memory://',
+        BOOTSTRAP_ADMIN_LOGIN: '',
         PORT: String(API_PORT),
     };
 

@@ -15,6 +15,8 @@ cp .env.example .env                                   # fill in the three secre
 # Same suite against real Postgres (stricter types than SQLite; run before deploying DB changes):
 docker run -d --rm --name maindug-test-pg -e POSTGRES_PASSWORD=test -e POSTGRES_DB=maindug_test -p 127.0.0.1:55432:5432 postgres:16-alpine
 TEST_DATABASE_URL=postgresql://postgres:test@127.0.0.1:55432/maindug_test ./venv/bin/python -m pytest
+DATABASE_URL=sqlite:///$PWD/instance/maindug.db ./venv/bin/python scripts/migrate.py   # create/upgrade schema (app never creates tables)
+./venv/bin/alembic revision --autogenerate -m "..."    # new migration (needs dev .env); review before committing
 ./venv/bin/python scripts/createAdmin.py               # first sysadmin (BOOTSTRAP_ADMIN_*)
 ./venv/bin/python scripts/migrateLookupHashes.py       # one-off, see "Lookup hashes"
 node --test tests/extension/                           # extension unit tests (e2e: see README)
@@ -23,7 +25,7 @@ node --test tests/extension/                           # extension unit tests (e
 ## Layout
 
 - `src/settings.py` — reads the environment once and refuses to boot when something required is missing. Never call `os.getenv` elsewhere.
-- `src/database.py` — Flask app + SQLAlchemy models + the `Database` class, exposed as the singleton `database`. Do not instantiate `Database()` again (it runs `create_all`).
+- `src/database.py` — Flask app + SQLAlchemy models + the `Database` class, exposed as the singleton `database`. Do not instantiate `Database()` again (its init runs the admin bootstrap).
 - `src/app.py` — web routes (session auth, CSRF-protected). `src/apiRoutes.py` — JSON API for the extension (JWT, CSRF-exempt), mounted at `/api`.
 - `src/extensions.py` — shared `csrf` and `limiter`.
 - `src/extension/maindug/` — MV3 extension for Chrome and Firefox from one manifest (`service_worker` for Chrome, `scripts` for Firefox; keep both). `lib/` holds ES modules shared by the service worker and the popup; `content.js` is a classic script and must stay self-contained.
@@ -59,4 +61,8 @@ node --test tests/extension/                           # extension unit tests (e
 
 ## Schema
 
-Table and column names are obfuscated (`tbl_0`, `col_a0`, …) and kept for compatibility with existing data. There are no migrations yet: `create_all()` runs once per process and never alters existing tables.
+- Alembic owns the schema (`alembic/`, `scripts/migrate.py`); the app never runs `create_all` (tests do, for speed, and `tests/test_migrations.py` asserts the migrations produce exactly the models' schema on SQLite and Postgres).
+- Production migrates in GitHub Actions (`.github/workflows/ci.yml`, job `migrate`, push to `main` only) with the unpooled Neon URL in the `DATABASE_URL` secret. Vercel Deployment Checks hold the production promotion until `migrate` passes.
+- `alembic/env.py` and `scripts/migrate.py` must not import `settings`/`database`: the CI job has only the database URL. Shared URL normalization lives in `src/databaseUrl.py`.
+- Expand/contract: a migration must work with the code that is live while it runs (new columns nullable first; drop only after no deployed code uses it). Preview deployments use the production database.
+- Table and column names are obfuscated (`tbl_0`, `col_a0`, …) and kept for compatibility with existing data; renaming is now possible through a migration.

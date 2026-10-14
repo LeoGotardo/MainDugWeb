@@ -6,10 +6,10 @@ pagination/search/flags, error-page tracebacks, request timeouts, …) are cover
 
 ## Architecture (vs. the hookahsys-back standard)
 
-1. **No migrations.** `create_all()` creates missing tables but never alters existing ones. Adopt Alembic before the next schema change.
+1. **Migrations are new.** Alembic is set up with a baseline (`0001`); the first real migration is still to come (e.g. the normalized site column, #10).
 2. **No layering.** `database.py` mixes the Flask app, models and business logic; `app.py` routes call it directly. Target: `routes → services → repositories → models`.
 3. **Tuple returns instead of exceptions.** `(True|False|-1, value)` everywhere. Replace with domain exceptions plus one error handler.
-4. **Obfuscated schema names** (`tbl_0`, `col_a0`). They add no security and make every query harder to read; renaming needs a migration.
+4. **Obfuscated schema names** (`tbl_0`, `col_a0`). They add no security and make every query harder to read; renaming is now a migration away.
 5. **Rate limit is per instance** (`memory://`). On Vercel each instance has its own counter. Point `RATE_LIMIT_STORAGE` at a Redis for a global limit.
 
 ## Features
@@ -23,7 +23,7 @@ pagination/search/flags, error-page tracebacks, request timeouts, …) are cover
 The extension (`src/extension/maindug/`) was rebuilt on 2026-10-13: API login, in-memory session with auto-lock, exact-domain fill, isolated page UI, save/update after login, usage logging. Covered by `tests/extension/` (unit + Chrome and Firefox e2e). Open items:
 
 9. **Not covered by the e2e tests** (check by hand after changes): context-menu and `Ctrl+Shift+G` actions, the server-URL change with its permission prompt, auto-lock (`idle`), and the production `host_permissions` path (tests patch the manifest to allow 127.0.0.1). In Chrome the popup UI is driven directly but its "Preencher" button is not (no other active tab); in Firefox the popup UI itself is not driven (WebDriver cannot see extension pages), only its code path through a test page.
-10. **Sites saved as names never autofill.** A credential whose site is "GitHub" instead of `github.com` is listed but never matched. A normalized origin column (needs migrations, #1) would let the website store and validate domains.
+10. **Sites saved as names never autofill.** A credential whose site is "GitHub" instead of `github.com` is listed but never matched. A normalized origin column (now possible with a migration) would let the website store and validate domains.
 11. **Top frame only** (`all_frames: false`): login forms inside iframes are not detected.
 12. **Firefox needs signing for a permanent install** (Firefox 142+ is supported from the same folder). `npm run sign:firefox` with the owner's addons.mozilla.org API keys produces the `.xpi`; until then it loads only as a temporary add-on.
 13. **Not published**: no Chrome Web Store listing; Chrome users load it unpacked.

@@ -150,7 +150,7 @@ class TestBootstrapAdmin:
 
 class TestDatabaseUrl:
     def test_postgresUrlsUsePsycopg3(self):
-        from settings import _normalizeDatabaseUrl
+        from databaseUrl import normalizeDatabaseUrl
         for url in ('postgres://u:p@h/db', 'postgresql://u:p@h/db', 'postgresql+psycopg2://u:p@h/db', 'postgresql+psycopg://u:p@h/db'):
-            assert _normalizeDatabaseUrl(url) == 'postgresql+psycopg://u:p@h/db'
-        assert _normalizeDatabaseUrl('sqlite://') == 'sqlite://'
+            assert normalizeDatabaseUrl(url) == 'postgresql+psycopg://u:p@h/db'
+        assert normalizeDatabaseUrl('sqlite://') == 'sqlite://'

@@ -73,18 +73,18 @@ pip install -r requirements.txt
 Copy `.env.example` to `.env` and fill it in. `src/settings.py` refuses to start and lists
 any missing key. `SECRET_KEY`, `ENCRYPTION_KEY` and `JWT_SECRET` must be three different values.
 
-Run the app and the tests:
+Create the schema (Alembic owns it; the app never creates tables), then run the app and the tests:
 
 ```bash
+DATABASE_URL=sqlite:///$PWD/instance/maindug.db python scripts/migrate.py   # same URL the app uses
 python src/app.py
 python -m pytest
 ```
 
-No admin account is created automatically. Create one with:
+New schema change: edit the models in `src/database.py`, then `alembic revision --autogenerate -m "..."`
+(with your dev `.env` loaded), review the generated file in `alembic/versions/` and run `scripts/migrate.py`.
 
-```bash
-BOOTSTRAP_ADMIN_LOGIN=<login> BOOTSTRAP_ADMIN_PASSWORD=<12+ chars> python scripts/createAdmin.py
-```
+The first admin is created at boot from `BOOTSTRAP_ADMIN_LOGIN` / `BOOTSTRAP_ADMIN_PASSWORD` (12+ chars) when that login does not exist yet; remove the variables afterwards. Locally you can also run `python scripts/createAdmin.py` with the same variables.
 
 ### Browser extension
 
@@ -121,9 +121,16 @@ npm run build                                        # dist/extension/*.zip (Chr
 
 The repo deploys on Vercel with zero config: Vercel detects Flask and serves `src/app.py`. Do not add a catch-all rewrite in `vercel.json` — Vercel now forwards the rewritten path to Flask, so every route would 404. See [`VERCEL_ATTEMPTS.md`](VERCEL_ATTEMPTS.md) for the history.
 
+Database migrations run in GitHub Actions (`.github/workflows/ci.yml`): every push runs the tests; a push to `main` then runs `scripts/migrate.py` against production. One-time setup:
+
+1. **GitHub secret `DATABASE_URL`** (Settings → Secrets and variables → Actions): the **direct (unpooled)** Postgres URL from the Neon console. DDL does not work through the pooler.
+2. **Vercel → Settings → Deployment Checks**: add GitHub and require the `migrate` check, so a production deployment is promoted only after its migrations ran.
+
+Migrations must stay compatible with the code that is live while they run (add columns as nullable, backfill, then make them required in a later deploy; drop things only after no deployed code reads them). Preview deployments share the production database and migrations only run from `main`, so preview code must not depend on unmerged migrations.
+
 ## Known issues
 
-The codebase currently has several open bugs (undefined methods/columns, mismatched function signatures, etc.) tracked in [`PROBLEMS.md`](PROBLEMS.md) — check there before relying on features like `/moreInfo`, the `/api` endpoints, or account editing.
+Open items and limitations are tracked in [`PROBLEMS.md`](PROBLEMS.md).
 
 ## Author
 

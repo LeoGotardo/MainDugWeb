@@ -11,6 +11,9 @@ os.environ.update({
     'JWT_SECRET': 'test-jwt-secret-with-at-least-32-bytes',
     'DATABASE_URL': os.getenv('TEST_DATABASE_URL', 'sqlite://'),
     'RATE_LIMIT_STORAGE': 'memory://',
+    # Vazias de propósito: o .env local do desenvolvedor não pode criar um admin no boot dos testes.
+    'BOOTSTRAP_ADMIN_LOGIN': '',
+    'BOOTSTRAP_ADMIN_PASSWORD': '',
 })
 os.environ.pop('SecretKey', None)
 os.environ.pop('VERCEL', None)

@@ -10,6 +10,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from dotenv import load_dotenv
 
+from databaseUrl import normalizeDatabaseUrl
+
 _srcDir = os.path.dirname(os.path.abspath(__file__))
 _rootDir = os.path.dirname(_srcDir)
 
@@ -47,17 +49,7 @@ if not DATABASE_URL and IS_DEV:
     DATABASE_URL = 'sqlite:///' + os.path.join(_rootDir, 'instance', 'maindug.db')
 
 
-def _normalizeDatabaseUrl(url: str | None) -> str | None:
-    """Força o driver psycopg (v3) em qualquer URL Postgres: `postgres://`, `postgresql://` ou `postgresql+<driver>://`."""
-    if not url:
-        return url
-    scheme, sep, rest = url.partition('://')
-    if sep and (scheme in ('postgres', 'postgresql') or scheme.startswith('postgresql+')):
-        return f'postgresql+psycopg://{rest}'
-    return url
-
-
-DATABASE_URL = _normalizeDatabaseUrl(DATABASE_URL)
+DATABASE_URL = normalizeDatabaseUrl(DATABASE_URL)
 
 SITE_URL = os.getenv('SITE_URL', 'https://maindug.leogotardo.com.br')
 

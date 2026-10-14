@@ -1,0 +1,71 @@
+# Testes em todo push/PR; migrações do banco de produção só em push no main, depois dos testes.
+# No Vercel, "Deployment Checks" exigindo o job `migrate` faz a produção só ser promovida
+# depois que as migrações forem aplicadas (ver README → Deploy).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: maindug_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: pytest (SQLite)
+        run: python -m pytest -q
+      - name: pytest (Postgres)
+        run: python -m pytest -q
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/maindug_test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: extension unit tests
+        run: node --test tests/extension/
+
+  migrate:
+    name: migrate
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # Nunca duas migrações ao mesmo tempo; uma nova espera a anterior terminar.
+    concurrency:
+      group: migrate-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Aplicar migrações no banco de produção
+        env:
+          # URL DIRETA (unpooled) do Neon: DDL não passa pelo pooler.
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Secret DATABASE_URL ausente. Crie em Settings → Secrets and variables → Actions com a URL direta (unpooled) do Neon."
+            exit 1
+          fi
+          python scripts/migrate.py

@@ -289,12 +289,8 @@ class Database:
         self.db = Config.db
         self.session = Config.session
         self.iscryptograph = Cryptograph()
-        self.createTables()
+        # O schema é do Alembic (scripts/migrate.py); a app nunca cria nem altera tabelas.
         self.bootstrapAdmin()
-
-    def createTables(self) -> None:
-        with Config.app.app_context():
-            self.db.create_all()
 
     def bootstrapAdmin(self) -> None:
         """Cria o sysadmin de BOOTSTRAP_ADMIN_* se ele ainda não existir. Nunca altera uma conta existente."""
