@@ -76,13 +76,17 @@ any missing key. `SECRET_KEY`, `ENCRYPTION_KEY` and `JWT_SECRET` must be three d
 Create the schema (Alembic owns it; the app never creates tables), then run the app and the tests:
 
 ```bash
-DATABASE_URL=sqlite:///$PWD/instance/maindug.db python scripts/migrate.py   # same URL the app uses
+# Export the SAME database URL the app uses (the one in your .env; with no DATABASE_URL in dev
+# the app uses sqlite:///<repo>/instance/maindug.db). migrate.py and alembic do not read .env.
+export DATABASE_URL=sqlite:///$PWD/instance/maindug.db
+python scripts/migrate.py
 python src/app.py
 python -m pytest
 ```
 
-New schema change: edit the models in `src/database.py`, then `alembic revision --autogenerate -m "..."`
-(with your dev `.env` loaded), review the generated file in `alembic/versions/` and run `scripts/migrate.py`.
+If the app dies at boot with `no such table: tbl_0`, the schema was not migrated for the URL it uses: run `scripts/migrate.py` with that URL.
+
+New schema change: edit the models in `src/database.py`, then, with `DATABASE_URL` exported as above, `alembic revision --autogenerate -m "..."`; review the generated file in `alembic/versions/` and run `scripts/migrate.py`.
 
 The first admin is created at boot from `BOOTSTRAP_ADMIN_LOGIN` / `BOOTSTRAP_ADMIN_PASSWORD` (12+ chars) when that login does not exist yet; remove the variables afterwards. Locally you can also run `python scripts/createAdmin.py` with the same variables.
 

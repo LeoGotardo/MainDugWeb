@@ -15,8 +15,9 @@ cp .env.example .env                                   # fill in the three secre
 # Same suite against real Postgres (stricter types than SQLite; run before deploying DB changes):
 docker run -d --rm --name maindug-test-pg -e POSTGRES_PASSWORD=test -e POSTGRES_DB=maindug_test -p 127.0.0.1:55432:5432 postgres:16-alpine
 TEST_DATABASE_URL=postgresql://postgres:test@127.0.0.1:55432/maindug_test ./venv/bin/python -m pytest
-DATABASE_URL=sqlite:///$PWD/instance/maindug.db ./venv/bin/python scripts/migrate.py   # create/upgrade schema (app never creates tables)
-./venv/bin/alembic revision --autogenerate -m "..."    # new migration (needs dev .env); review before committing
+export DATABASE_URL=<same URL the app uses>           # migrate.py/alembic don't read .env; dev default: sqlite:///$PWD/instance/maindug.db
+./venv/bin/python scripts/migrate.py                   # create/upgrade schema; boot error "no such table" = not migrated
+./venv/bin/alembic revision --autogenerate -m "..."    # new migration (also needs the dev .env for the app import); review before committing
 ./venv/bin/python scripts/createAdmin.py               # first sysadmin (BOOTSTRAP_ADMIN_*)
 ./venv/bin/python scripts/migrateLookupHashes.py       # one-off, see "Lookup hashes"
 node --test tests/extension/                           # extension unit tests (e2e: see README)
