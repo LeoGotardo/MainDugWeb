@@ -107,6 +107,11 @@ function prepareExtension(workDir, patchManifest) {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
     // Só nesta cópia de teste: acesso à API local sem o pedido de permissão (que exige clique).
     manifest.host_permissions.push('http://127.0.0.1/*');
+    // Só nesta cópia de teste: o bloqueio automático segue a ociosidade e o bloqueio de tela do
+    // sistema de quem roda os testes (tela bloqueada => sessão apagada no meio dos cenários).
+    // O e2e não cobre o bloqueio automático; aqui ele não pode depender do estado da máquina.
+    const backgroundPath = path.join(dir, 'background.js');
+    writeFileSync(backgroundPath, 'chrome.idle.onStateChanged.addListener = () => {};\n' + readFileSync(backgroundPath, 'utf8'));
     patchManifest?.(manifest, dir);
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
     return dir;
