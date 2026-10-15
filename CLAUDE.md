@@ -20,7 +20,7 @@ export DATABASE_URL=<same URL the app uses>           # migrate.py/alembic don't
 ./venv/bin/alembic revision --autogenerate -m "..."    # new migration (also needs the dev .env for the app import); review before committing
 ./venv/bin/python scripts/createAdmin.py               # first sysadmin (BOOTSTRAP_ADMIN_*)
 ./venv/bin/python scripts/migrateLookupHashes.py       # one-off, see "Lookup hashes"
-node --test tests/extension/                           # extension unit tests (e2e: see README)
+node --test tests/extension/*.test.mjs                 # extension unit tests (e2e: see README)
 ```
 
 ## Layout

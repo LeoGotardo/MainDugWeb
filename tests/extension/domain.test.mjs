@@ -1,5 +1,5 @@
 // Casamento de domínio da extensão (src/extension/maindug/lib/domain.js).
-// Rodar: node --test tests/extension/
+// Rodar: node --test tests/extension/*.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeHost, hostOfUrl, matchesHost } from '../../src/extension/maindug/lib/domain.js';

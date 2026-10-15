@@ -41,7 +41,7 @@ jobs:
         with:
           node-version: '22'
       - name: extension unit tests
-        run: node --test tests/extension/
+        run: node --test tests/extension/*.test.mjs
 
   migrate:
     name: migrate

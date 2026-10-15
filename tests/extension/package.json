@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Testes e empacotamento da extensão MainDug: unitários (node --test), e2e com Chrome for Testing e Firefox, build/assinatura com web-ext.",
   "scripts": {
-    "test:unit": "node --test .",
+    "test:unit": "node --test *.test.mjs",
     "test:e2e": "node e2e.mjs",
     "test:e2e:firefox": "node e2e-firefox.mjs",
     "lint:firefox": "web-ext lint --source-dir ../../src/extension/maindug",
